@@ -1,0 +1,176 @@
+body { font-family: 'Courier New', Courier, monospace; background-color: #1a252f; color: white; margin: 0; padding: 2px; display: flex; flex-direction: column; align-items: center; }
+
+/* タイトルと全体の幅・隙間の拡大 */
+.area-title { font-size: 20px; font-weight: bold; margin-bottom: 5px; margin-top: 5px; text-align: center; width: 100%; }
+.board { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; width: 100%; max-width: 1400px; margin-bottom: 5px; }
+
+/* 情報パネルの拡大 */
+.info-panel { background-color: #ecf0f1; color: #2c3e50; padding: 15px; border-radius: 8px; width: 90%; max-width: 800px; text-align: center; font-size: 24px; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.3); transition: 0.2s; min-height: 30px; line-height: 1.5; margin: 0 auto 15px auto;}
+
+/* ★ 通常カード本体のサイズ（120x160） */
+.card { width: 120px; height: 160px; background-color: white; border-radius: 4px; color: black; display: flex; flex-direction: column; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.5); transition: 0.2s; cursor: pointer; border: 2px solid transparent; }
+.hand-board .card:hover:not(.dragging):not(.disabled) { transform: translateY(-10px); box-shadow: 0 8px 16px rgba(0,0,0,0.6); }
+
+/* ★ リーダーカード専用サイズ（160x120・横長） */
+.leader-zone .card { width: 160px !important; height: 120px !important; flex-direction: row; }
+.leader-zone .card-image { font-size: 24px !important; } /* 画像(絵文字)を少し小さく */
+
+/* ====== スタイリッシュなカードデザイン（フルイラスト＆丸型バッジ） ====== */
+
+/* 1. 全体を細い枠線で囲む */
+.card { border: 2px solid #ecf0f1 !important; overflow: visible !important; }
+
+/* 2. ヘッダー背景を透明にし、名前を非表示にする */
+.card-header { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent !important; padding: 0; pointer-events: none; z-index: 20; }
+.card-name { display: none; } 
+
+/* 3. コストバッジ（左上にはみ出す・黄緑） */
+.card-cost { position: absolute; top: -15px; left: -15px; background-color: #8bc34a !important; color: white !important; width: 40px !important; height: 40px !important; border-radius: 50% !important; display: flex; justify-content: center; align-items: center; font-size: 22px !important; font-weight: bold; border: 3px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.5); text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+
+/* 4. イラストをカード全面に広げる */
+.card-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 0 !important; border-radius: 4px; overflow: hidden; z-index: 1; background-color: #34495e !important; }
+.card-image img { width: 100%; height: 100%; object-fit: cover; }
+
+/* 5. ステータス背景を透明化し、JSのレイアウト設定を上書き */
+.card-stats { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; padding: 0 !important; background: transparent !important; pointer-events: none; z-index: 20; }
+.card-stats > div { display: block !important; position: absolute; width: 100%; height: 100%; top: 0; left: 0; }
+
+/* 6. 攻撃力（左下・赤）とHP（右下・水色）のバッジ */
+.stat-attack, .stat-hp { position: absolute; width: 40px; height: 40px; border-radius: 50%; color: white !important; font-size: 18px; font-weight: bold; display: flex; justify-content: center; align-items: center; border: 3px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.5); text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+.stat-attack { bottom: -15px; left: -15px; background-color: #e74c3c; }
+.stat-hp     { bottom: -15px; right: -15px; background-color: #00bcd4; }
+
+.magic-desc { display: none; } /* テキストはホバー時の情報パネルに任せるので非表示 */
+
+/* ボタン類の拡大 */
+.retry-btn, .end-turn-btn { background-color: #f39c12; color: white; border: none; font-weight: bold; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: 0.2s; padding: 12px 24px !important; font-size: 18px !important; margin: 0 10px; }
+.end-turn-btn { background-color: #00bcd4; }
+.end-turn-btn:hover { background-color: #0097a7; transform: scale(1.05); }
+.retry-btn:hover { background-color: #e67e22; transform: scale(1.05); }
+
+/* プレイヤー陣地の余白拡大 */
+.player-area { width: 100%; max-width: 1400px; padding: 20px; border-radius: 12px; border: 3px solid transparent; transition: 0.3s; margin-bottom: 20px; }
+.p1-theme { background-color: rgba(52, 152, 219, 0.05); }
+.p2-theme { background-color: rgba(231, 76, 60, 0.05); }
+.active-turn.p1-theme { border-color: #3498db; box-shadow: 0 0 15px rgba(52, 152, 219, 0.5); background-color: rgba(52, 152, 219, 0.15); }
+.active-turn.p2-theme { border-color: #e74c3c; box-shadow: 0 0 15px rgba(231, 76, 60, 0.5); background-color: rgba(231, 76, 60, 0.15); }
+
+/* ステータスバー（ライフ・PPなど）の拡大 */
+.player-status-area { display: flex; justify-content: space-around; align-items: center; background-color: rgba(0,0,0,0.6); padding: 10px; border-radius: 8px; margin: 15px 0; }
+.hp-display { font-size: 18px; font-weight: bold; color: #e74c3c; }
+.mp-display { font-size: 18px; font-weight: bold; color: #3498db; }
+.deck-display { font-size: 18px; font-weight: bold; color: #f1c40f; }
+.trash-display { font-size: 18px; font-weight: bold; color: #7f8c8d; cursor: pointer; transition: 0.2s; }
+.lost-display { font-size: 18px; font-weight: bold; color: #9b59b6; }
+.trash-display:hover { color: #ecf0f1; transform: scale(1.05); }
+
+/* ★ ステージ（場）のサイズ調整（カードより少し大きい 80x115） */
+.stage-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 10px; }
+.stage-zone { width: 80px; min-height: 115px; background-color: rgba(255,255,255,0.1); border: 3px dashed #7f8c8d; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; transition: 0.2s; }
+
+/* ★ リーダーエリアのサイズ調整 */
+.leader-zone { background-color: rgba(241, 196, 15, 0.1); border-color: #f1c40f; width: 115px; height: 80px; min-height: 80px; flex-direction: row; }
+
+/* 状態異常・エフェクト・ラベルの縮小 */
+.card.dragging { opacity: 0.5; transform: scale(1.05); }
+.action-done { filter: grayscale(100%); opacity: 0.5; cursor: not-allowed; }
+.card.disabled { filter: brightness(50%); cursor: not-allowed; }
+
+/* =========================================
+   カード種類ごとのスタイリッシュ設定（イラスト表示＆枠線カラー）
+========================================= */
+/* 古いヘッダーの色塗りを透明化してイラストを見せる！ */
+.magic-header, .set-magic-header, .item-header, .skill-monster-header { background-color: transparent !important; }
+
+/* 🔮 魔法カード */
+.magic-card { border-color: #9b59b6 !important; background-color: transparent !important; }
+.magic-card .card-stats { display: none !important; } /* 魔法はバッジ非表示 */
+
+/* ⚙️ 設置魔法カード */
+.set-magic-card { border-color: #3498db !important; background-color: transparent !important; }
+
+/* 🗡️ アイテムカード */
+.item-card { border-color: #7f8c8d !important; background-color: transparent !important; }
+
+/* ⚡ スキルモンスターカード */
+.skill-monster-card { border-color: #e67e22 !important; background-color: transparent !important; }
+.skill-monster-card { border-color: #e67e22 !important; background-color: #fdf2e9 !important; }
+.card-label { color: white; padding: 1px 3px; border-radius: 2px; font-size: 6px; font-weight: bold; position: absolute; top: -5px; z-index: 10; }
+.set-magic-label { background-color: black; left: 3px; }
+.skill-label { background-color: #e67e22; right: 3px; }
+.item-label { background-color: #34495e; left: 3px; }
+
+/* ターゲット選択時と被ダメ時のエフェクト縮小 */
+.damage-anim { animation: shake 0.3s; animation-iteration-count: 1; border-color: red !important; box-shadow: 0 0 10px red !important; }
+@keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 20% { transform: translate(-1px, 0px) rotate(2deg); } 40% { transform: translate(1px, -1px) rotate(0deg); } 60% { transform: translate(-1px, 1px) rotate(-2deg); } 80% { transform: translate(1px, 0px) rotate(2deg); } 100% { transform: translate(0px, 0px) rotate(0deg); } }
+
+body.attack-dragging .stage-zone.drag-over { background-color: rgba(231, 76, 60, 0.3) !important; border-color: #e74c3c !important; box-shadow: 0 0 8px rgba(231, 76, 60, 0.5) !important; }
+
+.selected-attacker { box-shadow: 0 0 10px #f1c40f, 0 0 20px #f1c40f inset !important; transform: scale(1.05) !important; border: 2px solid #f1c40f !important; animation: pulse 1s infinite alternate; }
+@keyframes pulse { from { box-shadow: 0 0 5px #f1c40f; } to { box-shadow: 0 0 15px #f1c40f; } }
+body.targeting-mode .player-area:not(.active-turn) .stage-zone { cursor: crosshair; }
+body.targeting-mode .player-area:not(.active-turn) .stage-zone:hover { background-color: rgba(231, 76, 60, 0.2); border-color: #e74c3c; box-shadow: 0 0 10px rgba(231, 76, 60, 0.5); transform: scale(1.05); }
+
+/* 中央の区切り線の余白を極限まで縮小 */
+hr { margin: 5px 0 !important; border-width: 1px !important; }
+
+/* モーダル（ドロップゾーン）の調整 */
+.modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
+.modal-content { background-color: #f5f5f5; padding: 10px; border-radius: 8px; width: 90%; max-width: 600px; max-height: 80%; overflow-y: auto; position: relative; box-shadow: 0 3px 10px rgba(0,0,0,0.5); }
+.close-btn { color: #aaa; position: absolute; top: 2px; right: 10px; font-size: 20px; font-weight: bold; cursor: pointer; }
+.close-btn:hover { color: #333; }
+
+/* =========================================
+   フルスクリーン背景用設定
+========================================= */
+#game-wrap {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background-color: #111; z-index: 50; overflow: hidden;
+}
+#game-container {
+  position: absolute; top: 50%; left: 50%;
+  width: 1920px; height: 1080px;
+  transform-origin: center center; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.bg-asset {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background-image: url('images/background.png'); 
+  background-size: cover; background-position: center; 
+  z-index: -1; opacity: 0.7; /* 背景を少し暗くしてカードを見やすく */
+}
+
+/* =========================================
+   絶対配置（Absolute）レイアウト定義
+   1920x1080キャンバス用
+========================================= */
+.absolute-item {
+  position: absolute !important;
+  margin: 0 !important;
+}
+
+/* --- 相手の陣地（P2） --- */
+.pos-p2-leader { left: 907px; top: 110px; }
+.pos-p2-item   { left: 1030px; top: 85px; }
+.pos-p2-left   { left: 1380px; top: 180px; }
+.pos-p2-center { left: 925px; top: 280px; }
+.pos-p2-right  { left: 450px; top: 180px; }
+.pos-p2-status { left: 1320px; top: 10px; }
+
+/* --- 自分の陣地（P1） --- */
+.pos-p1-leader { left: 907px; top: 730px; }
+.pos-p1-item   { left: 820px; top: 710px; }
+.pos-p1-left   { left: 450px; top: 590px; }
+.pos-p1-center { left: 925px; top: 560px; }
+.pos-p1-right  { left: 1380px; top: 590px; }
+.pos-p1-status { left: 10px; top: 840px; }
+
+/* --- UI・システム --- */
+/* 11. 手札 */
+.pos-p1-hand    { left: 0px; top: 900px; width: 100%; justify-content: center; } 
+/* 12. ターン終了ボタン */
+.pos-end-turn   { left: 1700px; top: 800px; z-index: 1000; }
+/* 13. 降参ボタン */
+.pos-surrender  { left: 0px; top: 0px; z-index: 1001; }
+/* 14. 情報パネル */
+.pos-info-panel { left: 0px; top: 0px; width: 100%; z-index: 1000; }
