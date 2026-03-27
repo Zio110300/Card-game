@@ -981,9 +981,7 @@ function renderAll() {
       const leaderBox = document.getElementById(`p${pId}-leader-zone`);
 
       let extraStyle = "margin:0;";
-      if(p.weapon) extraStyle += " border: 3px solid #e74c3c; box-shadow: 0 0 10px #e74c3c;";
-
-leaderBox.innerHTML = `<div class="zone-label" style="top:-25px;">リーダー</div>` + generateCardHtml(displayLeader, `data-pid="${pId}" data-zone="leader" ${leaderDraggable} style="${extraStyle}"`, leaderActionDone);
+      leaderBox.innerHTML = `<div class="zone-label" style="top:-25px;">リーダー</div>` + generateCardHtml(displayLeader, `data-pid="${pId}" data-zone="leader" ${leaderDraggable} style="${extraStyle}"`, leaderActionDone);
     }
 
     // ★ アイテム枠の描画処理
@@ -993,7 +991,7 @@ leaderBox.innerHTML = `<div class="zone-label" style="top:-25px;">リーダー</
       if (!itemCard) {
         itemBox.innerHTML = `<div class="zone-label" style="top:-25px;">ITEM</div><div style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; border: 3px dashed rgba(255,255,255,0.3); border-radius: 8px; color: rgba(255,255,255,0.4); font-size: 24px; font-weight: bold; margin:0;">ITEM</div>`;
       } else {
-        itemBox.innerHTML = `<div class="zone-label" style="top:-25px;">ITEM</div>` + generateCardHtml(itemCard, `data-pid="${pId}" data-zone="item" draggable="false" style="margin:0;"`, "");
+        itemBox.innerHTML = `<div class="zone-label" style="top:-25px;">ITEM</div>` + generateCardHtml(itemCard, `data-pid="${pId}" data-zone="item" draggable="false"`, "");
       }
     }
 
@@ -1016,7 +1014,7 @@ leaderBox.innerHTML = `<div class="zone-label" style="top:-25px;">リーダー</
             }
         }
         
-        zoneEl.innerHTML = `<div class="zone-label" style="top:-25px;">${zone.toUpperCase()}</div>` + generateCardHtml(card, `data-pid="${pId}" data-zone="${zone}" ${stageDraggable} style="margin:0;"`, extraStageClass);
+        zoneEl.innerHTML = `<div class="zone-label" style="top:-25px;">${zone.toUpperCase()}</div>` + generateCardHtml(card, `data-pid="${pId}" data-zone="${zone}" ${stageDraggable}`, extraStageClass);
       }
     });
   });
