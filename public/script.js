@@ -459,7 +459,7 @@ function generateCardHtml(card, extraAttrs = "", extraClass = "", badgeCount = 1
 
   let badgeHtml = "";
   if (badgeCount > 1) {
-    badgeHtml = `<div style="position: absolute; top: -8px; left: -8px; background-color: #e74c3c; color: white; font-size: 14px; font-weight: bold; width: 28px; height: 28px; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 2px solid #2c3e50; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.5);">×${badgeCount}</div>`;
+    badgeHtml = `<div style="position: absolute; top: -8px; right: -8px; background-color: #e74c3c; color: white; font-size: 14px; font-weight: bold; width: 28px; height: 28px; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 2px solid #2c3e50; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.5);">×${badgeCount}</div>`;
   }
 
   let inlineStyle = extraClass.includes("box-shadow") ? extraClass : "";
