@@ -479,7 +479,7 @@ function generateCardHtml(card, extraAttrs = "", extraClass = "", badgeCount = 1
   }
 
   if (card.soul && card.soul.length > 0) {
-    statsHtml += `<div style="position: absolute; top: 50%; left: -10px; transform: translateY(-50%); background: #9b59b6; color: white; font-size: 12px; font-weight: bold; border-radius: 50%; width: 24px; height: 24px; display: flex; justify-content: center; align-items: center; border: 2px solid white; z-index: 10;" title="ソウル${card.soul.length}枚">🟣${card.soul.length}</div>`;
+    statsHtml += `<div style="position: absolute; top: -10px; right: -10px; background: #9b59b6; color: white; font-size: 12px; font-weight: bold; border-radius: 50%; width: 24px; height: 24px; display: flex; justify-content: center; align-items: center; border: 2px solid white; z-index: 10;" title="ソウル${card.soul.length}枚">🟣${card.soul.length}</div>`;
   }
 
   return `<div class="card ${cardClass} ${cleanClass}" ${extraAttrs} style="position: relative; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; ${inlineStyle}">
