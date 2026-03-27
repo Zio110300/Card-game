@@ -9,6 +9,29 @@ body { font-family: 'Courier New', Courier, monospace; background-color: #1a252f
 
 /* ★ 通常カード本体のサイズ（120x160） */
 .card { width: 120px; height: 160px; background-color: white; border-radius: 4px; color: black; display: flex; flex-direction: column; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.5); transition: 0.2s; cursor: pointer; border: 2px solid transparent; }
+/* デッキ編成画面専用のカードサイズ調整 */
+#deck-edit-screen .card {
+  width: 60px !important;
+  height: 80px !important;
+}
+
+/* 合わせてコストやステータスのバッジも少し小さくすると綺麗に収まります */
+#deck-edit-screen .card-cost {
+  width: 15px !important;
+  height: 15px !important;
+  font-size: 8px !important;
+  top: -10px;
+  left: -10px;
+}
+#deck-edit-screen .stat-attack, 
+#deck-edit-screen .stat-hp {
+  width: 15px !important;
+  height: 15px !important;
+  font-size: 8px !important;
+  bottom: -10px;
+}
+#deck-edit-screen .stat-attack { left: -10px; }
+#deck-edit-screen .stat-hp { right: -10px; }
 .hand-board .card:hover:not(.dragging):not(.disabled) { transform: translateY(-10px); box-shadow: 0 8px 16px rgba(0,0,0,0.6); }
 
 /* ★ リーダーカード専用サイズ（160x120・横長） */
