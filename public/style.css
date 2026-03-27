@@ -197,3 +197,28 @@ hr { margin: 5px 0 !important; border-width: 1px !important; }
 .pos-surrender  { left: 0px; top: 0px; z-index: 1001; }
 /* 14. 情報パネル */
 .pos-info-panel { left: 0px; top: 0px; width: 100%; z-index: 1000; }
+
+/* =========================================
+   👑 リーダーカード強制横長化の絶対ルール
+========================================= */
+
+/* 1. カード本体をどこにいても強制的に横長にする（枠に押し潰されないように flex-shrink: 0 を追加） */
+.leader-card { 
+  width: 160px !important; 
+  height: 120px !important; 
+  flex-shrink: 0 !important; 
+  flex-direction: row !important; 
+}
+
+/* 2. 戦闘画面の「置く枠」もカードに合わせて拡大する */
+.leader-zone { 
+  width: 160px !important; 
+  height: 130px !important; 
+  min-height: 130px !important; 
+}
+
+/* 3. デッキ編集画面・カタログ画面の中だけは、少し小さめの横長にする */
+#deck-edit-screen .leader-card { 
+  width: 105px !important; 
+  height: 70px !important; 
+}
