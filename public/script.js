@@ -980,7 +980,7 @@ function renderAll() {
       const leaderDraggable = canLeaderAttack ? 'draggable="true"' : 'draggable="false"';
       const leaderBox = document.getElementById(`p${pId}-leader-zone`);
 
-      let extraStyle = "margin:0; width:140px;";
+      let extraStyle = "margin:0;";
       if(p.weapon) extraStyle += " border: 3px solid #e74c3c; box-shadow: 0 0 10px #e74c3c;";
 
 leaderBox.innerHTML = `<div class="zone-label" style="top:-25px;">リーダー</div>` + generateCardHtml(displayLeader, `data-pid="${pId}" data-zone="leader" ${leaderDraggable} style="${extraStyle}"`, leaderActionDone);
