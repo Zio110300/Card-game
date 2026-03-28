@@ -251,7 +251,8 @@ soloModeBtn.addEventListener("click", () => {
   if (myCustomDeck.length !== DECK_LIMIT) { alert(`デッキは必ず ${DECK_LIMIT}枚 にしてください！（現在 ${myCustomDeck.length}枚）`); return; }
   isSoloMode = true;
   myRoomId = "solo-room"; 
-  myPlayerId = 1; 
+  myPlayerId = 1;
+  applyBoardLayout(myPlayerId); 
   homeScreen.style.display = "none"; 
   document.getElementById('game-wrap').style.display = 'block';
   resizeGame();
@@ -523,6 +524,7 @@ socket.on('p2_ready', (p2Data) => {
 socket.on('assign_player', (num) => {
   if (isSoloMode) return;
   myPlayerId = num; infoPanel.style.backgroundColor = "#ecf0f1"; 
+  applyBoardLayout(myPlayerId);
   if (isGameStarted) {
      sendGameState(); 
      infoPanel.innerHTML = `🟢 復帰しました！`;
@@ -2031,4 +2033,36 @@ window.openZoneView = function(playerId, zoneType) {
 window.closeZoneView = function() {
   const modal = document.getElementById('zone-view-modal');
   if (modal) modal.style.display = "none";
+}
+
+// =========================================================
+// ★ 視点反転機能 (P2の画面ではP2を手前にする！)
+// =========================================================
+function applyBoardLayout(myId) {
+    const setClasses = (id, baseClass, isBottom) => {
+        let el = document.getElementById(id);
+        if (el) {
+            el.classList.remove(`pos-p1-${baseClass}`);
+            el.classList.remove(`pos-p2-${baseClass}`);
+            el.classList.add(isBottom ? `pos-p1-${baseClass}` : `pos-p2-${baseClass}`);
+        }
+    };
+    
+    // myIdが2の時だけ、P1が奥(Top)になり、P2が手前(Bottom)に大反転します！
+    let isP1Bottom = (myId !== 2); 
+    
+    setClasses("p1-leader-zone", "leader", isP1Bottom);
+    setClasses("p2-leader-zone", "leader", !isP1Bottom);
+    setClasses("p1-item-zone", "item", isP1Bottom);
+    setClasses("p2-item-zone", "item", !isP1Bottom);
+    setClasses("p1-stage-left", "left", isP1Bottom);
+    setClasses("p2-stage-left", "left", !isP1Bottom);
+    setClasses("p1-stage-center", "center", isP1Bottom);
+    setClasses("p2-stage-center", "center", !isP1Bottom);
+    setClasses("p1-stage-right", "right", isP1Bottom);
+    setClasses("p2-stage-right", "right", !isP1Bottom);
+    setClasses("p1-status-area", "status", isP1Bottom);
+    setClasses("p2-status-area", "status", !isP1Bottom);
+    setClasses("p1-hand", "hand", isP1Bottom);
+    setClasses("p2-hand", "hand", !isP1Bottom);
 }

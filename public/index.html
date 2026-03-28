@@ -98,13 +98,14 @@
       <div id="p2-stage-left" class="stage-zone absolute-item pos-p2-left" data-player="2" data-zone="left"></div>
       <div id="p2-stage-center" class="stage-zone absolute-item pos-p2-center" data-player="2" data-zone="center"></div>
       <div id="p2-stage-right" class="stage-zone absolute-item pos-p2-right" data-player="2" data-zone="right"></div>
-      <div class="player-status-area absolute-item pos-p2-status">
-        <div class="hp-display">❤️ ライフ: <span id="p2-hp-text">15 / 15</span></div>
+      <div id="p2-status-area" class="player-status-area absolute-item pos-p2-status"> <div class="hp-display">❤️ ライフ: <span id="p2-hp-text">15 / 15</span></div>
         <div class="mp-display">🔮 PP: <span id="p2-mp-text">1 / 1</span></div>
         <div class="deck-display">🎴 デッキ: <span id="p2-deck-text">0</span></div>
         <div class="trash-display" style="color: #bdc3c7;" onclick="openZoneView(2, 'trash')">🪦 ドロップ: <span id="p2-trash-text">0</span></div>
         <div class="lost-display" style="color: #9b59b6;" onclick="openZoneView(2, 'lost')">🌌 ロスト: <span id="p2-lost-text">0</span></div>
       </div> 
+      
+      <div id="p2-hand" class="board hand-board absolute-item pos-p2-hand"></div>
       
       <div id="p1-leader-zone" class="stage-zone leader-zone absolute-item pos-p1-leader" data-player="1" data-zone="leader"></div>
       <div id="p1-item-zone" class="stage-zone absolute-item pos-p1-item" data-player="1" data-zone="item"></div>
@@ -112,8 +113,9 @@
       <div id="p1-stage-left" class="stage-zone absolute-item pos-p1-left" data-player="1" data-zone="left"></div>
       <div id="p1-stage-center" class="stage-zone absolute-item pos-p1-center" data-player="1" data-zone="center"></div>
       <div id="p1-stage-right" class="stage-zone absolute-item pos-p1-right" data-player="1" data-zone="right"></div>
-      <div class="player-status-area absolute-item pos-p1-status">
-        <div class="hp-display">❤️ ライフ: <span id="p1-hp-text">15 / 15</span></div>
+      <div id="p1-status-area" class="player-status-area absolute-item pos-p1-status"> ```
+
+      <div class="hp-display">❤️ ライフ: <span id="p1-hp-text">15 / 15</span></div>
         <div class="mp-display">🔮 PP: <span id="p1-mp-text">1 / 1</span></div>
         <div class="deck-display">🎴 デッキ: <span id="p1-deck-text">0</span></div>
         <div class="trash-display" style="color: #bdc3c7;" onclick="openZoneView(1, 'trash')">🪦 ドロップ: <span id="p1-trash-text">0</span></div>

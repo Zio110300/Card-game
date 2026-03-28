@@ -191,6 +191,7 @@ hr { margin: 5px 0 !important; border-width: 1px !important; }
 /* --- UI・システム --- */
 /* 11. 手札 */
 .pos-p1-hand    { left: 0px; top: 900px; width: 100%; justify-content: center; max-width: none !important; }
+.pos-p2-hand    { display: none !important; } 
 /* 12. ターン終了ボタン */
 .pos-end-turn   { left: 1650px; top: 750px; z-index: 1000; }
 /* 13. 降参ボタン */
