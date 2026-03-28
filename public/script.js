@@ -140,7 +140,7 @@ function showCardEffect(card) {
   const overlay = document.getElementById("card-effect-overlay");
   const container = document.getElementById("card-effect-container");
   container.innerHTML = generateCardHtml(card, "", "box-shadow: 0 0 20px rgba(255,255,255,0.8); transform: scale(1.5);");
-  overlay.style.opacity = "1"; container.style.transform = "scale(2)";
+  overlay.style.opacity = "1"; container.style.transform = "scale(1.2)";
   setTimeout(() => { overlay.style.opacity = "0"; container.style.transform = "scale(0.5)"; }, 1500);
 }
 if (!isSoloMode) socket.on('show_card_effect', (card) => { showCardEffect(card); });
@@ -479,7 +479,7 @@ function generateCardHtml(card, extraAttrs = "", extraClass = "", badgeCount = 1
   }
 
   if (card.soul && card.soul.length > 0) {
-    statsHtml += `<div style="position: absolute; top: -10px; right: -10px; background: #9b59b6; color: white; font-size: 12px; font-weight: bold; border-radius: 50%; width: 24px; height: 24px; display: flex; justify-content: center; align-items: center; border: 2px solid white; z-index: 10;" title="ソウル${card.soul.length}枚">🟣${card.soul.length}</div>`;
+    statsHtml += `<div style="position: absolute; top: -10px; right: -10px; left: auto; background: #9b59b6; color: white; font-size: 12px; font-weight: bold; border-radius: 50%; width: 24px; height: 24px; display: flex; justify-content: center; align-items: center; border: 2px solid white; z-index: 10;" title="ソウル${card.soul.length}枚">${card.soul.length}</div>`;
   }
 
   return `<div class="card ${cardClass} ${cleanClass}" ${extraAttrs} style="position: relative; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; ${inlineStyle}">
@@ -511,7 +511,7 @@ socket.on('connect', () => {
 socket.on('disconnect', () => {
   if (isSoloMode) return;
   infoPanel.innerHTML = `⚠️ 通信が不安定です。自動で再接続しています...`; 
-  infoPanel.style.backgroundColor = "#e74c3c"; 
+  infoPanel.style.backgroundColor = "rgba(231, 76, 60, 0.8)"; 
 });
 
 socket.on('p2_ready', (p2Data) => {
@@ -549,6 +549,9 @@ socket.on('game_updated', (gameState) => {
 socket.on('game_retry', () => {
   if (isSoloMode) return;
   infoPanel.style.backgroundColor = "#ecf0f1";
+  
+  if (typeof hideResultScreen === 'function') hideResultScreen(); // 👈 この1行を追加！！
+
   if (myPlayerId === 1) { 
     isGameStarted = false; 
     startGame(); sendGameState();
@@ -812,7 +815,7 @@ window.useBurnSkill = function(zone) {
         renderAll(); sendGameState(); 
       };
       infoPanel.innerHTML = `🎯 ソウルを増やす自分のモンスターをクリック！`;
-      infoPanel.style.backgroundColor = "#f1c40f"; 
+      infoPanel.style.backgroundColor = "rgba(241, 196, 15, 0.8)"; 
       renderAll();
       return;
   } else if (card.name === "\"Greater Than 2nd\" 911GT2RS") {
@@ -981,7 +984,7 @@ function renderAll() {
       const leaderBox = document.getElementById(`p${pId}-leader-zone`);
 
       let extraStyle = "margin:0;";
-      leaderBox.innerHTML = `<div class="zone-label" style="top:-25px;">リーダー</div>` + generateCardHtml(displayLeader, `data-pid="${pId}" data-zone="leader" ${leaderDraggable} style="${extraStyle}"`, leaderActionDone);
+      leaderBox.innerHTML = `<div class="zone-label" style="top:-25px;">` + generateCardHtml(displayLeader, `data-pid="${pId}" data-zone="leader" ${leaderDraggable} style="${extraStyle}"`, leaderActionDone);
     }
 
     // ★ アイテム枠の描画処理
@@ -989,9 +992,9 @@ function renderAll() {
     if (itemBox) {
       let itemCard = p.weapon;
       if (!itemCard) {
-        itemBox.innerHTML = `<div class="zone-label" style="top:-25px;">ITEM</div><div style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; border: 3px dashed rgba(255,255,255,0.3); border-radius: 8px; color: rgba(255,255,255,0.4); font-size: 24px; font-weight: bold; margin:0;">ITEM</div>`;
+        itemBox.innerHTML = `<div class="zone-label" style="top:-25px;"><div style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; border: 3px dashed rgba(255,255,255,0.3); border-radius: 8px; color: rgba(255,255,255,0.4); font-size: 24px; font-weight: bold; margin:0;">ITEM</div>`;
       } else {
-        itemBox.innerHTML = `<div class="zone-label" style="top:-25px;">ITEM</div>` + generateCardHtml(itemCard, `data-pid="${pId}" data-zone="item" draggable="false"`, "");
+        itemBox.innerHTML = `<div class="zone-label" style="top:-25px;">` + generateCardHtml(itemCard, `data-pid="${pId}" data-zone="item" draggable="false"`, "");
       }
     }
 
@@ -1049,6 +1052,16 @@ function attachHandListeners() {
       if(card) infoPanel.innerHTML = getCardInfoText(card);
     });
   });
+  if (isSelectingHand && pendingSelection && pendingSelection.type === 'hand') {
+    let handCards = document.querySelectorAll(`#p${myPlayerId}-hand .card`);
+    let selectedEl = handCards[pendingSelection.index];
+    if (selectedEl) {
+      let overlay = document.createElement("div");
+      overlay.className = "card-action-overlay";
+      overlay.innerHTML = `<button class="card-center-btn" style="background:#e74c3c; color:white;" onclick="event.stopPropagation(); confirmSelection();">🎯 確定</button>`;
+      selectedEl.appendChild(overlay);
+    }
+  }
 }
 
 function attachStageListeners() {
@@ -1077,24 +1090,51 @@ function attachStageListeners() {
       if (zone === 'leader' && p.weapon) text += `<br><b>※装備中:</b> ${p.weapon.name} (攻撃+${p.weapon.effectValue})`; 
       
       let maxAttacks = (p.leader.doubleAttack || (p.weapon && p.weapon.doubleAttack)) ? 2 : 1;
+      let overlayBtnHtml = ""; // 👈 カード上に出すボタンを貯める箱を用意！
 
       if (zone === 'leader' && card.name === "蒼深の砂時計" && pid === myPlayerId && currentTurn === myPlayerId && p.leaderAttackCount === 0 && !isGameOver && !isSelectingHand) {
         text += `<br><button onclick="useLeaderSkill()" style="margin-top:8px; padding:8px 16px; background:#f1c40f; color:#2c3e50; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">⏳ スキル発動（ロスト回収）</button>`;
+        overlayBtnHtml += `<button class="card-center-btn" style="background:#f1c40f; color:#2c3e50;" onclick="event.stopPropagation(); useLeaderSkill();">⏳ 起動</button>`; // 👈 追加
       }
       if (zone === 'leader' && card.name === "\"Absolutely Main Gamer\" ONE" && pid === myPlayerId && currentTurn === myPlayerId && p.mp >= 1 && !isGameOver && !isSelectingHand) {
         text += `<br><button onclick="useLeaderSkill()" style="margin-top:8px; padding:8px 16px; background:#1abc9c; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">👑 スキル発動（PP1消費: 攻撃力+1）</button>`;
+        overlayBtnHtml += `<button class="card-center-btn" style="background:#1abc9c; color:white;" onclick="event.stopPropagation(); useLeaderSkill();">👑 起動</button>`; // 👈 追加
       }
       if (zone === 'item' && card.name === "魔法の杖" && pid === myPlayerId && currentTurn === myPlayerId && p.leaderAttackCount < maxAttacks && p.mp >= 4 && !isGameOver && !isSelectingHand) {
         text += `<br><button onclick="useWeaponSkill()" style="margin-top:8px; padding:8px 16px; background:#e74c3c; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">🔥 杖スキル発動（PP4消費: 4ダメージ）</button>`;
+        overlayBtnHtml += `<button class="card-center-btn" style="background:#e74c3c; color:white;" onclick="event.stopPropagation(); useWeaponSkill();">🔥 起動</button>`; // 👈 追加
       }
       
       if (zone !== 'leader' && zone !== 'item' && card.burn && !card.burnActive && pid === myPlayerId && currentTurn === myPlayerId && !isGameOver && !isSelectingHand) {
         text += `<br><button onclick="useBurnSkill('${zone}')" style="margin-top:8px; padding:8px 16px; background:#e67e22; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">🔥 燃焼発動</button>`;
+        overlayBtnHtml += `<button class="card-center-btn" style="background:#e67e22; color:white;" onclick="event.stopPropagation(); useBurnSkill('${zone}');">🔥 燃焼</button>`; // 👈 追加
       }
 
-      infoPanel.innerHTML = text;
+      infoPanel.innerHTML = text; // 元からある処理
+
+      // 👇👇 ここから下を追加！クリックしたカードの真ん中にボタンを貼り付ける処理 👇👇
+      document.querySelectorAll('.card-action-overlay').forEach(o => o.remove()); // 前に出たボタンを消す
+      if (overlayBtnHtml !== "") {
+        let overlay = document.createElement("div");
+        overlay.className = "card-action-overlay";
+        overlay.innerHTML = overlayBtnHtml;
+        el.appendChild(overlay);
+      }
     });
   });
+  if (isSelectingStage && pendingSelection && pendingSelection.type === 'stage') {
+    let zoneId = pendingSelection.zone === 'leader' ? `p${pendingSelection.pid}-leader-zone` : (pendingSelection.zone === 'item' ? `p${pendingSelection.pid}-item-zone` : `p${pendingSelection.pid}-stage-${pendingSelection.zone}`);
+    let zoneEl = document.getElementById(zoneId);
+    if (zoneEl) {
+      let cardEl = zoneEl.querySelector('.card');
+      if (cardEl) {
+        let overlay = document.createElement("div");
+        overlay.className = "card-action-overlay";
+        overlay.innerHTML = `<button class="card-center-btn" style="background:#e74c3c; color:white;" onclick="event.stopPropagation(); confirmSelection();">🎯 確定</button>`;
+        cardEl.appendChild(overlay);
+      }
+    }
+  }
 }
 
 ['left', 'center', 'right', 'leader', 'item'].forEach(zone => {
@@ -1381,7 +1421,7 @@ function playCard(cardId, targetZone, pId) {
 
                     destroyCard(oppId, targetZone, true);
                     isSelectingStage = false; selectionStageCallback = null; pendingSelection = null; 
-                    infoPanel.style.backgroundColor = "#ecf0f1"; 
+                    infoPanel.style.backgroundColor = "rgba(236, 240, 241, 0.8)"; 
                     showCardEffect(card); 
                     if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card });
                     renderAll(); sendGameState(); 
@@ -1809,15 +1849,84 @@ async function playAITurn() {
   endTurnProcess(2);
 }
 
+// =========================================================
+// ★ 勝敗判定とリザルト画面
+// =========================================================
 function checkGameOver() {
   if(players[1].hp <= 0 || players[2].hp <= 0) {
-    isGameOver = true; let winner = players[1].hp <= 0 ? "プレイヤー2" : "プレイヤー1";
-    if (isSoloMode && players[1].hp <= 0) winner = players[2].leader.name; // ★ 敗北時はボスの名前を表示
-    else if (isSoloMode && players[2].hp <= 0) winner = "あなた";
+    if (isGameOver) return; // 既に終わってたら何もしない
+    isGameOver = true; 
     
-    infoPanel.innerHTML = `🏆 ゲーム終了！ ${winner} の勝利！！！`; infoPanel.style.backgroundColor = "#f39c12";
-    endTurnBtn.style.display = "none"; retryBtn.style.display = "inline-block";
-  } else { retryBtn.style.display = "none"; }
+    let isWin = false;
+    let winnerName = "";
+    
+    if (players[1].hp <= 0 && players[2].hp <= 0) {
+      isWin = false; winnerName = "DRAW";
+    } else if (players[1].hp <= 0) {
+      isWin = false; winnerName = isSoloMode ? players[2].leader.name : "プレイヤー2";
+    } else {
+      isWin = true; winnerName = isSoloMode ? "あなた" : "プレイヤー1";
+    }
+    
+    infoPanel.innerHTML = `🏆 ゲーム終了！`; 
+    infoPanel.style.backgroundColor = "rgba(243, 156, 18, 0.5)";
+    endTurnBtn.style.display = "none"; 
+    
+    // 👇 勝負がついた1秒後に、ド派手なリザルトを出す！
+    setTimeout(() => { showResultScreen(isWin, winnerName); }, 1000);
+  }
+}
+
+function showResultScreen(isWin, winnerName) {
+  const overlay = document.getElementById("result-overlay");
+  const title = document.getElementById("result-title");
+  const message = document.getElementById("result-message");
+  const buttons = document.getElementById("result-buttons");
+  
+  if (isWin) {
+    title.innerText = "YOU WIN!";
+    title.style.color = "#f1c40f";
+    title.style.textShadow = "0 0 40px rgba(241, 196, 15, 0.8)";
+    message.innerText = `勝者: ${winnerName} 🎉`;
+  } else {
+    title.innerText = "YOU LOSE...";
+    title.style.color = "#3498db";
+    title.style.textShadow = "0 0 40px rgba(52, 152, 219, 0.8)";
+    message.innerText = `勝者: ${winnerName}`;
+  }
+  
+  overlay.style.display = "flex";
+  
+  // アニメーション発動！
+  setTimeout(() => {
+    title.style.transform = "scale(1) rotate(-5deg)"; // ちょっと斜めにしてカッコよく！
+    message.style.opacity = "1";
+    buttons.style.opacity = "1";
+  }, 100);
+}
+
+document.getElementById("new-retry-btn").addEventListener("click", () => {
+  if (isSoloMode) {
+      hideResultScreen();
+      startGame();
+      return;
+  }
+  document.getElementById("new-retry-btn").style.display = "none";
+  document.getElementById("result-message").innerText = `相手の承認を待っています...`;
+  socket.emit('request_retry', myRoomId); 
+});
+
+document.getElementById("back-home-btn").addEventListener("click", () => {
+  location.reload(); // ホーム画面に戻る一番安全な方法
+});
+
+function hideResultScreen() {
+  const overlay = document.getElementById("result-overlay");
+  overlay.style.display = "none";
+  document.getElementById("result-title").style.transform = "scale(0)";
+  document.getElementById("result-message").style.opacity = "0";
+  document.getElementById("result-buttons").style.opacity = "0";
+  document.getElementById("new-retry-btn").style.display = "inline-block";
 }
 
 retryBtn.addEventListener("click", () => {
@@ -1837,3 +1946,89 @@ surrenderBtn.addEventListener("click", () => {
     sendGameState();
   }
 });
+
+// =========================================================
+// ★ 画面の適当な場所をクリックした時のキャンセル処理
+// =========================================================
+document.addEventListener("click", (e) => {
+  // ゲームが始まっていない場合は何もしない
+  if (!isGameStarted) return;
+
+  // クリックした場所が「カード」「ボタン」「情報パネル」「ゾーン確認画面」の場合はキャンセルしない
+  if (e.target.closest('.card') || 
+      e.target.closest('.card-action-overlay') || 
+      e.target.closest('#info-panel') ||
+      e.target.closest('button') ||
+      e.target.closest('#zone-view-modal')) { // 👈 この1行が追加されました！
+    return;
+  }
+
+  // 👇 ここからキャンセル処理（適当な背景をクリックした時）
+
+  // 1. カード上の【起動】【燃焼】ボタンをすべて消す
+  document.querySelectorAll('.card-action-overlay').forEach(o => o.remove());
+
+  // 2. 「対象を選択してください」などの選択モードをすべて強制解除
+  isSelectingHand = false;
+  isSelectingStage = false;
+  selectionCallback = null;
+  selectionStageCallback = null;
+  pendingSelection = null;
+
+  // 3. テキストボックス（情報パネル）の色と文字を通常に戻す
+  infoPanel.style.backgroundColor = "rgba(236, 240, 241, 0.8)";
+  
+  if (!isGameOver) {
+     if (myPlayerId === currentTurn) { 
+         infoPanel.innerHTML = `🟢 あなたのターンです！`; 
+     } else { 
+         infoPanel.innerHTML = `⏳ 相手のターンです...`; 
+     }
+  }
+
+  // 4. 画面を再描画して、カードの選択枠（赤枠や黄色枠）を消す
+  renderAll();
+});
+
+// =========================================================
+// ★ ドロップ・ロストゾーンの中身確認機能
+// =========================================================
+window.openZoneView = function(playerId, zoneType) {
+  const modal = document.getElementById('zone-view-modal');
+  const title = document.getElementById('zone-view-title');
+  const content = document.getElementById('zone-view-content');
+  
+  if (!modal || !players[playerId]) return;
+
+  const p = players[playerId];
+  let cards = [];
+  let zoneName = "";
+
+  if (zoneType === 'trash') {
+    cards = p.trash;
+    zoneName = `🪦 ドロップ (プレイヤー${playerId})`;
+  } else if (zoneType === 'lost') {
+    cards = p.lostZone;
+    zoneName = `🌌 ロストゾーン (プレイヤー${playerId})`;
+  }
+
+  title.innerText = `${zoneName} - ${cards.length}枚`;
+  
+  let html = "";
+  if (cards.length === 0) {
+    html = `<div style="color: white; font-size: 20px; width: 100%; text-align: center; margin-top: 50px;">カードがありません</div>`;
+  } else {
+    // 落ちた順番がわかりやすいように逆順（最新が先頭）で表示
+    [...cards].reverse().forEach(card => {
+      html += generateCardHtml(card, `draggable="false"`, "deck-card");
+    });
+  }
+  
+  content.innerHTML = html;
+  modal.style.display = "flex";
+}
+
+window.closeZoneView = function() {
+  const modal = document.getElementById('zone-view-modal');
+  if (modal) modal.style.display = "none";
+}

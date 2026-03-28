@@ -89,8 +89,7 @@
 
       <button id="surrender-btn" class="absolute-item pos-surrender" style="background-color: #c0392b; color: white; font-size: 16px; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; display: none;">🏳️ 降参する</button>
       
-      <div id="info-panel" class="info-panel absolute-item pos-info-panel" style="text-align: center; background-color: #1a252f; padding: 10px;">ゲーム開始！ 先攻はプレイヤー1だ！</div>
-
+      <div id="info-panel" class="info-panel absolute-item pos-info-panel" style="text-align: left; background-color: rgba(26, 37, 47, 0.8); padding: 10px;">ゲーム開始！ 先攻はプレイヤー1だ！</div>
       <button id="end-turn-btn" class="end-turn-btn absolute-item pos-end-turn" style="display: none;">⏳ ターン終了</button>
       <button id="retry-btn" class="retry-btn absolute-item pos-end-turn" style="display: none;">🔄 もう一度遊ぶ</button>
 
@@ -103,11 +102,13 @@
         <div class="hp-display">❤️ ライフ: <span id="p2-hp-text">15 / 15</span></div>
         <div class="mp-display">🔮 PP: <span id="p2-mp-text">1 / 1</span></div>
         <div class="deck-display">🎴 デッキ: <span id="p2-deck-text">0</span></div>
-        <div class="trash-display" style="color: #bdc3c7;">🪦 墓地: <span id="p2-trash-text">0</span></div>
-        <div class="lost-display" style="color: #9b59b6;">🌌 ロスト: <span id="p2-lost-text">0</span></div> </div>
-
+        <div class="trash-display" style="color: #bdc3c7;" onclick="openZoneView(2, 'trash')">🪦 ドロップ: <span id="p2-trash-text">0</span></div>
+        <div class="lost-display" style="color: #9b59b6;" onclick="openZoneView(2, 'lost')">🌌 ロスト: <span id="p2-lost-text">0</span></div>
+      </div> 
+      
       <div id="p1-leader-zone" class="stage-zone leader-zone absolute-item pos-p1-leader" data-player="1" data-zone="leader"></div>
       <div id="p1-item-zone" class="stage-zone absolute-item pos-p1-item" data-player="1" data-zone="item"></div>
+      
       <div id="p1-stage-left" class="stage-zone absolute-item pos-p1-left" data-player="1" data-zone="left"></div>
       <div id="p1-stage-center" class="stage-zone absolute-item pos-p1-center" data-player="1" data-zone="center"></div>
       <div id="p1-stage-right" class="stage-zone absolute-item pos-p1-right" data-player="1" data-zone="right"></div>
@@ -115,8 +116,8 @@
         <div class="hp-display">❤️ ライフ: <span id="p1-hp-text">15 / 15</span></div>
         <div class="mp-display">🔮 PP: <span id="p1-mp-text">1 / 1</span></div>
         <div class="deck-display">🎴 デッキ: <span id="p1-deck-text">0</span></div>
-        <div class="trash-display" style="color: #bdc3c7;">🪦 墓地: <span id="p1-trash-text">0</span></div>
-        <div class="lost-display" style="color: #9b59b6;">🌌 ロスト: <span id="p1-lost-text">0</span></div>
+        <div class="trash-display" style="color: #bdc3c7;" onclick="openZoneView(1, 'trash')">🪦 ドロップ: <span id="p1-trash-text">0</span></div>
+        <div class="lost-display" style="color: #9b59b6;" onclick="openZoneView(1, 'lost')">🌌 ロスト: <span id="p1-lost-text">0</span></div>
       </div>
 
 	<div id="p1-hand" class="board hand-board absolute-item pos-p1-hand"></div>
@@ -127,6 +128,22 @@
     <div id="card-effect-container" style="transform: scale(0.5); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);"></div>
   </div>
 
+  <div id="zone-view-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); z-index: 30000; justify-content: center; align-items: center; flex-direction: column;">
+    <div style="width: 90%; max-width: 1000px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+      <h2 id="zone-view-title" style="color: white; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">ゾーン確認</h2>
+      <button onclick="closeZoneView()" style="background: #e74c3c; color: white; border: 2px solid white; padding: 10px 20px; font-size: 18px; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.5);">❌ 閉じる</button>
+    </div>
+    <div id="zone-view-content" class="board" style="width: 90%; max-width: 1000px; max-height: 70vh; overflow-y: auto; background-color: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; border: 2px solid #7f8c8d; justify-content: flex-start; align-content: flex-start; gap: 15px;">
+      </div>
+  </div>
+  <div id="result-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); z-index: 40000; justify-content: center; align-items: center; flex-direction: column;">
+    <div id="result-title" style="font-size: 150px; font-weight: bold; transform: scale(0); transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); margin-bottom: 10px; font-style: italic;"></div>
+    <div id="result-message" style="font-size: 30px; color: #ecf0f1; margin-bottom: 40px; opacity: 0; transition: opacity 0.5s ease 0.5s; font-weight: bold;"></div>
+    <div id="result-buttons" style="opacity: 0; transition: opacity 0.5s ease 1s; display: flex; gap: 20px;">
+        <button id="new-retry-btn" class="retry-btn" style="display:inline-block; margin:0; padding: 15px 30px !important;">🔄 もう一度遊ぶ</button>
+        <button id="back-home-btn" class="end-turn-btn" style="display:inline-block; margin:0; padding: 15px 30px !important; background-color: #7f8c8d;">🏠 ホームへ</button>
+    </div>
+  </div>
   <script src="/socket.io/socket.io.js"></script>
   <script>const socket = io();</script>
   <script src="script.js"></script>

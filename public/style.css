@@ -5,7 +5,7 @@ body { font-family: 'Courier New', Courier, monospace; background-color: #1a252f
 .board { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; width: 100%; max-width: 1400px; margin-bottom: 5px; }
 
 /* 情報パネルの拡大 */
-.info-panel { background-color: #ecf0f1; color: #2c3e50; padding: 15px; border-radius: 8px; width: 90%; max-width: 800px; text-align: center; font-size: 24px; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.3); transition: 0.2s; min-height: 30px; line-height: 1.5; margin: 0 auto 15px auto;}
+.info-panel { background-color: rgba(236, 240, 241, 0.8); color: #ffffff; padding: 15px; border-radius: 8px; width: 90%; max-width: 1000px; text-align: left; font-size: 24px; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.3); transition: 0.2s; min-height: 30px; line-height: 1.5; margin: 0 auto 15px auto;}
 
 /* ★ 通常カード本体のサイズ（120x160） */
 .card { width: 120px; height: 160px; background-color: white; border-radius: 4px; color: black; display: flex; flex-direction: column; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.5); transition: 0.2s; cursor: pointer; border: 2px solid transparent; }
@@ -66,7 +66,7 @@ body { font-family: 'Courier New', Courier, monospace; background-color: #1a252f
 .magic-desc { display: none; } /* テキストはホバー時の情報パネルに任せるので非表示 */
 
 /* ボタン類の拡大 */
-.retry-btn, .end-turn-btn { background-color: #f39c12; color: white; border: none; font-weight: bold; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: 0.2s; padding: 12px 24px !important; font-size: 18px !important; margin: 0 10px; }
+.retry-btn, .end-turn-btn { background-color: #f39c12; color: white; border: none; font-weight: bold; border-radius: 50px; cursor: pointer; box-shadow: 0 6px 6px rgba(0,0,0,0.3); transition: 0.2s; padding: 48px 24px !important; font-size: 24px !important; margin: 0 10px; }
 .end-turn-btn { background-color: #00bcd4; }
 .end-turn-btn:hover { background-color: #0097a7; transform: scale(1.05); }
 .retry-btn:hover { background-color: #e67e22; transform: scale(1.05); }
@@ -84,12 +84,12 @@ body { font-family: 'Courier New', Courier, monospace; background-color: #1a252f
 .mp-display { font-size: 18px; font-weight: bold; color: #3498db; }
 .deck-display { font-size: 18px; font-weight: bold; color: #f1c40f; }
 .trash-display { font-size: 18px; font-weight: bold; color: #7f8c8d; cursor: pointer; transition: 0.2s; }
-.lost-display { font-size: 18px; font-weight: bold; color: #9b59b6; }
-.trash-display:hover { color: #ecf0f1; transform: scale(1.05); }
+.lost-display { font-size: 18px; font-weight: bold; color: #9b59b6; cursor: pointer; transition: 0.2s; }
+.trash-display:hover, .lost-display:hover { color: #ecf0f1; transform: scale(1.05); }
 
 /* ★ ステージ（場）のサイズ調整（カードより少し大きい 80x115） */
 .stage-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 10px; }
-.stage-zone { width: 80px; min-height: 115px; background-color: rgba(255,255,255,0.1); border: 3px dashed #7f8c8d; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; transition: 0.2s; }
+.stage-zone { width: 120px; min-height: 160px; background-color: rgba(255,255,255,0.1); border: 3px dashed #7f8c8d; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; transition: 0.2s; }
 
 /* ★ リーダーエリアのサイズ調整 */
 .leader-zone { background-color: rgba(241, 196, 15, 0.1); border-color: #f1c40f; width: 115px; height: 80px; min-height: 80px; flex-direction: row; }
@@ -173,28 +173,28 @@ hr { margin: 5px 0 !important; border-width: 1px !important; }
 }
 
 /* --- 相手の陣地（P2） --- */
-.pos-p2-leader { left: 907px; top: 110px; }
-.pos-p2-item   { left: 1030px; top: 85px; }
-.pos-p2-left   { left: 1380px; top: 180px; }
-.pos-p2-center { left: 925px; top: 280px; }
-.pos-p2-right  { left: 450px; top: 180px; }
-.pos-p2-status { left: 1320px; top: 10px; }
+.pos-p2-leader { left: 880px; top: 80px; }
+.pos-p2-item   { left: 1060px; top: 20px; }
+.pos-p2-left   { left: 1350px; top: 110px; }
+.pos-p2-center { left: 900px; top: 210px; }
+.pos-p2-right  { left: 450px; top: 110px; }
+.pos-p2-status { left: 1100px; top: 10px; }
 
 /* --- 自分の陣地（P1） --- */
-.pos-p1-leader { left: 907px; top: 730px; }
-.pos-p1-item   { left: 820px; top: 710px; }
-.pos-p1-left   { left: 450px; top: 590px; }
-.pos-p1-center { left: 925px; top: 560px; }
-.pos-p1-right  { left: 1380px; top: 590px; }
+.pos-p1-leader { left: 880px; top: 680px; }
+.pos-p1-item   { left: 710px; top: 620px; }
+.pos-p1-left   { left: 450px; top: 520px; }
+.pos-p1-center { left: 900px; top: 490px; }
+.pos-p1-right  { left: 1350px; top: 520px; }
 .pos-p1-status { left: 10px; top: 840px; }
 
 /* --- UI・システム --- */
 /* 11. 手札 */
-.pos-p1-hand    { left: 0px; top: 900px; width: 100%; justify-content: center; } 
+.pos-p1-hand    { left: 0px; top: 900px; width: 100%; justify-content: center; max-width: none !important; }
 /* 12. ターン終了ボタン */
-.pos-end-turn   { left: 1700px; top: 800px; z-index: 1000; }
+.pos-end-turn   { left: 1650px; top: 750px; z-index: 1000; }
 /* 13. 降参ボタン */
-.pos-surrender  { left: 0px; top: 0px; z-index: 1001; }
+.pos-surrender  { left: 10px; top: 790px; z-index: 1001; }
 /* 14. 情報パネル */
 .pos-info-panel { left: 0px; top: 0px; width: 100%; z-index: 1000; }
 
@@ -222,3 +222,21 @@ hr { margin: 5px 0 !important; border-width: 1px !important; }
   width: 105px !important; 
   height: 70px !important; 
 }
+
+/* =========================================
+   🔥 カード中央に浮かび上がるスキルボタン
+========================================= */
+.card-action-overlay {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+  display: flex; flex-direction: column; gap: 5px; width: 80%; align-items: center;
+}
+.card-center-btn {
+  border: 2px solid white; border-radius: 6px; padding: 8px 10px;
+  font-size: 16px; font-weight: bold; cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.8); transition: 0.2s;
+  width: 100%; text-align: center; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+.card-center-btn:hover { transform: scale(1.1); box-shadow: 0 6px 15px rgba(0,0,0,0.9); }
