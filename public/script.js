@@ -272,6 +272,9 @@ soloModeBtn.addEventListener("click", () => {
   } else if (bossType === "satan") {
       // ★ 新ボス：大悪魔 サタン
       opponentLeader = { name: "大悪魔 サタン", type: "leader", originalCost: 0, cost: 0, attack: 3, hp: 66, image: "👿", attribute: "dark", desc: "【常時】ターン終了時、相手のランダムなモンスター1体に4ダメージを与える。モンスターがいない場合、相手リーダーに2ダメージを与える。" };
+  } else if (bossType === "disaster") {
+      // ★ 超高難易度ボス：ディザスター
+      opponentLeader = { name: "絶望の魔神 ディザスター", type: "leader", originalCost: 0, cost: 0, attack: 4, hp: 80, image: "🌋", attribute: "dark", desc: "【常時】ターン終了時、相手の全モンスターに3ダメージ！相手の場にモンスターがいない場合、相手リーダーに5ダメージ！！" };
   }
   
   startGame();
@@ -1305,6 +1308,7 @@ function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
         } else {
           targetPlayer.hp -= pierceDamage;
           drainAmount += pierceDamage; 
+          showFloatingTextOnElement(`p${targetPid}-leader-zone`, pierceDamage, 'damage'); // 👈 追加！貫通ダメージを表示
         }
       }
     } 
@@ -1776,6 +1780,7 @@ function endTurnProcess(pId) {
           tp.hp -= 1;
           const el = document.getElementById(`p${targetPId}-leader-zone`);
           if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
+          showFloatingTextOnElement(`p${targetPId}-leader-zone`, 1, 'damage'); // 👈 追加！リーダーへの感染ダメージ
         }
         tp.leader.infection = false; 
     }
@@ -1791,6 +1796,7 @@ function endTurnProcess(pId) {
         if (tp.stage[z]) tp.stage[z].infection = false;
         const el = document.getElementById(`p${targetPId}-stage-${z}`);
         if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
+        showFloatingTextOnElement(`p${targetPId}-stage-${z}`, 1, 'damage'); // 👈 追加！モンスターへの感染ダメージ
       }
     });
   });
@@ -1929,6 +1935,42 @@ async function playAITurn() {
               p1.hp -= 2;
               const el = document.getElementById(`p1-leader-zone`);
               if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
+              showFloatingTextOnElement(`p1-leader-zone`, 2, 'damage'); // ついでにサタンのダメージも表示
+          }
+      }
+      renderAll();
+      await new Promise(r => setTimeout(r, 1000));
+      checkGameOver();
+      if (isGameOver) return;
+      
+  // 👇👇 ここからディザスターの攻撃処理を追加 👇👇
+  } else if (p2.leader.name === "絶望の魔神 ディザスター") {
+      infoPanel.innerHTML = `🌋 ディザスターの絶望の波動！！すべてを焼き尽くす！`;
+      let targets = ['left', 'center', 'right'].filter(z => p1.stage[z] !== null);
+      
+      if (targets.length > 0) {
+          // モンスターがいる場合：全員に3ダメージ
+          targets.forEach(z => {
+              let tCard = p1.stage[z];
+              let dmg = 3;
+              if (tCard.name === "老練なる有段者") { dmg -= 2; if(dmg<0)dmg=0; } // 有段者の軽減を適用
+              
+              if (dmg > 0) {
+                  if (tCard.hasBarrier) tCard.hasBarrier = false;
+                  else { tCard.hp -= dmg; if(tCard.hp<=0) destroyCard(1, z, false); }
+                  const el = document.getElementById(`p1-stage-${z}`);
+                  if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
+                  showFloatingTextOnElement(`p1-stage-${z}`, dmg, 'damage'); // フローティング表示
+              }
+          });
+      } else {
+          // モンスターがいない場合：リーダーに5ダメージ！！
+          if (p1.leader.hasBarrier) p1.leader.hasBarrier = false;
+          else {
+              p1.hp -= 5;
+              const el = document.getElementById(`p1-leader-zone`);
+              if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
+              showFloatingTextOnElement(`p1-leader-zone`, 5, 'damage'); // フローティング表示
           }
       }
       renderAll();
@@ -1936,6 +1978,7 @@ async function playAITurn() {
       checkGameOver();
       if (isGameOver) return;
   }
+  // 👆👆 ここまで追加 👆👆
 
   endTurnProcess(2);
 }
