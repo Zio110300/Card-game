@@ -108,6 +108,8 @@ function getCardInfoText(card) {
   if (card.soulGuard) skillTags.push("【ソウルガード】");
   if (card.infection) skillTags.push("【感染症】");
   if (card.burn) skillTags.push("【燃焼】");
+  if (card.drain) skillTags.push("【ドレイン】");
+  if (card.connectSkill) skillTags.push("【コネクト】");
   if (card.arts !== undefined) skillTags.push(`【アーツ${card.arts}】`);
   if (card.accel !== undefined) skillTags.push(`【アクセラ${card.accel}】`);
   
@@ -478,6 +480,10 @@ function generateCardHtml(card, extraAttrs = "", extraClass = "", badgeCount = 1
     barrierHtml += `<div style="position: absolute; bottom: -15px; left: -15px; font-size: 30px; z-index: 20; filter: drop-shadow(0 0 5px #e67e22);" title="燃焼中！">🔥</div>`;
     inlineStyle += " box-shadow: 0 0 15px 5px #e67e22; border: 2px solid #e67e22;";
   }
+  if (card.isConnected) {
+    barrierHtml += `<div style="position: absolute; top: -15px; left: 40%; font-size: 30px; z-index: 20; filter: drop-shadow(0 0 5px #00ffcc);" title="接続状態！">🔗</div>`;
+    inlineStyle += " box-shadow: 0 0 15px 5px #00ffcc; border: 2px solid #00ffcc;";
+  }
 
   if (card.soul && card.soul.length > 0) {
     statsHtml += `<div style="position: absolute; top: -10px; right: -10px; left: auto; background: #9b59b6; color: white; font-size: 12px; font-weight: bold; border-radius: 50%; width: 24px; height: 24px; display: flex; justify-content: center; align-items: center; border: 2px solid white; z-index: 10;" title="ソウル${card.soul.length}枚">${card.soul.length}</div>`;
@@ -682,6 +688,8 @@ function destroyCard(playerId, zone, isLost = false) {
   let p = players[playerId];
   let targetCard = p.stage[zone];
   if (!targetCard) return { destroyed: true };
+
+  if (targetCard.isConnected) breakConnection();
 
   players[1].destroyedThisTurn++; players[2].destroyedThisTurn++;
   
@@ -1112,7 +1120,31 @@ function attachStageListeners() {
         overlayBtnHtml += `<button class="card-center-btn" style="background:#e67e22; color:white;" onclick="event.stopPropagation(); useBurnSkill('${zone}');">🔥 燃焼</button>`; // 👈 追加
       }
 
+      // 👇👇ここから「接続スキル」の追加👇👇
+      window.useConnectSkill = function() {
+        isSelectingStage = true;
+        selectionStageCallback = function(targetPid, targetZone) {
+          if (targetZone === 'leader') return; // モンスターのみ対象
+          connectCards(myPlayerId, 'leader', targetPid, targetZone);
+          isSelectingStage = false; selectionStageCallback = null; pendingSelection = null;
+          infoPanel.style.backgroundColor = "#ecf0f1"; 
+          renderAll(); sendGameState();
+        };
+        infoPanel.innerHTML = `🎯 接続する対象のモンスターをクリックしてください！`;
+        infoPanel.style.backgroundColor = "#00bcd4"; 
+        renderAll();
+      }
+
+      // ボタンを表示する条件
+      if (zone === 'leader' && card.connectSkill && pid === myPlayerId && currentTurn === myPlayerId && !isGameOver && !isSelectingHand) {
+        text += `<br><button onclick="useConnectSkill()" style="margin-top:8px; padding:8px 16px; background:#00bcd4; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%;">🔗 接続スキル発動</button>`;
+        overlayBtnHtml += `<button class="card-center-btn" style="background:#00bcd4; color:white;" onclick="event.stopPropagation(); useConnectSkill();">🔗 接続</button>`;
+      }
+      // 👆👆ここまで「接続スキル」の追加👆👆
+
       infoPanel.innerHTML = text; // 元からある処理
+
+      // 👇👇 ここから下を追加！クリックしたカードの真ん中にボタンを貼り付ける処理 👇👇
 
       // 👇👇 ここから下を追加！クリックしたカードの真ん中にボタンを貼り付ける処理 👇👇
       document.querySelectorAll('.card-action-overlay').forEach(o => o.remove()); // 前に出たボタンを消す
@@ -1160,10 +1192,31 @@ function attachStageListeners() {
   });
 });
 
+// 👇👇ここから追加👇👇
+function showFloatingTextOnElement(elementId, value, type) {
+  if (!value || value <= 0) return; 
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  const container = document.getElementById("floating-text-container");
+  if (!container) return;
+  const rect = el.getBoundingClientRect();
+  const textEl = document.createElement("div");
+  textEl.className = `floating-text ${type}`;
+  textEl.innerText = (type === 'heal' ? '+' : '-') + value;
+  container.appendChild(textEl);
+  const textWidth = textEl.offsetWidth;
+  const textHeight = textEl.offsetHeight;
+  textEl.style.left = `${rect.left + rect.width / 2 - textWidth / 2}px`;
+  textEl.style.top = `${rect.top + rect.height / 2 - textHeight / 2}px`;
+  setTimeout(() => { textEl.remove(); }, 1200); 
+}
+// 👆👆ここまで追加👆👆
+
 function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
   const attackerPlayer = players[attackerPid]; const targetPlayer = players[targetPid];
   const attackerLeader = attackerPlayer.leader; const targetLeader = targetPlayer.leader;
-  
+  let drainAmount = 0;
+
   const attackerCard = attackerZone === 'leader' ? attackerLeader : attackerPlayer.stage[attackerZone];
   const targetCard = targetZone === 'leader' ? null : targetPlayer.stage[targetZone];
 
@@ -1212,13 +1265,16 @@ function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
 
   let oppCounterAtk = 0; 
   let actualDamageDealt = 0;
-
+  
   if (targetZone === 'leader') { 
     if (targetLeader.hasBarrier) {
       targetLeader.hasBarrier = false; damageToDeal = 0; 
     } else {
       targetPlayer.hp -= damageToDeal; 
       actualDamageDealt = damageToDeal;
+      drainAmount += actualDamageDealt;
+      triggerConnection(targetLeader, 'damage', actualDamageDealt);
+      showFloatingTextOnElement(`p${targetPid}-leader-zone`, actualDamageDealt, 'damage'); // 👈 追加！
     }
     oppCounterAtk = 0; 
   } else { 
@@ -1227,6 +1283,9 @@ function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
     } else {
       targetCard.hp -= damageToDeal; 
       actualDamageDealt = damageToDeal;
+      drainAmount += actualDamageDealt;
+      triggerConnection(targetCard, 'damage', actualDamageDealt);
+      showFloatingTextOnElement(`p${targetPid}-stage-${targetZone}`, actualDamageDealt, 'damage'); // 👈 追加！
     }
     
     oppCounterAtk = targetCard.attack + (targetCard.turnAttackBoost || 0); 
@@ -1244,7 +1303,8 @@ function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
         if (targetLeader.hasBarrier) {
           targetLeader.hasBarrier = false; 
         } else {
-          targetPlayer.hp -= pierceDamage; 
+          targetPlayer.hp -= pierceDamage;
+          drainAmount += pierceDamage; 
         }
       }
     } 
@@ -1269,6 +1329,7 @@ function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
       } else {
         attackerCard.hp -= counterDmg; 
         actualCounterDealt = counterDmg;
+        showFloatingTextOnElement(`p${attackerPid}-stage-${attackerZone}`, actualCounterDealt, 'damage'); // 👈 追加！
         if(attackerCard.hp <= 0) { 
           destroyCard(attackerPid, attackerZone, false);
         }
@@ -1281,6 +1342,7 @@ function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
         } else {
             attackerPlayer.hp -= oppCounterAtk;
             actualCounterDealt = oppCounterAtk;
+            showFloatingTextOnElement(`p${attackerPid}-leader-zone`, actualCounterDealt, 'damage'); // 👈 追加！
         }
     }
   }
@@ -1293,6 +1355,22 @@ function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
   if (attackerZone === 'leader') attackerPlayer.leaderAttackCount++; 
   else attackerCard.attackCount = (attackerCard.attackCount || 0) + 1;
 
+  if (attackerCard && attackerCard.drain && drainAmount > 0) {
+    if (attackerZone === 'leader') {
+      attackerPlayer.hp += drainAmount;
+      if (attackerPlayer.hp > attackerPlayer.maxHp) attackerPlayer.hp = attackerPlayer.maxHp;
+    } else {
+      attackerCard.hp += drainAmount;
+    }
+    triggerConnection(attackerCard, 'heal', drainAmount); // 🔗 ドレインの回復も接続先に伝染！
+    const healEl = document.getElementById(attackerZone === 'leader' ? `p${attackerPid}-leader-zone` : `p${attackerPid}-stage-${attackerZone}`);
+    if(healEl) { healEl.classList.add("heal-anim"); setTimeout(() => healEl.classList.remove("heal-anim"), 300); }
+    
+    // 👇 追加！ドレインの回復数値を表示
+    showFloatingTextOnElement(attackerZone === 'leader' ? `p${attackerPid}-leader-zone` : `p${attackerPid}-stage-${attackerZone}`, drainAmount, 'heal');
+  }
+
+  // （中略：ダメージアニメーションの処理など）
   const targetElId = targetZone === 'leader' ? `p${targetPid}-leader-zone` : `p${targetPid}-stage-${targetZone}`;
   const el = document.getElementById(targetElId);
   if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
@@ -1652,10 +1730,18 @@ function playCard(cardId, targetZone, pId) {
         players[oppId].hp -= dmg;
         const targetEl = document.getElementById(`p${oppId}-leader-zone`);
         if(targetEl){ targetEl.classList.add("damage-anim"); setTimeout(() => targetEl.classList.remove("damage-anim"), 300); }
+        showFloatingTextOnElement(`p${oppId}-leader-zone`, dmg, 'damage'); // 👈 追加！
       }
     } else if(card.name === "ヒール") {
-      Object.values(p.stage).forEach(c => { if(c && c.type === "monster") c.hp += card.effectValue; });
+      ['left', 'center', 'right'].forEach(z => {
+        let c = p.stage[z];
+        if(c && c.type === "monster") {
+          c.hp += card.effectValue;
+          showFloatingTextOnElement(`p${pId}-stage-${z}`, card.effectValue, 'heal'); // 👈 モンスターの回復を追加！
+        }
+      });
       p.hp += card.effectValue; if(p.hp > p.maxHp) p.hp = p.maxHp; 
+      showFloatingTextOnElement(`p${pId}-leader-zone`, card.effectValue, 'heal'); // 👈 リーダーの回復を追加！
     }
     isSuccess = true;
   }
@@ -1714,6 +1800,7 @@ function endTurnProcess(pId) {
       p.mp = 0;
       p.hp += consumedMp;
       if (p.hp > p.maxHp) p.hp = p.maxHp;
+      if (consumedMp > 0) showFloatingTextOnElement(`p${pId}-leader-zone`, consumedMp, 'heal'); // 👈 追加！
   }
   ['left', 'center', 'right'].forEach(z => {
       let c = p.stage[z];
@@ -1721,6 +1808,8 @@ function endTurnProcess(pId) {
           c.hp += 1;
           p.hp += 1;
           if (p.hp > p.maxHp) p.hp = p.maxHp;
+          showFloatingTextOnElement(`p${pId}-stage-${z}`, 1, 'heal'); // 👈 追加！
+          showFloatingTextOnElement(`p${pId}-leader-zone`, 1, 'heal'); // 👈 追加！
       }
   });
 
@@ -2066,3 +2155,72 @@ function applyBoardLayout(myId) {
     setClasses("p1-hand", "hand", isP1Bottom);
     setClasses("p2-hand", "hand", !isP1Bottom);
 }
+
+// =========================================================
+// ★ 接続（リンク）システム
+// =========================================================
+let isProcessingConnection = false; // 無限ループ防止用のバリア！
+
+window.breakConnection = function() {
+    [1, 2].forEach(p => {
+      ['leader', 'left', 'center', 'right'].forEach(z => {
+         let c = z === 'leader' ? players[p].leader : players[p].stage[z];
+         if (c) c.isConnected = false;
+      });
+    });
+}
+
+window.connectCards = function(pid1, zone1, pid2, zone2) {
+    breakConnection(); // 接続は1ペアのみのルールの為、古い接続をすべて解除
+    let c1 = zone1 === 'leader' ? players[pid1].leader : players[pid1].stage[zone1];
+    let c2 = zone2 === 'leader' ? players[pid2].leader : players[pid2].stage[zone2];
+    if (c1 && c2) {
+       c1.isConnected = true;
+       c2.isConnected = true;
+    }
+}
+
+// ダメージや回復をもう片方に伝染させる関数
+window.triggerConnection = function(sourceCard, type, value) {
+    if (isProcessingConnection || !sourceCard || !sourceCard.isConnected) return;
+    
+    let otherCardInfo = null;
+    [1, 2].forEach(p => {
+      ['leader', 'left', 'center', 'right'].forEach(z => {
+         let c = z === 'leader' ? players[p].leader : players[p].stage[z];
+         if (c && c.isConnected && c.id !== sourceCard.id) {
+             otherCardInfo = { pid: p, zone: z, card: c };
+         }
+      });
+    });
+    
+    if (!otherCardInfo) return; // 相手が見つからなければ何もしない
+
+    isProcessingConnection = true; // 伝染処理中！無限ループバリアを展開！
+    
+    let tp = players[otherCardInfo.pid];
+    let tc = otherCardInfo.card;
+    let tz = otherCardInfo.zone;
+
+    if (type === 'damage') {
+        if (tz === 'leader') { tp.hp -= value; } 
+        else {
+            tc.hp -= value;
+            if (tc.hp <= 0) destroyCard(otherCardInfo.pid, tz, false);
+        }
+        let targetElId = tz === 'leader' ? `p${otherCardInfo.pid}-leader-zone` : `p${otherCardInfo.pid}-stage-${tz}`;
+        const el = document.getElementById(targetElId);
+        if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
+        showFloatingTextOnElement(targetElId, value, 'damage'); // 👈 追加！
+    } else if (type === 'heal') {
+        if (tz === 'leader') {
+            tp.hp += value; if (tp.hp > tp.maxHp) tp.hp = tp.maxHp;
+        } else { tc.hp += value; }
+        let targetElId = tz === 'leader' ? `p${otherCardInfo.pid}-leader-zone` : `p${otherCardInfo.pid}-stage-${tz}`;
+        const el = document.getElementById(targetElId);
+        if(el) { el.classList.add("heal-anim"); setTimeout(() => el.classList.remove("heal-anim"), 300); }
+        showFloatingTextOnElement(targetElId, value, 'heal'); // 👈 追加！
+    }
+
+    isProcessingConnection = false; // 処理完了。バリア解除！
+} 

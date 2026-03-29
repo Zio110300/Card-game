@@ -241,3 +241,61 @@ hr { margin: 5px 0 !important; border-width: 1px !important; }
   width: 100%; text-align: center; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
 .card-center-btn:hover { transform: scale(1.1); box-shadow: 0 6px 15px rgba(0,0,0,0.9); }
+
+/* 回復エフェクト（緑色に光る） */
+.heal-anim { animation: healFlash 0.3s; animation-iteration-count: 1; border-color: #2ecc71 !important; box-shadow: 0 0 15px #2ecc71 !important; }
+@keyframes healFlash { 0% { filter: brightness(1); } 50% { filter: brightness(1.5) drop-shadow(0 0 10px #2ecc71); } 100% { filter: brightness(1); } }
+
+/* --- 回復・接続エフェクト --- */
+.heal-anim { animation: healFlash 0.3s; animation-iteration-count: 1; border-color: #2ecc71 !important; box-shadow: 0 0 15px #2ecc71 !important; }
+@keyframes healFlash { 0% { filter: brightness(1); } 50% { filter: brightness(1.5) drop-shadow(0 0 10px #2ecc71); } 100% { filter: brightness(1); } }
+
+/* --- フローティングテキスト（ダメージ・回復数値表示） --- */
+.floating-text-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* クリックなどを透過させる */
+  z-index: 10000; /* 最前面に表示 */
+}
+
+.floating-text {
+  position: absolute;
+  font-size: 50px; /* 数値を大きくド派手に！ */
+  font-weight: bold;
+  font-family: 'Anton', sans-serif; /* もしGoogle Fontsなどがあればカッコいいフォントに */
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0,0,0,0.5);
+  animation: floatFade 1.2s cubic-bezier(0.215, 0.610, 0.355, 1.000) forwards; /* 緩急のある動き */
+  pointer-events: none;
+  opacity: 0;
+  white-space: nowrap;
+}
+
+.floating-text.damage {
+  color: #e74c3c; /* 鮮やかな赤 */
+}
+
+.floating-text.heal {
+  color: #2ecc71; /* 鮮やかな緑 */
+}
+
+@keyframes floatFade {
+  0% {
+    transform: translateY(20px) scale(0.5); /* 下から小さく登場 */
+    opacity: 0;
+  }
+  20% {
+    transform: translateY(0) scale(1.2); /* 少し大きくバウンド */
+    opacity: 1;
+  }
+  80% {
+    transform: translateY(-50px) scale(1); /* ゆっくり浮き上がる */
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-70px) scale(0.8); /* 小さくなりながら消える */
+    opacity: 0;
+  }
+}

@@ -113,9 +113,8 @@
       <div id="p1-stage-left" class="stage-zone absolute-item pos-p1-left" data-player="1" data-zone="left"></div>
       <div id="p1-stage-center" class="stage-zone absolute-item pos-p1-center" data-player="1" data-zone="center"></div>
       <div id="p1-stage-right" class="stage-zone absolute-item pos-p1-right" data-player="1" data-zone="right"></div>
-      <div id="p1-status-area" class="player-status-area absolute-item pos-p1-status"> ```
-
-      <div class="hp-display">❤️ ライフ: <span id="p1-hp-text">15 / 15</span></div>
+      <div id="p1-status-area" class="player-status-area absolute-item pos-p1-status">
+        <div class="hp-display">❤️ ライフ: <span id="p1-hp-text">15 / 15</span></div>
         <div class="mp-display">🔮 PP: <span id="p1-mp-text">1 / 1</span></div>
         <div class="deck-display">🎴 デッキ: <span id="p1-deck-text">0</span></div>
         <div class="trash-display" style="color: #bdc3c7;" onclick="openZoneView(1, 'trash')">🪦 ドロップ: <span id="p1-trash-text">0</span></div>
@@ -146,6 +145,8 @@
         <button id="back-home-btn" class="end-turn-btn" style="display:inline-block; margin:0; padding: 15px 30px !important; background-color: #7f8c8d;">🏠 ホームへ</button>
     </div>
   </div>
+
+  <div id="floating-text-container" class="floating-text-container"></div>
   <script src="/socket.io/socket.io.js"></script>
   <script>const socket = io();</script>
   <script src="script.js"></script>
