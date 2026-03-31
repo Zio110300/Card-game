@@ -1946,8 +1946,29 @@ async function playAITurn() {
   // 👇👇 ここからディザスターの攻撃処理を追加 👇👇
   } else if (p2.leader.name === "絶望の魔神 ディザスター") {
       infoPanel.innerHTML = `🌋 ディザスターの絶望の波動！！すべてを焼き尽くす！`;
-      let targets = ['left', 'center', 'right'].filter(z => p1.stage[z] !== null);
+
+      // ★★★ ここから専用エフェクトを追加 ★★★
+      // 1. 画面フラッシュ用の要素を作成して追加
+      const flashEl = document.createElement("div");
+      flashEl.className = "disaster-attack-anim";
+      document.body.appendChild(flashEl);
       
+      // 2. ゲーム画面全体に揺れアニメーションを適用
+      const gameContainer = document.getElementById("game-wrap"); // 👈 ここを変更！
+      gameContainer.classList.add("screen-shake-anim");
+      
+      // 3. アニメーション終了後にエフェクトを削除 (1.5秒 = 1500ms)
+      setTimeout(() => {
+          flashEl.remove();
+          gameContainer.classList.remove("screen-shake-anim"); // 揺れを止める
+      }, 1500);
+      
+      // 既存のダメージ処理の開始を少し遅らせてフラッシュと同期させる
+      await new Promise(r => setTimeout(r, 600)); 
+      // ★★★ ここまで専用エフェクトを追加 ★★★
+      
+      let targets = ['left', 'center', 'right'].filter(z => p1.stage[z] !== null);
+
       if (targets.length > 0) {
           // モンスターがいる場合：全員に3ダメージ
           targets.forEach(z => {

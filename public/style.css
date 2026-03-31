@@ -299,3 +299,44 @@ hr { margin: 5px 0 !important; border-width: 1px !important; }
     opacity: 0;
   }
 }
+
+/* --- ディザスター専用エフェクト --- */
+/* 画面全体を闇と炎でフラッシュさせる */
+.disaster-attack-anim {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999; /* 最前面に表示 */
+  pointer-events: none; /* クリックなどを透過させる */
+  animation: disasterFlash 1.5s ease-out forwards; /* 1.5秒かけてフラッシュ */
+}
+
+/* 画面全体を激しく揺らす (game-containerに適用) */
+.screen-shake-anim {
+  animation: screenShake 0.5s linear infinite; /* 0.5秒の揺れを無限ループ */
+}
+
+/* 画面の色を闇紫から深紅、そして赤黒へ */
+@keyframes disasterFlash {
+  0% { background-color: rgba(0, 0, 0, 0); box-shadow: inset 0 0 0px #000; }
+  10% { background-color: rgba(75, 0, 130, 0.7); box-shadow: inset 0 0 100px #000; } /* 闇紫 */
+  40% { background-color: rgba(139, 0, 0, 0.8); box-shadow: inset 0 0 150px #ff4500; } /* 深紅と橙 */
+  100% { background-color: rgba(0, 0, 0, 0.3); box-shadow: inset 0 0 200px #8b0000; } /* 赤黒く残る */
+}
+
+/* 激しい画面揺れ */
+@keyframes screenShake {
+  0% { transform: translate(2px, 2px) rotate(0deg); }
+  10% { transform: translate(-2px, -3px) rotate(-1deg); }
+  20% { transform: translate(-5px, 0px) rotate(1deg); }
+  30% { transform: translate(5px, 3px) rotate(0deg); }
+  40% { transform: translate(2px, -2px) rotate(1deg); }
+  50% { transform: translate(-2px, 3px) rotate(-1deg); }
+  60% { transform: translate(-5px, 2px) rotate(0deg); }
+  70% { transform: translate(5px, 2px) rotate(-1deg); }
+  80% { transform: translate(-2px, -2px) rotate(1deg); }
+  90% { transform: translate(2px, 3px) rotate(0deg); }
+  100% { transform: translate(2px, -3px) rotate(-1deg); }
+}
