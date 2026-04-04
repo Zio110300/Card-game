@@ -340,3 +340,11 @@ hr { margin: 5px 0 !important; border-width: 1px !important; }
   90% { transform: translate(2px, 3px) rotate(0deg); }
   100% { transform: translate(2px, -3px) rotate(-1deg); }
 }
+/* --- 攻撃力アップエフェクト（赤く光る） --- */
+.attack-anim { animation: attackFlash 0.3s; animation-iteration-count: 1; border-color: #e74c3c !important; box-shadow: 0 0 15px #e74c3c !important; }
+@keyframes attackFlash { 0% { filter: brightness(1); } 50% { filter: brightness(1.5) drop-shadow(0 0 10px #e74c3c); } 100% { filter: brightness(1); } }
+
+/* 数字の色を赤にする */
+.floating-text.attack_boost {
+  color: #e74c3c;
+}
