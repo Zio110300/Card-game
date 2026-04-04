@@ -647,9 +647,10 @@ function getCardTypes() {
 
 function startGame() {
   isGameOver = false; 
+  window.isResultProcessing = false; // 👈 リザルト処理のストッパーをリセット！
   currentTurn = Math.random() < 0.5 ? 1 : 2; 
   isGameStarted = true;
-  isSelectingHand = false; selectionCallback = null; 
+  isSelectingHand = false; selectionCallback = null;
   isSelectingStage = false; selectionStageCallback = null;
   pendingSelection = null; 
   
@@ -2353,7 +2354,8 @@ async function playAITurn() {
 // =========================================================
 function checkGameOver() {
   if(players[1].hp <= 0 || players[2].hp <= 0) {
-    if (isGameOver) return; // 既に終わってたら何もしない
+    if (window.isResultProcessing) return; // すでに自分の画面でリザルト処理に入っていたらスキップ
+    window.isResultProcessing = true; 
     isGameOver = true; 
     
     let isWin = false;
@@ -2362,14 +2364,17 @@ function checkGameOver() {
     if (players[1].hp <= 0 && players[2].hp <= 0) {
       isWin = false; winnerName = "DRAW";
     } else if (players[1].hp <= 0) {
-      isWin = false; winnerName = isSoloMode ? players[2].leader.name : "プレイヤー2";
+      isWin = (myPlayerId === 2); // 👈 自分がプレイヤー2なら「勝ち」判定にする！
+      winnerName = isSoloMode ? players[2].leader.name : "プレイヤー2";
     } else {
-      isWin = true; winnerName = isSoloMode ? "あなた" : "プレイヤー1";
+      isWin = (myPlayerId === 1); // 👈 自分がプレイヤー1なら「勝ち」判定にする！
+      winnerName = isSoloMode ? "あなた" : "プレイヤー1";
     }
     
     infoPanel.innerHTML = `🏆 ゲーム終了！`; 
     infoPanel.style.backgroundColor = "rgba(243, 156, 18, 0.5)";
     endTurnBtn.style.display = "none"; 
+    surrenderBtn.style.display = "none"; // ついでに降参ボタンも消す
     
     // 👇 勝負がついた1秒後に、ド派手なリザルトを出す！
     setTimeout(() => { showResultScreen(isWin, winnerName); }, 1000);
