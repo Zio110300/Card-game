@@ -131,7 +131,7 @@ function getCardInfoText(card) {
     if (ownerId && players[ownerId].lostZone.length > 0) { displayAttack += card.soul.length; }
   }
 
-  if (card.type === "monster" || card.type === "leader") statsText = `(攻撃: ${displayAttack} / HP: ${card.hp})`;
+  if (card.type === "monster" || card.type === "leader") statsText = `(攻撃: ${displayAttack} / ライフ: ${card.hp})`;
   else if (card.type === "item") statsText = `(攻撃: +${card.effectValue})`;
 
   let soulText = (card.soul && card.soul.length > 0) ? `<br>🟣 <b>ソウル:</b> ${card.soul.length}枚` : "";
@@ -270,13 +270,13 @@ soloModeBtn.addEventListener("click", () => {
   }
   
   if (bossType === "dragon") {
-      opponentLeader = { name: "ダークドラゴン", type: "leader", originalCost: 0, cost: 0, attack: 2, hp: 50, image: "🐉", attribute: "dark", desc: "【常時】相手のセンターにモンスターがいないなら、ターン終了時に相手のリーダーに2ダメージを与える。" };
+      opponentLeader = { name: "ダークドラゴン", type: "leader", originalCost: 0, cost: 0, attack: 2, hp: 50, image: "🐉", attribute: "dark", desc: "【常時】相手のセンターにキャラがいないなら、ターン終了時に相手のリーダーに2ダメージを与える。" };
   } else if (bossType === "satan") {
       // ★ 新ボス：大悪魔 サタン
-      opponentLeader = { name: "大悪魔 サタン", type: "leader", originalCost: 0, cost: 0, attack: 3, hp: 66, image: "👿", attribute: "dark", desc: "【常時】ターン終了時、相手のランダムなモンスター1体に4ダメージを与える。モンスターがいない場合、相手リーダーに2ダメージを与える。" };
+      opponentLeader = { name: "大悪魔 サタン", type: "leader", originalCost: 0, cost: 0, attack: 3, hp: 66, image: "👿", attribute: "dark", desc: "【常時】ターン終了時、相手のランダムなキャラ1体に4ダメージを与える。キャラがいない場合、相手リーダーに2ダメージを与える。" };
   } else if (bossType === "disaster") {
       // ★ 超高難易度ボス：ディザスター
-      opponentLeader = { name: "絶望の魔神 ディザスター", type: "leader", originalCost: 0, cost: 0, attack: 4, hp: 80, image: "🌋", attribute: "dark", desc: "【常時】ターン終了時、相手の全モンスターに3ダメージ！相手の場にモンスターがいない場合、相手リーダーに5ダメージ！！" };
+      opponentLeader = { name: "絶望の魔神 ディザスター", type: "leader", originalCost: 0, cost: 0, attack: 4, hp: 80, image: "🌋", attribute: "dark", desc: "【常時】ターン終了時、相手の全キャラに3ダメージ！相手のステージにキャラがいない場合、相手リーダーに5ダメージ！！" };
   }
   
   startGame();
@@ -588,65 +588,65 @@ function sendGameState() {
 function getCardTypes() {
   return [
     { category: "pack_1", type: "leader", name: "蒼深の砂時計", originalCost: 0, cost: 0, attack: 0, hp: 20, image: "images/pack_1/sunadokei.jpg", attribute: "sea_god", desc: "【起動】未攻撃時のみ。このカードを攻撃済みにし、お互いのロストから1枚をランダムに手札に加える。自分のカードがドロップに置かれる時、代わりにロストに置く。" },
-    { category: "pack_1", type: "monster", name: "海神 アオクジラ", originalCost: 6, cost: 6, attack: 1, hp: 6, image: "images/pack_1/aokujira.jpg", attribute: "sea_god", evolution: true, doubleAttack: true, pierce: true, ward: true, soulGuard: true, desc: "■【登場時】自分の手札1枚を選択してこのカードのソウルに入れる。<br>■自分のロストゾーンにカードがあるなら、このカードの攻撃力をこのカードのソウルの枚数分、+する。" },
-    { category: "pack_1", type: "monster", name: "生春 アオハル", originalCost: 3, cost: 3, attack: 1, hp: 1, image: "images/pack_1/aoharu.jpg", attribute: "sea_god", desc: "ロストにカードがあるなら手札のコスト0。センターに出た時、レフトとライトに同名カードを出す。" },
-    { category: "pack_1", type: "monster", name: "冬辞 アオトウ", originalCost: 4, cost: 4, attack: 1, hp: 2, image: "images/pack_1/aotou.jpg", attribute: "sea_god", ward: true, desc: "【登場時】相手のステージにいるモンスター1枚を選択し、ロストする。" },
-    { category: "pack_1", type: "monster", name: "アオクラゲ", originalCost: 2, cost: 2, attack: 2, hp: 1, image: "images/pack_1/aokurage.jpg", attribute: "sea_god", soulGuard: true, desc: "場に出た時、自分の手札1枚を選択し、このカードのソウルに入れる。ソウルガード。" },
-    { category: "pack_1", type: "monster", name: "アオノメ", originalCost: 1, cost: 1, attack: 1, hp: 1, image: "images/pack_1/aonome.jpg", attribute: "sea_god", desc: "自分の場にいる「アオノメ」の数だけ、手札の「アオノメ」のコスト-1。(※デッキ枚数制限なし)" },
-    { category: "pack_1", type: "magic", name: "Erotion the future", originalCost: 7, cost: 7, image: "images/pack_1/erotionthefuture.jpg", attribute: "sea_god", desc: "自分の全モンスターをロストし、相手の場のHP6以下のモンスターを全てロストする。" },
-    { category: "pack_1", type: "magic", name: "海神の権能", originalCost: 5, cost: 5, image: "images/pack_1/kaishinnnokennnou.jpg", attribute: "sea_god", desc: "相手のステージにいるモンスターからランダムに1枚をロストする。カード3枚を引く。" },
-    { category: "pack_1", type: "magic", name: "侵界の跡", originalCost: 1, cost: 1, image: "images/pack_1/shinnkainoato.jpg", attribute: "sea_god", desc: "自分のリーダーにバリア付与。自分のロストが13枚以上なら、相手のHP3以下のモンスター全てロスト。" },
-    { category: "pack_1", type: "magic", name: "侵界の雨", originalCost: 10, cost: 10, image: "images/pack_1/shinnkainoame.jpg", attribute: "sea_god", desc: "お互いのステージのモンスターと、手札のカード全てをロストする。" },
+    { category: "pack_1", type: "monster", name: "海神 アオクジラ", originalCost: 6, cost: 6, attack: 1, hp: 6, image: "images/pack_1/aokujira.jpg", attribute: "sea_god", evolution: true, doubleAttack: true, pierce: true, ward: true, soulGuard: true, desc: "■【コール時】自分の手札1枚を選択してこのカードのソウルに入れる。<br>■自分のロストゾーンにカードがあるなら、このカードの攻撃力をこのカードのソウルの枚数分、+する。" },
+    { category: "pack_1", type: "monster", name: "生春 アオハル", originalCost: 3, cost: 3, attack: 1, hp: 1, image: "images/pack_1/aoharu.jpg", attribute: "sea_god", desc: "ロストにカードがあるなら手札のコスト0。センターにコールされた時、レフトとライトに同名カードをコールする。" },
+    { category: "pack_1", type: "monster", name: "冬辞 アオトウ", originalCost: 4, cost: 4, attack: 1, hp: 2, image: "images/pack_1/aotou.jpg", attribute: "sea_god", ward: true, desc: "【コール時】相手のステージにいるキャラ1枚を選択し、ロストする。" },
+    { category: "pack_1", type: "monster", name: "アオクラゲ", originalCost: 2, cost: 2, attack: 2, hp: 1, image: "images/pack_1/aokurage.jpg", attribute: "sea_god", soulGuard: true, desc: "ステージにコールされた時、自分の手札1枚を選択し、このカードのソウルに入れる。ソウルガード。" },
+    { category: "pack_1", type: "monster", name: "アオノメ", originalCost: 1, cost: 1, attack: 1, hp: 1, image: "images/pack_1/aonome.jpg", attribute: "sea_god", desc: "自分のステージにいる「アオノメ」の数だけ、手札の「アオノメ」のコスト-1。(※デッキ枚数制限なし)" },
+    { category: "pack_1", type: "magic", name: "Erotion the future", originalCost: 7, cost: 7, image: "images/pack_1/erotionthefuture.jpg", attribute: "sea_god", desc: "自分の全キャラをロストし、相手のステージのライフ6以下のキャラを全てロストする。" },
+    { category: "pack_1", type: "magic", name: "海神の権能", originalCost: 5, cost: 5, image: "images/pack_1/kaishinnnokennnou.jpg", attribute: "sea_god", desc: "相手のステージにいるキャラからランダムに1枚をロストする。カード3枚を引く。" },
+    { category: "pack_1", type: "magic", name: "侵界の跡", originalCost: 1, cost: 1, image: "images/pack_1/shinnkainoato.jpg", attribute: "sea_god", desc: "自分のリーダーにバリア付与。自分のロストが13枚以上なら、相手のライフ3以下のキャラ全てロスト。" },
+    { category: "pack_1", type: "magic", name: "侵界の雨", originalCost: 10, cost: 10, image: "images/pack_1/shinnkainoame.jpg", attribute: "sea_god", desc: "お互いのステージのキャラと、手札のカード全てをロストする。" },
     { category: "pack_1", type: "magic", name: "侵界の光", originalCost: 4, cost: 4, image: "images/pack_1/shinnkainohikari.jpg", attribute: "sea_god", desc: "自分の手札1枚をクリックしてロストし、カードを2枚引く。" },
     { category: "pack_1", type: "monster", name: "蒼神", originalCost: 11, cost: 11, attack: 30, hp: 30, image: "images/pack_1/soushinn.jpg", attribute: "sea_god", desc: "お互いのロスト合計が10枚以上なら、手札のこのカードのコストは10になる。" },
 
-    { category: "test", type: "leader", name: "王国の勇者", originalCost: 0, cost: 0, attack: 1, hp: 20, image: "👦", attribute: "human", doubleAttack: true, desc: "【リーダー】王国を守る勇ましい騎士。2回攻撃を持つ。※モンスターに攻撃したとき反撃を受ける。" },
-    { category: "test", type: "leader", name: "森の長", originalCost: 0, cost: 0, attack: 0, hp: 15, image: "🧝", attribute: "spirit", desc: "【リーダー】ターン終了時、残りのPP全てを消費し、消費した分リーダーのHPを回復する。" },
+    { category: "test", type: "leader", name: "王国の勇者", originalCost: 0, cost: 0, attack: 1, hp: 20, image: "👦", attribute: "human", doubleAttack: true, desc: "【リーダー】王国を守る勇ましい騎士。2回攻撃を持つ。※キャラに攻撃したとき反撃を受ける。" },
+    { category: "test", type: "leader", name: "森の長", originalCost: 0, cost: 0, attack: 0, hp: 15, image: "🧝", attribute: "spirit", desc: "【リーダー】ターン終了時、残りのPP全てを消費し、消費した分リーダーのライフを回復する。" },
     { category: "test", type: "leader", name: "狂気の大魔術師", originalCost: 0, cost: 0, attack: 0, hp: 20, image: "🧙‍♂️", attribute: "magic_attr", desc: "【リーダー】自分の魔法カードが与えるダメージを+1する。" },
     { category: "test", type: "monster", name: "フェアリー", originalCost: 1, cost: 1, attack: 1, hp: 1, image: "images/faily.jpg", attribute: "fairy_attr", desc: "破壊されたとき、ドロップゾーンに置く代わりにデッキの下に置く。" },
-    { category: "test", type: "monster", name: "ファイター", originalCost: 2, cost: 2, attack: 2, hp: 2, image: "👦", attribute: "human", arts: 4, desc: "場に出た時、攻撃力とHP+3" },
+    { category: "test", type: "monster", name: "ファイター", originalCost: 2, cost: 2, attack: 2, hp: 2, image: "👦", attribute: "human", arts: 4, desc: "ステージにコールされた時、攻撃力とライフ+3" },
     { category: "test", type: "monster", name: "ゾンビ", originalCost: 2, cost: 2, attack: 1, hp: 3, image: "🧟", attribute: "magic_attr", desc: "このカードがダメージを与えた時、その対象に【感染症】(ターン終了時1ダメージを受け治癒)を付与する。" },
-    { category: "test", type: "monster", name: "ユニコ", originalCost: 3, cost: 3, attack: 2, hp: 3, image: "🦄", attribute: "fairy_attr", desc: "ターン終了時、自分のリーダーとこのカードのHPを1回復する。" },
+    { category: "test", type: "monster", name: "ユニコ", originalCost: 3, cost: 3, attack: 2, hp: 3, image: "🦄", attribute: "fairy_attr", desc: "ターン終了時、自分のリーダーとこのカードのライフを1回復する。" },
     { category: "test", type: "monster", name: "ゴリアテ", originalCost: 5, cost: 5, attack: 6, hp: 7, image: "💪", attribute: "neutral", desc: "圧倒的な力を持つ巨人。" },
     { category: "test", type: "monster", name: "エルフ", originalCost: 3, cost: 3, attack: 1, hp: 2, image: "🌿", skillType: "draw", skillValue: 1, desc: "常時：ドロー＋1", attribute: "wood" },
     { category: "test", type: "monster", name: "重装歩兵", originalCost: 4, cost: 4, attack: 2, hp: 4, image: "🛡️", skillType: "guard", skillValue: 1, attribute: "human", desc: "このカードがセンターにいるとき、このカードが受けるダメージを1にする。" },
     { category: "test", type: "monster", name: "老練なる有段者", originalCost: 4, cost: 4, attack: 2, hp: 4, image: "🥋", attribute: "human", desc: "このカードが受けるダメージを2減らす。" },
-    { category: "test", type: "monster", name: "ライトブラザーズ", originalCost: 3, cost: 3, attack: 2, hp: 2, image: "👨‍👦", attribute: "human", desc: "■このカードがレフトに登場したとき、自分のライトに同名のカードを出す。<br>■【登場時】自分のリーダーのHPを1回復する。" },
-    { category: "test", type: "magic", name: "ファイアボール", originalCost: 2, cost: 2, effectValue: 4, image: "🔥", attribute: "fire_magic", desc: "自場に属性「魔」のカードがあり、自分のセンターにモンスターがいないなら使える。相手リーダーに4ダメ。" },
+    { category: "test", type: "monster", name: "ライトブラザーズ", originalCost: 3, cost: 3, attack: 2, hp: 2, image: "👨‍👦", attribute: "human", desc: "■このカードがレフトにコールされたとき、自分のライトに同名のカードをコールする。<br>■【コール時】自分のリーダーのライフを1回復する。" },
+    { category: "test", type: "magic", name: "ファイアボール", originalCost: 2, cost: 2, effectValue: 4, image: "🔥", attribute: "fire_magic", desc: "自分のステージに属性「魔」のカードがあり、自分のセンターにキャラがいないなら使える。相手リーダーに4ダメ。" },
     { category: "test", type: "magic", name: "ヒール", originalCost: 1, cost: 1, effectValue: 2, image: "🧪", desc: "味方を2回復", attribute: "water" },
-    { category: "test", type: "magic", name: "アイススピアー！", originalCost: 2, cost: 2, effectValue: 3, image: "🧊", attribute: "fire_magic", desc: "相手のモンスター1体に3ダメージを与える。" },
-    { category: "test", type: "magic", name: "サンダーストーム！", originalCost: 3, cost: 3, effectValue: 2, image: "🌩️", attribute: "electric_magic", desc: "相手のステージのモンスター全てに2ダメージを与える。" },
+    { category: "test", type: "magic", name: "アイススピアー！", originalCost: 2, cost: 2, effectValue: 3, image: "🧊", attribute: "fire_magic", desc: "相手のキャラ1体に3ダメージを与える。" },
+    { category: "test", type: "magic", name: "サンダーストーム！", originalCost: 3, cost: 3, effectValue: 2, image: "🌩️", attribute: "electric_magic", desc: "相手のステージのキャラ全てに2ダメージを与える。" },
     { category: "test", type: "set_magic", name: "豊穣の祭壇", originalCost: 3, cost: 3, image: "🌾", desc: "毎ターンPP＋1", attribute: "wood" },
     { category: "test", type: "set_magic", name: "戦神の旗", originalCost: 4, cost: 4, effectValue: 2, image: "🚩", desc: "味方攻撃＋2", attribute: "fire" },
     { category: "test", type: "item", name: "鉄の剣", originalCost: 2, cost: 2, effectValue: 2, image: "🗡️", desc: "プレイヤー攻撃＋2", attribute: "neutral" },
     { category: "test", type: "item", name: "魔法の杖", originalCost: 3, cost: 3, effectValue: 1, image: "🪄", attribute: "magic_attr", desc: "【起動】PPを4消費して相手に4ダメージを与える。" },
     
-    { category: "pack_2", type: "leader", name: "\"Absolutely Main Gamer\" ONE", originalCost: 0, cost: 0, attack: 1, hp: 16, image: "images/pack_2/ONE.jpg", attribute: "bice_epic", desc: "■自分の場にカードが登場したとき、そのカードのソウルを+1する。<br>■【起動】PPを1消費して、このターン中攻撃力+1。" },
-    { category: "pack_2", type: "monster", name: "\"Born from competition\" GR", originalCost: 1, cost: 1, attack: 1, hp: 2, image: "images/pack_2/GXPA.jpg", attribute: "bice_epic", soulGuard: true, desc: "■自分の場の「BICE」モンスターが破壊された時、自身とリーダーのHPを1回復。<br>■このカードは相手に攻撃されない。" },
-    { category: "pack_2", type: "monster", name: "\"Get Ready Going To\" LFA", originalCost: 8, cost: 8, attack: 8, hp: 4, image: "images/pack_2/GRGT.jpg", attribute: "bice_epic", soulGuard: true, pierce: true, accel: 6, burn: true, desc: "■【アクセラ6】自分の「GR」の上に重ねて場に出る。<br>■【燃焼】このターン中、このカードは【超貫通】を持つ。" },
-    { category: "pack_2", type: "monster", name: "\"Re Born in 2600\" BNR34", originalCost: 2, cost: 2, attack: 1, hp: 2, image: "images/pack_2/GTR.jpg", attribute: "bice", soulGuard: true, arts: 3, burn: true, desc: "■【燃焼】このターン中、リーダーへ与えるダメージ+2。<br>■【アーツ3】場に出た時、攻撃力とHP+2。" },
-    { category: "pack_2", type: "monster", name: "\"To Just Zero\" A8000", originalCost: 3, cost: 3, attack: 3, hp: 3, image: "images/pack_2/supra.jpg", attribute: "bice", soulGuard: true, burn: true, desc: "■【燃焼】このターン中、モンスターに与えるダメージ+2。" },
-    { category: "pack_2", type: "monster", name: "\"Comact OPElator of No.1\" LA4000", originalCost: 1, cost: 1, attack: 1, hp: 1, image: "images/pack_2/copen.jpg", attribute: "bice", burn: true, desc: "■【燃焼】自分のモンスター1枚を選択し、ソウルを+1する。" },
-    { category: "pack_2", type: "monster", name: "\"Greater Than 2nd\" 911GT2RS", originalCost: 5, cost: 5, attack: 2, hp: 2, image: "images/pack_2/911.jpg", attribute: "bice", soulGuard: true, burn: true, desc: "■【登場時】カード2枚を引く。<br>■【燃焼】相手のレフトとライトのモンスター全てにダメージ4！" },
-    { category: "pack_2", type: "monster", name: "\"Ultimate Buddy\" ヴァルキリー", originalCost: 4, cost: 4, attack: 1, hp: 3, image: "images/pack_2/valkily.jpg", attribute: "bice", soulGuard: true, burn: true, desc: "■【登場時】デッキからコスト3以下の「BICE」モンスター最大2枚を場に出す。<br>■【燃焼】自分のセンターのモンスターにバリアを付与する。" },
-    { category: "pack_2", type: "magic", name: "RBA", originalCost: 1, cost: 1, image: "images/pack_2/RBA.jpg", attribute: "bice", desc: "自分のリーダーにバリア付与。自場に「GR」がいるなら、ドロップからランダムなモンスターを1枚手札に加える。" },
-    { category: "pack_2", type: "magic", name: "Absolute enforcer", originalCost: 4, cost: 4, image: "images/pack_2/enforcer.jpg", attribute: "bice", desc: "相手の場のモンスター全てにダメージ1。カード2枚を引く。" },
-    { category: "pack_2", type: "magic", name: "Exaust re boost", originalCost: 1, cost: 1, image: "images/pack_2/boost.jpg", attribute: "bice", desc: "このターン中、自分の場の属性「BICE」のモンスター全ての攻撃力+1。" },
-    { category: "pack_2", type: "magic", name: "Absolute punisher！", originalCost: 11, cost: 11, image: "images/pack_2/punisher.jpg", attribute: "bice", desc: "■手札にある間、このターン破壊された枚数分コスト減少。<br>■リーダーが「ONE」でお互いセンターが空なら使える。相手リーダーに11ダメージ！" }, // 👈 最後にカンマ(,)を追加！！！
+    { category: "pack_2", type: "leader", name: "\"Absolutely Main Gamer\" ONE", originalCost: 0, cost: 0, attack: 1, hp: 16, image: "images/pack_2/ONE.jpg", attribute: "bice_epic", desc: "■自分のステージにカードがコールされたとき、そのカードのソウルを+1する。<br>■【起動】PPを1消費して、このターン中攻撃力+1。" },
+    { category: "pack_2", type: "monster", name: "\"Born from competition\" GR", originalCost: 1, cost: 1, attack: 1, hp: 2, image: "images/pack_2/GXPA.jpg", attribute: "bice_epic", soulGuard: true, desc: "■自分のステージの「BICE」キャラが破壊された時、自身とリーダーのライフを1回復。<br>■このカードは相手に攻撃されない。" },
+    { category: "pack_2", type: "monster", name: "\"Get Ready Going To\" LFA", originalCost: 8, cost: 8, attack: 8, hp: 4, image: "images/pack_2/GRGT.jpg", attribute: "bice_epic", soulGuard: true, pierce: true, accel: 6, burn: true, desc: "■【アクセラ6】自分の「GR」の上に重ねてステージにコールされる。<br>■【燃焼】このターン中、このカードは【超貫通】を持つ。" },
+    { category: "pack_2", type: "monster", name: "\"Re Born in 2600\" BNR34", originalCost: 2, cost: 2, attack: 1, hp: 2, image: "images/pack_2/GTR.jpg", attribute: "bice", soulGuard: true, arts: 3, burn: true, desc: "■【燃焼】このターン中、リーダーへ与えるダメージ+2。<br>■【アーツ3】ステージにコールされた時、攻撃力とライフ+2。" },
+    { category: "pack_2", type: "monster", name: "\"To Just Zero\" A8000", originalCost: 3, cost: 3, attack: 3, hp: 3, image: "images/pack_2/supra.jpg", attribute: "bice", soulGuard: true, burn: true, desc: "■【燃焼】このターン中、キャラに与えるダメージ+2。" },
+    { category: "pack_2", type: "monster", name: "\"Comact OPElator of No.1\" LA4000", originalCost: 1, cost: 1, attack: 1, hp: 1, image: "images/pack_2/copen.jpg", attribute: "bice", burn: true, desc: "■【燃焼】自分のキャラ1枚を選択し、ソウルを+1する。" },
+    { category: "pack_2", type: "monster", name: "\"Greater Than 2nd\" 911GT2RS", originalCost: 5, cost: 5, attack: 2, hp: 2, image: "images/pack_2/911.jpg", attribute: "bice", soulGuard: true, burn: true, desc: "■【コール時】カード2枚を引く。<br>■【燃焼】相手のレフトとライトのキャラ全てにダメージ4！" },
+    { category: "pack_2", type: "monster", name: "\"Ultimate Buddy\" ヴァルキリー", originalCost: 4, cost: 4, attack: 1, hp: 3, image: "images/pack_2/valkily.jpg", attribute: "bice", soulGuard: true, burn: true, desc: "■【コール時】デッキからコスト3以下の「BICE」キャラ最大2枚をステージにコールする。<br>■【燃焼】自分のセンターのキャラにバリアを付与する。" },
+    { category: "pack_2", type: "magic", name: "RBA", originalCost: 1, cost: 1, image: "images/pack_2/RBA.jpg", attribute: "bice", desc: "自分のリーダーにバリア付与。自分のステージに「GR」がいるなら、ドロップからランダムなキャラを1枚手札に加える。" },
+    { category: "pack_2", type: "magic", name: "Absolute enforcer", originalCost: 4, cost: 4, image: "images/pack_2/enforcer.jpg", attribute: "bice", desc: "相手のステージのキャラ全てにダメージ1。カード2枚を引く。" },
+    { category: "pack_2", type: "magic", name: "Exaust re boost", originalCost: 1, cost: 1, image: "images/pack_2/boost.jpg", attribute: "bice", desc: "このターン中、自分のステージの属性「BICE」のキャラ全ての攻撃力+1。" },
+    { category: "pack_2", type: "magic", name: "Absolute punisher！", originalCost: 11, cost: 11, image: "images/pack_2/punisher.jpg", attribute: "bice", desc: "■手札にある間、このターン破壊された枚数分コスト減少。<br>■リーダーが「ONE」でお互いセンターが空なら使える。相手リーダーに11ダメージ！" },
 
-    { category: "pack_3", type: "leader", name: "≪Conecting other world≫ ヴァイス&シュヴァルツ", originalCost: 0, cost: 0, attack: 0, hp: 20, image: "images/pack_3/shirokuro.jpg", attribute: "reliance", connectSkill: true, desc: "■【コネクト】自分のステージのモンスター1枚を選択し、このカードと「接続」状態にする。<br>■自分の場のモンスターが「接続」状態になったとき、そのモンスターのHPを+2する。" },
-    { category: "pack_3", type: "monster", name: "≪Overconfidence≫ スターレット", originalCost: 3, cost: 3, attack: 2, hp: 1, image: "images/pack_3/sutarlet.jpg", attribute: "reliance", connectSkill: true, desc: "■このカードは相手のカードの効果で選択されない。<br>■【登場時】自分のデッキからコスト2以下の属性「リライアンス」を持つモンスター1枚を自分のステージに出し、自分のステージのモンスター全てのHPを+1する。<br>■【起動】ステージのモンスター1枚を選択し、自身と「接続」する。" },
-    { category: "pack_3", type: "monster", name: "≪Trust myself≫ ラパン", originalCost: 2, cost: 2, attack: 1, hp: 1, image: "images/pack_3/rapane.jpg", attribute: "reliance", desc: "■【登場時】このカードと同名のカード1枚を自分のレフトに出し、このカードと「接続」する。" },
-    { category: "pack_3", type: "monster", name: "≪相死相愛≫ α&β", originalCost: 4, cost: 4, attack: 2, hp: 2, image: "images/pack_3/aruvel.jpg", attribute: "reliance", drain: true, connectSkill: true, desc: "■【登場時】自分のデッキから属性「リライアンス」を持つコスト3以下のモンスター2種類を1枚ずつ自分のステージに出す。<br>■【起動】ステージのモンスター1枚を選択し、自身と「接続」する。<br>【ドレイン】" },
-    { category: "pack_3", type: "monster", name: "≪耽溺≫ セロ&ローブ", originalCost: 3, cost: 3, attack: 1, hp: 1, image: "images/pack_3/copen.jpg", attribute: "reliance", burn: true, desc: "■【燃焼】自分の場のモンスター全ての攻撃力を+1する。" },
-    { category: "pack_3", type: "monster", name: "≪従属≫ オデッセイ", originalCost: 2, cost: 2, attack: 1, hp: 1, image: "images/pack_3/odyssey.jpg", attribute: "reliance", desc: "■【登場時】このカードと同名のカード2枚を自分のステージに出す。" },
-    { category: "pack_3", type: "monster", name: "“絶対依存の情” マッハ", originalCost: 8, cost: 8, attack: 1, hp: 4, image: "images/pack_3/mahha.jpg", attribute: "reliance", transform: true, desc: "■自分のリーダーが「接続」状態なら、手札のこのカードのコストを-2する。<br>■【登場時】相手のモンスター1枚を選択し、相手のリーダーと「接続」状態にする。<br>■自分のターン終了時、自身の目の前のポジションにあるモンスターにダメージ11。<br>【変身】" },
-    { category: "pack_3", type: "magic", name: "あなたをおしえて", originalCost: 1, cost: 1, image: "images/pack_3/teach.jpg", attribute: "reliance", desc: "■ステージからモンスターを2枚選択する。選択したカード同士を「接続」する。" },
-    { category: "pack_3", type: "magic", name: "その身に過する保護り", originalCost: 1, cost: 1, image: "images/pack_3/hokori.jpg", attribute: "reliance", desc: "■自分のリーダーにバリアを付与し、自分の場の全モンスターのHPを+1する。" },
-    { category: "pack_3", type: "magic", name: "狂依存", originalCost: 3, cost: 3, image: "images/pack_3/kyouizonn.jpg", attribute: "reliance", desc: "■自分のドロップゾーンからランダムなモンスターを1枚、センターに出す。" },
-    { category: "pack_3", type: "magic", name: "信用", originalCost: 5, cost: 5, image: "images/pack_3/shinnyou.jpg", attribute: "reliance", desc: "■ステージのモンスター2枚を選択する。最初に選んだモンスターを破壊し、次に選んだモンスターのHPを最初に選んだモンスターのHP分+する。カードを3枚引く。" },
-    { category: "pack_3", type: "magic", name: "Trust my future", originalCost: 4, cost: 4, image: "images/pack_3/future.jpg", attribute: "reliance", desc: "■自分の場のモンスター全ての攻撃力を+2する。" },
-    { category: "pack_3", type: "item", name: "拠りどこ露", originalCost: 3, cost: 3, effectValue: 0, image: "images/pack_3/ro.jpg", attribute: "reliance", desc: "■自分の場のモンスターが破壊されたとき、ランダムな自分の場のモンスター1枚のHPを+1する。" },
+    { category: "pack_3", type: "leader", name: "≪Conecting other world≫ ヴァイス&シュヴァルツ", originalCost: 0, cost: 0, attack: 0, hp: 20, image: "images/pack_3/shirokuro.jpg", attribute: "reliance", connectSkill: true, desc: "■【コネクト】自分のステージのキャラ1枚を選択し、このカードと「接続」状態にする。<br>■自分のステージのキャラが「接続」状態になったとき、そのキャラのライフを+2する。" },
+    { category: "pack_3", type: "monster", name: "≪Overconfidence≫ スターレット", originalCost: 3, cost: 3, attack: 2, hp: 1, image: "images/pack_3/sutarlet.jpg", attribute: "reliance", connectSkill: true, desc: "■このカードは相手のカードの効果で選択されない。<br>■【コール時】自分のデッキからコスト2以下の属性「リライアンス」を持つキャラ1枚を自分のステージにコールし、自分のステージのキャラ全てのライフを+1する。<br>■【起動】ステージのキャラ1枚を選択し、自身と「接続」する。" },
+    { category: "pack_3", type: "monster", name: "≪Trust myself≫ ラパン", originalCost: 2, cost: 2, attack: 1, hp: 1, image: "images/pack_3/rapane.jpg", attribute: "reliance", desc: "■【コール時】このカードと同名のカード1枚を自分のレフトにコールし、このカードと「接続」する。" },
+    { category: "pack_3", type: "monster", name: "≪相死相愛≫ α&β", originalCost: 4, cost: 4, attack: 2, hp: 2, image: "images/pack_3/aruvel.jpg", attribute: "reliance", drain: true, connectSkill: true, desc: "■【コール時】自分のデッキから属性「リライアンス」を持つコスト3以下のキャラ2種類を1枚ずつ自分のステージにコールする。<br>■【起動】ステージのキャラ1枚を選択し、自身と「接続」する。<br>【ドレイン】" },
+    { category: "pack_3", type: "monster", name: "≪耽溺≫ セロ&ローブ", originalCost: 3, cost: 3, attack: 1, hp: 1, image: "images/pack_3/copen.jpg", attribute: "reliance", burn: true, desc: "■【燃焼】自分のステージのキャラ全ての攻撃力を+1する。" },
+    { category: "pack_3", type: "monster", name: "≪従属≫ オデッセイ", originalCost: 2, cost: 2, attack: 1, hp: 1, image: "images/pack_3/odyssey.jpg", attribute: "reliance", desc: "■【コール時】このカードと同名のカード2枚を自分のステージにコールする。" },
+    { category: "pack_3", type: "monster", name: "“絶対依存の情” マッハ", originalCost: 8, cost: 8, attack: 1, hp: 4, image: "images/pack_3/mahha.jpg", attribute: "reliance", transform: true, desc: "■自分のリーダーが「接続」状態なら、手札のこのカードのコストを-2する。<br>■【コール時】相手のキャラ1枚を選択し、相手のリーダーと「接続」状態にする。<br>■自分のターン終了時、自身の目の前のポジションにあるキャラにダメージ11。<br>【変身】" },
+    { category: "pack_3", type: "magic", name: "あなたをおしえて", originalCost: 1, cost: 1, image: "images/pack_3/teach.jpg", attribute: "reliance", desc: "■ステージからキャラを2枚選択する。選択したカード同士を「接続」する。" },
+    { category: "pack_3", type: "magic", name: "その身に過する保護り", originalCost: 1, cost: 1, image: "images/pack_3/hokori.jpg", attribute: "reliance", desc: "■自分のリーダーにバリアを付与し、自分のステージの全キャラのライフを+1する。" },
+    { category: "pack_3", type: "magic", name: "狂依存", originalCost: 3, cost: 3, image: "images/pack_3/kyouizonn.jpg", attribute: "reliance", desc: "■自分のドロップゾーンからランダムなキャラを1枚、センターにコールする。" },
+    { category: "pack_3", type: "magic", name: "信用", originalCost: 5, cost: 5, image: "images/pack_3/shinnyou.jpg", attribute: "reliance", desc: "■ステージのキャラ2枚を選択する。最初に選んだキャラを破壊し、次に選んだキャラのライフを最初に選んだキャラのライフ分+する。カードを3枚引く。" },
+    { category: "pack_3", type: "magic", name: "Trust my future", originalCost: 4, cost: 4, image: "images/pack_3/future.jpg", attribute: "reliance", desc: "■自分のステージのキャラ全ての攻撃力を+2する。" },
+    { category: "pack_3", type: "item", name: "拠りどこ露", originalCost: 3, cost: 3, effectValue: 0, image: "images/pack_3/ro.jpg", attribute: "reliance", desc: "■自分のステージのキャラが破壊されたとき、ランダムな自分のステージのキャラ1枚のライフを+1する。" },
   ]
 }
 
@@ -879,7 +879,7 @@ window.useBurnSkill = function(zone) {
         if (!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card }); 
         renderAll(); sendGameState(); 
       };
-      infoPanel.innerHTML = `🎯 ソウルを増やす自分のモンスターをクリック！`;
+      infoPanel.innerHTML = `キャラ1枚を自分のステージから選択してください`;
       infoPanel.style.backgroundColor = "rgba(241, 196, 15, 0.8)"; 
       renderAll();
       return;
@@ -1215,7 +1215,7 @@ function attachStageListeners() {
           infoPanel.style.backgroundColor = "#ecf0f1"; 
           renderAll(); sendGameState();
         };
-        infoPanel.innerHTML = `🎯 接続する対象のモンスターをクリックしてください！`;
+        infoPanel.innerHTML = `接続するキャラを選択してください`;
         infoPanel.style.backgroundColor = "#00bcd4"; 
         renderAll();
       }
@@ -1582,7 +1582,7 @@ function playCard(cardId, targetZone, pId) {
                   isSelectingStage = false; selectionStageCallback = null; pendingSelection = null;
                   infoPanel.style.backgroundColor = "#ecf0f1"; renderAll(); sendGameState();
               };
-              infoPanel.innerHTML = `🎯 相手のリーダーと接続させる相手モンスターをクリック！`;
+              infoPanel.innerHTML = `相手のリーダーと接続させる相手キャラ1枚を選択してください`;
               infoPanel.style.backgroundColor = "#00bcd4"; renderAll(); 
               return true; // 選択モード待機
           }
@@ -1642,7 +1642,7 @@ function playCard(cardId, targetZone, pId) {
               showCardEffect(playedCard); if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: playedCard });
               renderAll(); sendGameState(); 
             };
-            infoPanel.innerHTML = `🎯 ソウルに入れる手札をクリックしてください！`;
+            infoPanel.innerHTML = `ソウルに入れる手札1枚を選択してください`;
             infoPanel.style.backgroundColor = "#f1c40f"; 
             showCardEffect(playedCard); if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: playedCard });
             renderAll(); return true; 
@@ -1666,7 +1666,7 @@ function playCard(cardId, targetZone, pId) {
                     showCardEffect(playedCard); if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: playedCard });
                     renderAll(); sendGameState(); 
                   };
-                  infoPanel.innerHTML = `🎯 ロストする相手のモンスターをクリック！`;
+                  infoPanel.innerHTML = `ロストする相手のキャラ1枚を選択してください`;
                   infoPanel.style.backgroundColor = "#f1c40f"; 
                   showCardEffect(playedCard); if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: playedCard });
                   renderAll(); return true;
@@ -1724,7 +1724,7 @@ function playCard(cardId, targetZone, pId) {
             showCardEffect(card); if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card });
             renderAll(); sendGameState();
         };
-        infoPanel.innerHTML = `🎯 変身する自分のモンスターかリーダーをクリックしてください！`;
+        infoPanel.innerHTML = `変身させる自分のキャラかリーダーを選択してください`;
         infoPanel.style.backgroundColor = "#9b59b6";
         renderAll();
         return; 
@@ -1839,7 +1839,7 @@ function playCard(cardId, targetZone, pId) {
         renderAll(); sendGameState(); 
       };
       
-      infoPanel.innerHTML = `🎯 対象にする相手のモンスターをクリックしてください！`;
+      infoPanel.innerHTML = `キャラ1枚を選択してください`;
       infoPanel.style.backgroundColor = "#f1c40f"; 
       renderAll();
       return; 
@@ -1950,7 +1950,7 @@ function playCard(cardId, targetZone, pId) {
           if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card });
           renderAll(); sendGameState(); 
         };
-        infoPanel.innerHTML = `🎯 ロストする手札をクリックしてください！`;
+        infoPanel.innerHTML = `ロストする手札を選択してください！`;
         infoPanel.style.backgroundColor = "#f1c40f"; 
         showCardEffect(card); 
         if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card });
@@ -2014,7 +2014,7 @@ function playCard(cardId, targetZone, pId) {
             if (tZone === 'leader') return;
             if (!firstTarget) {
                 firstTarget = { pid: tPid, zone: tZone };
-                infoPanel.innerHTML = `🎯 2枚目のモンスターをクリックしてください！`;
+                infoPanel.innerHTML = `選択したキャラと接続するキャラを選択してください`;
                 renderAll(); return;
             }
             consumeThisMagic();
@@ -2024,7 +2024,7 @@ function playCard(cardId, targetZone, pId) {
             showCardEffect(card); if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card });
             renderAll(); sendGameState();
         };
-        infoPanel.innerHTML = `🎯 接続する1枚目のモンスターをクリックしてください！`;
+        infoPanel.innerHTML = `🎯 接続する1枚目のキャラをクリックしてください！`;
         infoPanel.style.backgroundColor = "#00bcd4";
         renderAll(); return; 
     }
@@ -2066,7 +2066,7 @@ function playCard(cardId, targetZone, pId) {
             if (!firstTarget) {
                 // 1枚目（破壊する対象）を記憶
                 firstTarget = { pid: tPid, zone: tZone, card: tCard };
-                infoPanel.innerHTML = `🎯 2枚目のモンスター（HPを吸収する対象）をクリックしてください！`;
+                infoPanel.innerHTML = `ライフを+するキャラ1枚を選択してください`;
                 renderAll(); return;
             }
 
@@ -2089,7 +2089,7 @@ function playCard(cardId, targetZone, pId) {
             showCardEffect(card); if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card });
             renderAll(); sendGameState();
         };
-        infoPanel.innerHTML = `🎯 破壊する1枚目のモンスターをクリックしてください！`;
+        infoPanel.innerHTML = `破壊するキャラをクリックしてください`;
         infoPanel.style.backgroundColor = "#00bcd4";
         renderAll(); return; 
     }
