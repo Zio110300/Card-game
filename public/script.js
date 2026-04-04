@@ -552,7 +552,12 @@ socket.on('game_updated', (gameState) => {
   players = gameState.players; currentTurn = gameState.currentTurn; isGameOver = gameState.isGameOver; 
   isGameStarted = true;
   infoPanel.style.backgroundColor = "#ecf0f1"; 
+  
   if (!isGameOver) {
+     // 👇 追加：新しいゲームが始まっていたらリザルト画面を強制的に消す！
+     if (typeof hideResultScreen === 'function') hideResultScreen(); 
+     window.isResultProcessing = false;
+     
      if (myPlayerId === currentTurn) { infoPanel.innerHTML = `🟢 あなたのターンです！`; } 
      else { infoPanel.innerHTML = `⏳ 相手のターンです...`; }
   }
@@ -568,7 +573,7 @@ socket.on('game_retry', () => {
   if (myPlayerId === 1) { 
     isGameStarted = false; 
     startGame(); sendGameState();
-  } else { infoPanel.innerHTML = `⏳ 相手の準備を待っています...`; }
+  }
 });
 
 function sendGameState() {
@@ -2417,7 +2422,12 @@ document.getElementById("new-retry-btn").addEventListener("click", () => {
   }
   document.getElementById("new-retry-btn").style.display = "none";
   document.getElementById("result-message").innerText = `相手の承認を待っています...`;
-  socket.emit('request_retry', myRoomId); 
+  socket.emit('request_retry', myRoomId);
+  if (myPlayerId === 1) {
+      hideResultScreen();
+      startGame();
+      sendGameState();
+  } 
 });
 
 document.getElementById("back-home-btn").addEventListener("click", () => {
