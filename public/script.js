@@ -862,9 +862,14 @@ window.useBurnSkill = function(zone) {
 
   if (card.name === "\"Comact OPElator of No.1\" LA4000") {
       isSelectingStage = true;
+      window.cancelActionCallback = () => { card.burnActive = false; renderAll(); }; 
       selectionStageCallback = function(targetPid, targetZone) {
         if (targetPid !== myPlayerId || targetZone === 'leader') return; 
         let targetCard = p.stage[targetZone];
+        if (!targetCard) return; 
+        
+        window.cancelActionCallback = null; 
+        targetCard.soul.push({name: "オーラ", type: "soul"});
         if (!targetCard) return; 
         
         targetCard.soul.push({name: "オーラ", type: "soul"});
@@ -1477,6 +1482,19 @@ function playCard(cardId, targetZone, pId) {
 
   // 👇 追加：登場時効果を処理する専用の内部関数 👇
   const executeEnterEffects = (playedCard, tZone) => {
+      // 👇 ここに revertSummon を追加！
+      const revertSummon = () => {
+          p.mp += playedCard.cost;
+          p.stage[tZone] = null;
+          playedCard.soul = [];
+          playedCard.attackCount = 0;
+          playedCard.hasBarrier = false;
+          playedCard.infection = false;
+          playedCard.burnActive = false;
+          playedCard.turnAttackBoost = 0;
+          p.hand.push(playedCard); 
+      };
+
       if (p.leader && p.leader.name === "\"Absolutely Main Gamer\" ONE") {
           if (tZone !== 'leader' && p.stage[tZone]) p.stage[tZone].soul.push({name: "オーラ", type: "soul"});
       }
@@ -1556,8 +1574,10 @@ function playCard(cardId, targetZone, pId) {
           let targets = ['left', 'center', 'right'].filter(z => players[oppId].stage[z] !== null);
           if (targets.length > 0 && !(isSoloMode && pId === 2)) {
               isSelectingStage = true;
+              window.cancelActionCallback = revertSummon;
               selectionStageCallback = function(tPid, selZone) {
                   if (tPid !== oppId || selZone === 'leader') return;
+                  window.cancelActionCallback = null;
                   connectCards(oppId, 'leader', tPid, selZone); 
                   isSelectingStage = false; selectionStageCallback = null; pendingSelection = null;
                   infoPanel.style.backgroundColor = "#ecf0f1"; renderAll(); sendGameState();
@@ -1612,8 +1632,10 @@ function playCard(cardId, targetZone, pId) {
             p.hand.splice(randIndex, 1);
         } else {
             isSelectingHand = true;
+            window.cancelActionCallback = revertSummon;
             selectionCallback = function(selectedIndex) {
               let targetHandCard = p.hand[selectedIndex];
+              window.cancelActionCallback = null;
               if (tZone !== 'leader' && p.stage[tZone]) p.stage[tZone].soul.push(targetHandCard);
               p.hand.splice(selectedIndex, 1);
               isSelectingHand = false; selectionCallback = null; pendingSelection = null;
@@ -1634,8 +1656,10 @@ function playCard(cardId, targetZone, pId) {
                   destroyCard(oppId, randZone, true); 
               } else {
                   isSelectingStage = true;
+                  window.cancelActionCallback = revertSummon;
                   selectionStageCallback = function(targetPid, selZone) {
-                    if (targetPid !== oppId || selZone === 'leader') return; 
+                    if (targetPid !== oppId || selZone === 'leader') return;
+                    window.cancelActionCallback = null; 
                     destroyCard(oppId, selZone, true);
                     isSelectingStage = false; selectionStageCallback = null; pendingSelection = null; 
                     infoPanel.style.backgroundColor = "rgba(236, 240, 241, 0.8)"; 
@@ -1756,6 +1780,24 @@ function playCard(cardId, targetZone, pId) {
     let extraMagicDmg = 0;
     if (p.leader && p.leader.name === "狂気の大魔術師") extraMagicDmg += 1;
 
+    // 👇 追加：魔法カードのコスト消費を保留させる関数！
+    const consumeThisMagic = () => {
+        let cIdx = p.hand.findIndex(c => c.id === cardId);
+        if (cIdx !== -1) {
+            p.mp -= card.cost;
+            p.hand.splice(cIdx, 1);
+            sendToTrashOrLost(pId, [card]);
+        }
+    };
+
+    let isTargetedMagic = ["アイススピアー！", "あなたをおしえて", "信用"].includes(card.name);
+    if (card.name === "侵界の光" && p.hand.length > 0 && !(isSoloMode && pId === 2)) {
+        isTargetedMagic = true;
+    }
+
+    // 対象を取らない魔法なら、ここで即座にコストを払う
+    if (!isTargetedMagic) { consumeThisMagic(); }
+
     if (card.name === "アイススピアー！") {
       isSelectingStage = true;
       selectionStageCallback = function(targetPid, targetZone) {
@@ -1767,9 +1809,7 @@ function playCard(cardId, targetZone, pId) {
             return;
         } 
 
-        p.mp -= card.cost;
-        p.hand.splice(cardIndex, 1);
-        sendToTrashOrLost(pId, [card]);
+        consumeThisMagic();
 
         let dmg = card.effectValue + extraMagicDmg; 
         if (p.weapon && p.weapon.name === "魔法の杖") dmg += 1;
@@ -1804,9 +1844,6 @@ function playCard(cardId, targetZone, pId) {
       renderAll();
       return; 
     }
-
-    p.mp -= card.cost; p.hand.splice(cardIndex, 1); 
-    sendToTrashOrLost(pId, [card]); 
     
     if (card.name === "RBA") {
         p.leader.hasBarrier = true;
@@ -1900,6 +1937,7 @@ function playCard(cardId, targetZone, pId) {
       } else if (!(isSoloMode && pId === 2)) {
         isSelectingHand = true;
         selectionCallback = function(selectedIndex) {
+          consumeThisMagic();
           let targetCard = p.hand[selectedIndex];
           p.lostZone.push(resetCardState(targetCard)); 
           p.hand.splice(selectedIndex, 1); 
@@ -1979,6 +2017,7 @@ function playCard(cardId, targetZone, pId) {
                 infoPanel.innerHTML = `🎯 2枚目のモンスターをクリックしてください！`;
                 renderAll(); return;
             }
+            consumeThisMagic();
             connectCards(firstTarget.pid, firstTarget.zone, tPid, tZone);
             isSelectingStage = false; selectionStageCallback = null; pendingSelection = null;
             infoPanel.style.backgroundColor = "#ecf0f1";
@@ -2030,6 +2069,8 @@ function playCard(cardId, targetZone, pId) {
                 infoPanel.innerHTML = `🎯 2枚目のモンスター（HPを吸収する対象）をクリックしてください！`;
                 renderAll(); return;
             }
+
+            consumeThisMagic();
             
             // 2枚目が選ばれたら処理を実行
             let hpGain = firstTarget.card.hp;
@@ -2477,7 +2518,12 @@ document.addEventListener("click", (e) => {
     return;
   }
 
-  // 👇 ここからキャンセル処理（適当な背景をクリックした時）
+// 👇 ここからキャンセル処理（適当な背景をクリックした時）
+  
+  if (typeof window.cancelActionCallback === 'function') {
+      window.cancelActionCallback(); // 👈 巻き戻し処理を発動！
+      window.cancelActionCallback = null;
+  }
 
   // 1. カード上の【起動】【燃焼】ボタンをすべて消す
   document.querySelectorAll('.card-action-overlay').forEach(o => o.remove());
