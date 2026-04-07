@@ -94,8 +94,9 @@ function resetCardState(card) {
 
 function getCardInfoText(card) {
   const attrMap = { 
-    fire: "🔥炎", water: "💧水", wood: "🌿木", light: "✨光", dark: "🌙闇", neutral: "⚪無", god: "👁️神", sea_god: "🌊海神", human: "👤人", spirit: "👻霊", magic_attr: "🔮魔", fairy_attr: "🧚精霊", fire_magic: "🔥熱/魔", electric_magic: "⚡電気/魔",
-    bice: "🏎️BICE", bice_epic: "👑BICE/EPIC", reliance: "🤝依存"
+    fire: "🔥炎", water: "💧水", wood: "🌿木", light: "✨光", dark: "🌙闇", neutral: "⚪無", god: "👼神", sea_god: "🌊海神", human: "👤人", spirit: "👻霊", magic_attr: "🔮魔", fairy_attr: "🧚精霊", fire_magic: "🔥熱/魔", electric_magic: "⚡電気/魔",
+    bice: "🏎️BICE", bice_epic: "👑BICE/EPIC", reliance: "🤝依存",
+    magic_human: "👤🔮人/魔", beast_human: "🐺👤獣/人", machine: "⚙️機械", dragon_human: "🐉👤竜/人" // 👈 この1行を追加！
   };
   const attrName = attrMap[card.attribute] || "不明";
   
@@ -129,6 +130,23 @@ function getCardInfoText(card) {
       }
     }
     if (ownerId && players[ownerId].lostZone.length > 0) { displayAttack += card.soul.length; }
+  }
+
+  if (card.type === "monster") {
+      let ownerId = null;
+      let isOnStage = false;
+      for (let i = 1; i <= 2; i++) {
+          if (players[i] && players[i].stage) {
+              Object.values(players[i].stage).forEach(c => { 
+                  if (c && c.id === card.id) { ownerId = i; isOnStage = true; }
+              });
+          }
+      }
+      if (isOnStage && ownerId) {
+          Object.values(players[ownerId].stage).forEach(c => {
+              if (c && c.name === "戦女神の加護") displayAttack += c.effectValue;
+          });
+      }
   }
 
   if (card.type === "monster" || card.type === "leader") statsText = `(攻撃: ${displayAttack} / ライフ: ${card.hp})`;
@@ -264,7 +282,7 @@ soloModeBtn.addEventListener("click", () => {
   let bossType = document.getElementById("solo-boss-select").value;
   
   opponentDeck = [];
-  let aiCardTypes = getCardTypes().filter(c => c.category === "test" && c.type === "monster");
+  let aiCardTypes = getCardTypes().filter(c => c.category === "general" && c.type === "monster");
   for(let i=0; i<DECK_LIMIT; i++) {
     opponentDeck.push(JSON.parse(JSON.stringify(aiCardTypes[Math.floor(Math.random() * aiCardTypes.length)])));
   }
@@ -360,6 +378,20 @@ const myLeaderBoard = document.getElementById("my-leader-board");
   zone.addEventListener("dragleave", e => { zone.style.backgroundColor = ""; });
 });
 
+// 👇👇 ここに追加：マウスホイールで快適に横スクロールできるようにする 👇👇
+[myDeckBoard, catalogBoard].forEach(board => {
+  if (board) {
+    board.addEventListener("wheel", e => {
+      // 縦ホイールの動きを横スクロールに変換する
+      if (e.deltaY !== 0 && e.deltaX === 0) {
+        e.preventDefault();
+        board.scrollLeft += e.deltaY;
+      }
+    }, { passive: false });
+  }
+});
+// 👆👆 追加ここまで 👆👆
+
 myDeckBoard.addEventListener("drop", e => {
   e.preventDefault(); myDeckBoard.style.backgroundColor = "";
   try {
@@ -442,6 +474,23 @@ function generateCardHtml(card, extraAttrs = "", extraClass = "", badgeCount = 1
     if (ownerId && players[ownerId].lostZone.length > 0) {
       displayAttack += card.soul.length;
     }
+  }
+
+  if (card.type === "monster") {
+      let ownerId = null;
+      let isOnStage = false;
+      for (let i = 1; i <= 2; i++) {
+          if (players[i] && players[i].stage) {
+              Object.values(players[i].stage).forEach(c => { 
+                  if (c && c.id === card.id) { ownerId = i; isOnStage = true; }
+              });
+          }
+      }
+      if (isOnStage && ownerId) {
+          Object.values(players[ownerId].stage).forEach(c => {
+              if (c && c.name === "戦女神の加護") displayAttack += c.effectValue;
+          });
+      }
   }
 
   let statsHtml = ""; 
@@ -587,7 +636,7 @@ function sendGameState() {
 
 function getCardTypes() {
   return [
-    { category: "pack_1", type: "leader", name: "蒼深の砂時計", originalCost: 0, cost: 0, attack: 0, hp: 20, image: "images/pack_1/sunadokei.jpg", attribute: "sea_god", desc: "<br>■【アクト】このカードをレストし、お互いのロストからカードをランダムに1枚手札に加える。<br>■自分のカードがドロップゾーンに置かれる時、代わりにロストに置く。" },
+    { category: "pack_1", type: "leader", name: "蒼深の砂時計", originalCost: 0, cost: 0, attack: 0, hp: 15, image: "images/pack_1/sunadokei.jpg", attribute: "sea_god", desc: "<br>■【アクト】このカードをレストし、お互いのロストからカードをランダムに1枚手札に加える。<br>■自分のカードがドロップゾーンに置かれる時、代わりにロストに置く。" },
     { category: "pack_1", type: "monster", name: "海神 アオクジラ", originalCost: 6, cost: 6, attack: 1, hp: 6, image: "images/pack_1/aokujira.jpg", attribute: "sea_god", evolution: true, doubleAttack: true, pierce: true, ward: true, soulGuard: true, desc: "<br>■【コール時】自分の手札1枚を選択してこのカードのソウルに入れる。<br>■自分のロストゾーンにカードがあるなら、このカードの攻撃力をこのカードのソウルの枚数分、+する。" },
     { category: "pack_1", type: "monster", name: "生春 アオハル", originalCost: 3, cost: 3, attack: 1, hp: 1, image: "images/pack_1/aoharu.jpg", attribute: "sea_god", desc: "<br>■自分か相手のロストにカードがあるなら手札のこのカードのコストを0にする。<br>■【コール】このカードがセンターにコールされた時、レフトとライトに同名カードをコールする。" },
     { category: "pack_1", type: "monster", name: "冬辞 アオトウ", originalCost: 4, cost: 4, attack: 1, hp: 2, image: "images/pack_1/aotou.jpg", attribute: "sea_god", ward: true, desc: "<br>■【コール】相手のステージにいるキャラ1枚を選択し、ロストする。" },
@@ -600,28 +649,31 @@ function getCardTypes() {
     { category: "pack_1", type: "magic", name: "侵界の光", originalCost: 4, cost: 4, image: "images/pack_1/shinnkainohikari.jpg", attribute: "sea_god", desc: "<br>■自分の手札1枚をロストし、カードを2枚引く。" },
     { category: "pack_1", type: "monster", name: "蒼神", originalCost: 11, cost: 11, attack: 30, hp: 30, image: "images/pack_1/soushinn.jpg", attribute: "sea_god", desc: "<br>■お互いのロスト合計が10枚以上なら、手札のこのカードのコストは10になる。" },
 
-    { category: "test", type: "leader", name: "王国の勇者", originalCost: 0, cost: 0, attack: 1, hp: 20, image: "👦", attribute: "human", doubleAttack: true, desc: "<br>■このカードがキャラを攻撃したとき、反撃を受ける。<br>【2回攻撃】" },
-    { category: "test", type: "leader", name: "森の長", originalCost: 0, cost: 0, attack: 0, hp: 15, image: "🧝", attribute: "spirit", desc: "<br>■【ターン終了時】自分のターン終了時、残りのPP全てを消費し、消費した分リーダーのライフを回復する。" },
-    { category: "test", type: "leader", name: "狂気の大魔術師", originalCost: 0, cost: 0, attack: 0, hp: 20, image: "🧙‍♂️", attribute: "magic_attr", desc: "<br>■自分の魔法カードが与えるダメージを+1する。" },
-    { category: "test", type: "monster", name: "フェアリー", originalCost: 1, cost: 1, attack: 1, hp: 1, image: "images/faily.jpg", attribute: "fairy_attr", desc: "<br>■【ラストレスポンス】このカードをドロップゾーンに置く代わりにデッキの下に置く。" },
-    { category: "test", type: "monster", name: "ファイター", originalCost: 2, cost: 2, attack: 2, hp: 2, image: "👦", attribute: "human", arts: 4, desc: "<br>■【アーツ4】このカードの攻撃力とライフを+3する。" },
-    { category: "test", type: "monster", name: "ゾンビ", originalCost: 2, cost: 2, attack: 1, hp: 3, image: "🧟", attribute: "magic_attr", desc: "<br>■このカードがダメージを与えた時、その対象に【感染症】(ターン終了時1ダメージを受け治癒)を付与する。" },
-    { category: "test", type: "monster", name: "ユニコ", originalCost: 3, cost: 3, attack: 2, hp: 3, image: "🦄", attribute: "fairy_attr", desc: "<br>■【ターン終了時】自分のターン終了時、自分のリーダーとこのカードのライフを1回復する。" },
-    { category: "test", type: "monster", name: "ゴリアテ", originalCost: 5, cost: 5, attack: 6, hp: 7, image: "💪", attribute: "neutral", desc: "「圧倒的な力を持つ巨人。」" },
-    { category: "test", type: "monster", name: "エルフ", originalCost: 3, cost: 3, attack: 1, hp: 2, image: "🌿", skillType: "draw", skillValue: 1, desc: "常時：ドロー＋1", attribute: "wood" },
-    { category: "test", type: "monster", name: "重装歩兵", originalCost: 4, cost: 4, attack: 2, hp: 4, image: "🛡️", skillType: "guard", skillValue: 1, attribute: "human", desc: "<br>■このカードがセンターにいるとき、このカードが受けるダメージを1にする。" },
-    { category: "test", type: "monster", name: "老練なる有段者", originalCost: 4, cost: 4, attack: 2, hp: 4, image: "🥋", attribute: "human", desc: "<br>■このカードが受けるダメージを2減らす。" },
-    { category: "test", type: "monster", name: "ライトブラザーズ", originalCost: 3, cost: 3, attack: 2, hp: 2, image: "👨‍👦", attribute: "human", desc: "<br>■【コール】このカードがレフトにコールされたとき、自分のライトに同名のカードをコールする。<br>■【コール】自分のリーダーのライフを1回復する。" },
-    { category: "test", type: "magic", name: "ファイアボール", originalCost: 2, cost: 2, effectValue: 4, image: "🔥", attribute: "fire_magic", desc: "<br>■自分のステージに属性「魔」のカードがあり、自分のセンターにキャラがいないなら使える。相手リーダーにダメージ4。" },
-    { category: "test", type: "magic", name: "ヒール", originalCost: 1, cost: 1, effectValue: 2, image: "🧪", desc: "味方を2回復", attribute: "water" },
-    { category: "test", type: "magic", name: "アイススピアー！", originalCost: 2, cost: 2, effectValue: 3, image: "🧊", attribute: "fire_magic", desc: "<br>■相手のキャラ1枚を選択し、ダメージ3。" },
-    { category: "test", type: "magic", name: "サンダーストーム！", originalCost: 3, cost: 3, effectValue: 2, image: "🌩️", attribute: "electric_magic", desc: "<br>■相手のステージにいるキャラ全てにダメージ2。" },
-    { category: "test", type: "set_magic", name: "豊穣の祭壇", originalCost: 3, cost: 3, image: "🌾", desc: "毎ターンPP＋1", attribute: "wood" },
-    { category: "test", type: "set_magic", name: "戦神の旗", originalCost: 4, cost: 4, effectValue: 2, image: "🚩", desc: "味方攻撃＋2", attribute: "fire" },
-    { category: "test", type: "item", name: "鉄の剣", originalCost: 2, cost: 2, effectValue: 2, image: "🗡️", desc: "プレイヤー攻撃＋2", attribute: "neutral" },
-    { category: "test", type: "item", name: "魔法の杖", originalCost: 3, cost: 3, effectValue: 1, image: "🪄", attribute: "magic_attr", desc: "<br>■【アクト】PPを4消費して相手に4ダメージを与える。" },
-    
-    { category: "pack_2", type: "leader", name: "\"Absolutely Main Gamer\" ONE", originalCost: 0, cost: 0, attack: 1, hp: 16, image: "images/pack_2/ONE.jpg", attribute: "bice_epic", desc: "<br>■自分のステージにカードがコールされたとき、そのカードのソウルを+1する。<br>■【起動】PPを1消費する。このターン中、このカードの攻撃力+1。" },
+    { category: "general", type: "leader", name: "王国の勇者", originalCost: 0, cost: 0, attack: 1, hp: 20, image: "images/general/yuusha.jpg", attribute: "human", doubleAttack: true, desc: "【2回攻撃】" },
+    { category: "general", type: "leader", name: "森林の長 フォルエル", originalCost: 0, cost: 0, attack: 0, hp: 15, image: "images/general/mori.jpg", attribute: "spirit", desc: "■【ターン終了時】自分のターン終了時、自分の残りPPが2以上なら、相手のステージにいるキャラ全てのHPを-1する。<br>■【ターン終了時】自分のターン終了時、残りのPP全てを消費する。消費した分、自分のリーダーのライフを回復する。" },
+    { category: "general", type: "leader", name: "狂気の大魔術師", originalCost: 0, cost: 0, attack: 0, hp: 20, image: "images/general/which.jpg", attribute: "magic_attr", desc: "■【アクト】PPを6消費して相手に12ダメージを与える。<br>■自分の魔法が与えるダメージを+1する。" },
+    { category: "general", type: "monster", name: "フェアリー", originalCost: 1, cost: 1, attack: 1, hp: 1, image: "images/general/fairy.jpg", attribute: "fairy_attr", desc: "■【コール】相手のステージからレスト状態のキャラ1枚を選択し、破壊する。" },
+    { category: "general", type: "monster", name: "くノ一", originalCost: 1, cost: 1, attack: 1, hp: 2, image: "images/general/kunoichi.jpg", attribute: "human", desc: "■【アクト】このカードを手札に戻す。" },
+    { category: "general", type: "monster", name: "魔法科学生", originalCost: 1, cost: 1, attack: 1, hp: 1, image: "images/general/student.jpg", attribute: "magic_human", desc: "■【コール】デッキからコスト1の魔法をランダムに1枚手札に加える。" },
+    { category: "general", type: "monster", name: "ファイター", originalCost: 2, cost: 2, attack: 2, hp: 2, image: "images/general/fighter.jpg", attribute: "beast_human", arts: 4, desc: "■自分のPPが4以上なら、手札のこのカードのコストは4になり、「このカードがステージに出たとき、このカードの攻撃力とライフを+3する」を持つ。" },
+    { category: "general", type: "monster", name: "ゾンビ", originalCost: 2, cost: 2, attack: 1, hp: 3, image: "images/general/zombe.jpg", attribute: "magic_attr", desc: "■このカードがダメージを与えた時、その対象に【感染症】を付与する。" },
+    { category: "general", type: "monster", name: "魔導騎兵", originalCost: 2, cost: 2, attack: 1, hp: 1, image: "images/general/makisi.jpg", attribute: "machine", desc: "■【コール】目の前のキャラにダメージ2。<br>■このカードが受けるダメージを-1する。" },
+    { category: "general", type: "monster", name: "ヴァンパイア", originalCost: 3, cost: 3, attack: 1, hp: 1, image: "images/general/vampia.jpg", attribute: "magic_attr", drain: true, desc: "【ドレイン】<br>■【コール】自身と同名のカード2枚をコールする。" },
+    { category: "general", type: "monster", name: "月ウサギ アイリス", originalCost: 3, cost: 3, attack: 2, hp: 2, image: "images/general/tuki.jpg", attribute: "fairy_attr", ward: true, desc: "【守護】<br>■【ターン終了時】自分のターン終了時、自身と自分のリーダーのライフを+1する。" },
+    { category: "general", type: "monster", name: "地縛霊 プイズ", originalCost: 3, cost: 3, attack: 1, hp: 3, image: "images/general/ghost.jpg", attribute: "spirit", desc: "■【コール】相手のステージにいるキャラ全てにダメージ1。" },
+    { category: "general", type: "monster", name: "黒鱗の竜人", originalCost: 4, cost: 4, attack: 3, hp: 4, image: "images/general/brock.jpg", attribute: "dragon_human", desc: "■このカードがセンターにいるとき、このカードが受けるダメージを1にする。" },
+    { category: "general", type: "monster", name: "白鱗の竜人", originalCost: 4, cost: 4, attack: 2, hp: 4, image: "images/general/dragonW.jpg", attribute: "dragon_human", desc: "■このカードが受けるダメージを2減らす。" },
+    { category: "general", type: "monster", name: "牛鬼", originalCost: 5, cost: 5, attack: 6, hp: 7, image: "images/general/gyuuki.jpg", attribute: "magic_attr", desc: "特殊能力なし。" },
+    { category: "general", type: "magic", name: "スプリングティー", originalCost: 1, cost: 1, image: "images/general/tea.jpg", attribute: "fairy_attr", desc: "■自分のキャラ全てと自分のリーダーのライフを+2する。" },
+    { category: "general", type: "magic", name: "黒炎弾", originalCost: 1, cost: 1, image: "images/general/kokuenn.jpg", attribute: "fire_magic", desc: "■「相手のステージにいるキャラからランダム1枚にダメージ1。」を2回行う。" },
+    { category: "general", type: "magic", name: "フロストバブル", originalCost: 2, cost: 2, image: "images/general/ice.jpg", attribute: "fire_magic", desc: "■自分のステージにアクティブ状態のカードがあるなら使える。<br>■相手のステージにいるキャラからランダム1枚にダメージ4。相手のリーダーにダメージ1！" },
+    { category: "general", type: "magic", name: "サンダーボルト！", originalCost: 3, cost: 3, image: "images/general/sander.jpg", attribute: "electric_magic", desc: "■相手のステージのキャラ全てにダメージ2。<br>■このターン中、自分のステージにいるキャラ全ての攻撃力を+1する。" },
+    { category: "general", type: "set_magic", name: "生命の象徴 千年樹", originalCost: 3, cost: 3, image: "images/general/houjou.jpg", attribute: "god", desc: "【設置】<br>■【ターン終了時】自分のターン終了時、自分のPPとリーダーのライフを+1する。" },
+    { category: "general", type: "set_magic", name: "戦女神の加護", originalCost: 4, cost: 4, effectValue: 2, image: "images/general/ken.jpg", attribute: "god", desc: "【設置】<br>■自分のステージにいるキャラ全ての攻撃力を+2する。" },
+    { category: "general", type: "item", name: "勇者の剣", originalCost: 2, cost: 2, effectValue: 2, image: "images/general/sord.jpg", attribute: "magic_attr", desc: "プレイヤー攻撃力+2" },
+    { category: "general", type: "item", name: "魔法の杖", originalCost: 3, cost: 3, effectValue: 1, image: "images/general/wand.jpg", attribute: "magic_attr", desc: "プレイヤー攻撃力+1<br>■自分が魔法を使った後、自分のPPを1回復する。" },
+
+    { category: "pack_2", type: "leader", name: "\"Absolutely Main Gamer\" ONE", originalCost: 0, cost: 0, attack: 1, hp: 16, image: "images/pack_2/ONE.jpg", attribute: "bice_epic", desc: "<br>■自分のステージにカードがコールされたとき、そのカードのソウルを+1する。<br>■【アクト】PPを1消費する。このターン中、このカードの攻撃力+1。" },
     { category: "pack_2", type: "monster", name: "\"Born from competition\" GR", originalCost: 1, cost: 1, attack: 1, hp: 2, image: "images/pack_2/GXPA.jpg", attribute: "bice_epic", soulGuard: true, desc: "<br>■自分のステージの「BICE」キャラが破壊された時、自身とリーダーのライフを1回復。<br>■このカードは攻撃されない。" },
     { category: "pack_2", type: "monster", name: "\"Get Ready Going To\" LFA", originalCost: 8, cost: 8, attack: 8, hp: 4, image: "images/pack_2/GRGT.jpg", attribute: "bice_epic", soulGuard: true, pierce: true, accel: 6, burn: true, desc: "<br>■【アクセラ6】自分の「GR」の上に重ねてステージにコールできる。<br>■【燃焼】このターン中、このカードは【超貫通】を持つ。" },
     { category: "pack_2", type: "monster", name: "\"Re Born in 2600\" BNR34", originalCost: 2, cost: 2, attack: 1, hp: 2, image: "images/pack_2/GTR.jpg", attribute: "bice", soulGuard: true, arts: 3, burn: true, desc: "<br>■【燃焼】このターン中、このカードがリーダーへ与えるダメージを+2する。<br>■【アーツ3】このカードの攻撃力とライフ+2する。" },
@@ -635,9 +687,9 @@ function getCardTypes() {
     { category: "pack_2", type: "magic", name: "Absolute punisher！", originalCost: 11, cost: 11, image: "images/pack_2/punisher.jpg", attribute: "bice", desc: "<br>■自分の場のキャラが破壊された時、このカードのコストを-1する。<br>■リーダーが「ONE」でお互いセンターが空なら使える。<br>■相手リーダーにダメージ11！" },
 
     { category: "pack_3", type: "leader", name: "≪Conecting other world≫ ヴァイス&シュヴァルツ", originalCost: 0, cost: 0, attack: 0, hp: 20, image: "images/pack_3/shirokuro.jpg", attribute: "reliance", connectSkill: true, desc: "<br>■【コネクト】自分のステージからキャラ1枚を選択し、このカードと「接続」する。<br>■自分のステージのキャラが「接続」状態になったとき、そのキャラのライフを+2する。" },
-    { category: "pack_3", type: "monster", name: "≪Overconfidence≫ スターレット", originalCost: 3, cost: 3, attack: 2, hp: 1, image: "images/pack_3/sutarlet.jpg", attribute: "reliance", connectSkill: true, desc: "<br>■このカードは相手のカードの効果で選択されない。<br>■【コール】自分のデッキからコスト2以下の属性「リライアンス」を持つキャラ1枚をコールし、自分のステージのキャラ全てのライフを+1する。<br>■【起動】ステージのキャラ1枚を選択し、自身と「接続」する。" },
+    { category: "pack_3", type: "monster", name: "≪Overconfidence≫ スターレット", originalCost: 3, cost: 3, attack: 2, hp: 1, image: "images/pack_3/sutarlet.jpg", attribute: "reliance", connectSkill: true, desc: "<br>■このカードは相手のカードの効果で選択されない。<br>■【コール】自分のデッキからコスト2以下の属性「リライアンス」を持つキャラ1枚をコールし、自分のステージのキャラ全てのライフを+1する。<br>■【アクト】ステージのキャラ1枚を選択し、自身と「接続」する。" },
     { category: "pack_3", type: "monster", name: "≪Trust myself≫ ラパン", originalCost: 2, cost: 2, attack: 1, hp: 1, image: "images/pack_3/rapane.jpg", attribute: "reliance", desc: "<br>■【コール】このカードと同名のカード1枚をレフトにコールし、このカードと「接続」する。" },
-    { category: "pack_3", type: "monster", name: "≪相死相愛≫ α&β", originalCost: 4, cost: 4, attack: 2, hp: 2, image: "images/pack_3/aruvel.jpg", attribute: "reliance", drain: true, connectSkill: true, desc: "<br>■【コール】自分のデッキから属性「リライアンス」を持つコスト3以下のキャラ2種類を1枚ずつコールする。<br>■【起動】ステージのキャラ1枚を選択し、自身と「接続」する。<br>【ドレイン】" },
+    { category: "pack_3", type: "monster", name: "≪相死相愛≫ α&β", originalCost: 4, cost: 4, attack: 2, hp: 2, image: "images/pack_3/aruvel.jpg", attribute: "reliance", drain: true, connectSkill: true, desc: "<br>■【コール】自分のデッキから属性「リライアンス」を持つコスト3以下のキャラ2種類を1枚ずつコールする。<br>■【アクト】ステージのキャラ1枚を選択し、自身と「接続」する。<br>【ドレイン】" },
     { category: "pack_3", type: "monster", name: "≪耽溺≫ セロ&ローブ", originalCost: 3, cost: 3, attack: 1, hp: 1, image: "images/pack_3/copen.jpg", attribute: "reliance", burn: true, desc: "<br>■【燃焼】自分のステージにいるキャラ全ての攻撃力を+1する。" },
     { category: "pack_3", type: "monster", name: "≪従属≫ オデッセイ", originalCost: 2, cost: 2, attack: 1, hp: 1, image: "images/pack_3/odyssey.jpg", attribute: "reliance", desc: "<br>■【コール】このカードと同名のカード2枚を自分のステージにコールする。" },
     { category: "pack_3", type: "monster", name: "“絶対依存の情” マッハ", originalCost: 8, cost: 8, attack: 1, hp: 4, image: "images/pack_3/mahha.jpg", attribute: "reliance", transform: true, desc: "<br>■自分のリーダーが「接続」状態なら、手札のこのカードのコストを-2する。<br>■【コール】相手のキャラ1枚を選択し、相手のリーダーと「接続」する。<br>■【ターン終了時】自分のターン終了時、目の前のキャラにダメージ11！<br>【変身】" },
@@ -716,13 +768,15 @@ function destroyCard(playerId, zone, isLost = false) {
   let targetCard = p.stage[zone];
   if (!targetCard) return { destroyed: true };
 
-  // ▼ 追加: 接続先を道連れにするために相手のIDを記憶しておく ▼
   let linkedId = targetCard.isConnected;
-
-  // 破壊されたカード自身を渡して、そのペアだけ接続を切る！
   if (targetCard.isConnected) breakConnection(targetCard);
 
-  players[1].destroyedThisTurn++; players[2].destroyedThisTurn++;
+  let isSandglass = p.leader && p.leader.name === "蒼深の砂時計";
+  let actualLost = isLost || isSandglass; 
+
+  // 👇 追加：直接ロスト（isLost === true）の時は破壊時効果やソウルガードを無視する！
+  if (!isLost) {
+      players[1].destroyedThisTurn++; players[2].destroyedThisTurn++;
 
 // 👇 pack_3 破壊時効果 👇
   if (targetCard.type === "monster") {
@@ -762,9 +816,7 @@ function destroyCard(playerId, zone, isLost = false) {
     targetCard.hp = 1; 
     return { destroyed: true }; 
   }
-
-  let isSandglass = p.leader && p.leader.name === "蒼深の砂時計";
-  let actualLost = isLost || isSandglass; 
+  }
 
   let soulsToDrop = targetCard.soul ? [...targetCard.soul] : [];
 
@@ -806,15 +858,17 @@ window.useLeaderSkill = function() {
         p.hand.push(resetCardState(recoveredCard));
       }
   } else if (p.leader.name === "狂気の大魔術師") {
-      if (p.mp < 4 || p.leaderAttackCount >= maxAttacks) return;
+      if (p.mp < 6 || p.leaderAttackCount >= maxAttacks) return;
       p.leaderAttackCount++;
-      p.mp -= 4;
+      p.mp -= 6;
       let oppId = myPlayerId === 1 ? 2 : 1;
       let oppP = players[oppId];
       if (oppP.leader.hasBarrier) {
           oppP.leader.hasBarrier = false;
       } else {
-          oppP.hp -= 4;
+          oppP.hp -= 12;
+          triggerConnection(oppP.leader, 'damage', 12);
+          showFloatingTextOnElement(`p${oppId}-leader-zone`, 12, 'damage');
           const targetEl = document.getElementById(`p${oppId}-leader-zone`);
           if(targetEl){ targetEl.classList.add("damage-anim"); setTimeout(() => targetEl.classList.remove("damage-anim"), 300); }
       }
@@ -829,29 +883,20 @@ window.useLeaderSkill = function() {
   if (!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: p.leader }); 
   renderAll(); sendGameState();
 }
-
-window.useWeaponSkill = function() {
-  let p = players[myPlayerId];
-  if (isSelectingHand || isSelectingStage) return; 
-  let maxAttacks = (p.leader.doubleAttack || (p.weapon && p.weapon.doubleAttack)) ? 2 : 1;
-  if (p.weapon && p.weapon.name === "魔法の杖") {
-      if (p.mp < 4 || p.leaderAttackCount >= maxAttacks) return;
-      p.leaderAttackCount++;
-      p.mp -= 4;
-      let oppId = myPlayerId === 1 ? 2 : 1;
-      let oppP = players[oppId];
-      if (oppP.leader.hasBarrier) {
-          oppP.leader.hasBarrier = false;
-      } else {
-          oppP.hp -= 4;
-          const targetEl = document.getElementById(`p${oppId}-leader-zone`);
-          if(targetEl){ targetEl.classList.add("damage-anim"); setTimeout(() => targetEl.classList.remove("damage-anim"), 300); }
-      }
-      if (!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: p.weapon }); 
-      renderAll(); sendGameState();
-  }
+window.useKunoichiSkill = function(zone) {
+    let p = players[myPlayerId];
+    if (isSelectingHand || isSelectingStage) return;
+    let card = p.stage[zone];
+    if (!card || card.name !== "くノ一") return;
+    
+    card.attackCount = 0; card.turnAttackBoost = 0; card.hasBarrier = false;
+    p.hand.push(resetCardState(card));
+    p.stage[zone] = null;
+    
+    document.querySelectorAll('.card-action-overlay').forEach(o => o.remove());
+    if (!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card }); 
+    renderAll(); sendGameState();
 }
-
 window.useBurnSkill = function(zone) {
   let p = players[myPlayerId];
   if (isSelectingHand || isSelectingStage) return;
@@ -865,7 +910,7 @@ window.useBurnSkill = function(zone) {
       window.cancelActionCallback = () => { card.burnActive = false; renderAll(); }; 
       selectionStageCallback = function(targetPid, targetZone) {
         if (targetPid !== myPlayerId || targetZone === 'leader') return; 
-        let targetCard = p.stage[targetZone];
+        let targetCard = p.stage[targetZone]; if (!targetCard || targetCard.type !== "monster") { alert("キャラを選択してください"); return; }
         if (!targetCard) return; 
         
         window.cancelActionCallback = null; 
@@ -887,9 +932,9 @@ window.useBurnSkill = function(zone) {
       let oppId = myPlayerId === 1 ? 2 : 1;
       ['left', 'right'].forEach(z => {
           let tCard = players[oppId].stage[z];
-          if (tCard) {
+          if (tCard && tCard.type === "monster") {
               let dmg = 4;
-              if (tCard.name === "老練なる有段者") { dmg -= 2; if(dmg<0)dmg=0; }
+              if (tCard.name === "白鱗の竜人") { dmg -= 2; if(dmg<0)dmg=0; }
               if (dmg > 0) {
                   if (tCard.hasBarrier) tCard.hasBarrier = false;
                   else { tCard.hp -= dmg; if(tCard.hp<=0) destroyCard(oppId, z, false); }
@@ -1004,24 +1049,7 @@ function renderAll() {
 
       if (card.name === "\"Get Ready Going To\" LFA" && accelTriggered && canPlay) {
           if (!canPlayLFA_Accel) canPlay = false;
-      }
-
-      if (card.name === "ファイアボール" && canPlay) {
-          let hasMagicAttr = false;
-          if (p.leader && (p.leader.attribute === "magic_attr" || p.leader.attribute === "fire_magic")) hasMagicAttr = true;
-          if (p.weapon && (p.weapon.attribute === "magic_attr" || p.weapon.attribute === "fire_magic")) hasMagicAttr = true;
-          ['left', 'center', 'right'].forEach(z => {
-              if (p.stage[z] && (p.stage[z].attribute === "magic_attr" || p.stage[z].attribute === "fire_magic")) hasMagicAttr = true;
-          });
-          let isCenterEmpty = p.stage.center === null;
-          if (!hasMagicAttr || !isCenterEmpty) canPlay = false;
-      }
-      
-      if (card.name === "アイススピアー！" && canPlay) {
-          let hasTarget = ['left', 'center', 'right'].some(z => players[oppId].stage[z] !== null);
-          if (!hasTarget) canPlay = false;
-      }
-      
+      } 
       if (card.name === "Absolute punisher！" && canPlay) {
           let isOne = p.leader && p.leader.name === "\"Absolutely Main Gamer\" ONE";
           let bothCenterEmpty = p.stage.center === null && players[oppId].stage.center === null;
@@ -1190,32 +1218,36 @@ function attachStageListeners() {
       if (zone === 'leader' && p.weapon) text += `<br><b>※装備中:</b> ${p.weapon.name} (攻撃+${p.weapon.effectValue})`; 
       
       let maxAttacks = (p.leader.doubleAttack || (p.weapon && p.weapon.doubleAttack)) ? 2 : 1;
-      let overlayBtnHtml = ""; // 👈 カード上に出すボタンを貯める箱を用意！
+      let overlayBtnHtml = "";
 
       if (zone === 'leader' && card.name === "蒼深の砂時計" && pid === myPlayerId && currentTurn === myPlayerId && p.leaderAttackCount === 0 && !isGameOver && !isSelectingHand) {
         text += `<br><button onclick="useLeaderSkill()" style="margin-top:8px; padding:8px 16px; background:#f1c40f; color:#2c3e50; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">⏳ スキル発動（ロスト回収）</button>`;
-        overlayBtnHtml += `<button class="card-center-btn" style="background:#f1c40f; color:#2c3e50;" onclick="event.stopPropagation(); useLeaderSkill();">⏳ 起動</button>`; // 👈 追加
+        overlayBtnHtml += `<button class="card-center-btn" style="background:#f1c40f; color:#2c3e50;" onclick="event.stopPropagation(); useLeaderSkill();">アクト</button>`; // 👈 追加
       }
       if (zone === 'leader' && card.name === "\"Absolutely Main Gamer\" ONE" && pid === myPlayerId && currentTurn === myPlayerId && p.mp >= 1 && !isGameOver && !isSelectingHand) {
         text += `<br><button onclick="useLeaderSkill()" style="margin-top:8px; padding:8px 16px; background:#1abc9c; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">👑 スキル発動（PP1消費: 攻撃力+1）</button>`;
-        overlayBtnHtml += `<button class="card-center-btn" style="background:#1abc9c; color:white;" onclick="event.stopPropagation(); useLeaderSkill();">👑 起動</button>`; // 👈 追加
+        overlayBtnHtml += `<button class="card-center-btn" style="background:#1abc9c; color:white;" onclick="event.stopPropagation(); useLeaderSkill();">アクト</button>`; // 👈 追加
       }
-      if (zone === 'item' && card.name === "魔法の杖" && pid === myPlayerId && currentTurn === myPlayerId && p.leaderAttackCount < maxAttacks && p.mp >= 4 && !isGameOver && !isSelectingHand) {
-        text += `<br><button onclick="useWeaponSkill()" style="margin-top:8px; padding:8px 16px; background:#e74c3c; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">🔥 杖スキル発動（PP4消費: 4ダメージ）</button>`;
-        overlayBtnHtml += `<button class="card-center-btn" style="background:#e74c3c; color:white;" onclick="event.stopPropagation(); useWeaponSkill();">🔥 起動</button>`; // 👈 追加
+      if (zone !== 'leader' && zone !== 'item' && card.name === "くノ一" && pid === myPlayerId && currentTurn === myPlayerId && !isGameOver && !isSelectingHand) {
+        text += `<br><button onclick="useKunoichiSkill('${zone}')" style="margin-top:8px; padding:8px 16px; background:#8e44ad; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">💨 アクト（手札に戻る）</button>`;
+        overlayBtnHtml += `<button class="card-center-btn" style="background:#8e44ad; color:white;" onclick="event.stopPropagation(); useKunoichiSkill('${zone}');">アクト</button>`;
       }
-      
       if (zone !== 'leader' && zone !== 'item' && card.burn && !card.burnActive && pid === myPlayerId && currentTurn === myPlayerId && !isGameOver && !isSelectingHand) {
         text += `<br><button onclick="useBurnSkill('${zone}')" style="margin-top:8px; padding:8px 16px; background:#e67e22; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">🔥 燃焼発動</button>`;
-        overlayBtnHtml += `<button class="card-center-btn" style="background:#e67e22; color:white;" onclick="event.stopPropagation(); useBurnSkill('${zone}');">🔥 燃焼</button>`; // 👈 追加
+        overlayBtnHtml += `<button class="card-center-btn" style="background:#e67e22; color:white;" onclick="event.stopPropagation(); useBurnSkill('${zone}');">燃焼</button>`; // 👈 追加
       }
 
 // 👇👇ここから「接続スキル」の追加👇👇
-      window.useConnectSkill = function(sourceZone) { // 👈 引数を追加！
+      window.useConnectSkill = function(sourceZone) {
         isSelectingStage = true;
         selectionStageCallback = function(targetPid, targetZone) {
-          if (targetZone === 'leader') return; // モンスターのみ対象
-          connectCards(myPlayerId, sourceZone, targetPid, targetZone); // 👈 自身のゾーンと接続！
+          if (targetZone === 'leader') return; 
+          
+          // 👇追加：対象が「キャラ」かどうかをしっかりチェックする！
+          let tCard = players[targetPid].stage[targetZone];
+          if (!tCard || tCard.type !== "monster") { alert("キャラを選択してください"); return; }
+
+          connectCards(myPlayerId, sourceZone, targetPid, targetZone);
           isSelectingStage = false; selectionStageCallback = null; pendingSelection = null;
           infoPanel.style.backgroundColor = "#ecf0f1"; 
           renderAll(); sendGameState();
@@ -1299,6 +1331,19 @@ function showFloatingTextOnElement(elementId, value, type) {
   textEl.style.left = `${rect.left + rect.width / 2 - textWidth / 2}px`;
   textEl.style.top = `${rect.top + rect.height / 2 - textHeight / 2}px`;
   setTimeout(() => { textEl.remove(); }, 1200); 
+
+  // 👇 追加：10ダメージ以上の大ダメージなら画面全体を激しく揺らす！
+  if (type === 'damage' && value >= 10) {
+      const gameWrap = document.getElementById("game-wrap");
+      if (gameWrap) {
+          gameWrap.classList.remove("screen-shake-anim"); 
+          void gameWrap.offsetWidth; // 連続ヒットした時も正しく揺れるようにリセット
+          gameWrap.classList.add("screen-shake-anim");
+          setTimeout(() => {
+              gameWrap.classList.remove("screen-shake-anim");
+          }, 500); // 0.5秒間揺らして止める
+      }
+  }
 }
 // 👆👆ここまで追加👆👆
 
@@ -1327,7 +1372,7 @@ function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
 
   if (targetCard && targetCard.name === "\"Born from competition\" GR") { return; }
 
-  let bonusAttack = 0; Object.values(attackerPlayer.stage).forEach(c => { if(c && c.name === "戦神の旗") bonusAttack += c.effectValue; });
+  let bonusAttack = 0; Object.values(attackerPlayer.stage).forEach(c => { if(c && c.name === "戦女神の加護") bonusAttack += c.effectValue; });
   let finalAtk = 0;
   
   if (attackerZone === 'leader') {
@@ -1342,9 +1387,14 @@ function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
   let damageToDeal = finalAtk; 
   if (targetZone === 'center' && targetCard.skillType === "guard") damageToDeal = targetCard.skillValue; 
   
-  if (targetZone !== 'leader' && targetCard && targetCard.name === "老練なる有段者") {
-      damageToDeal -= 2;
-      if (damageToDeal < 0) damageToDeal = 0;
+  if (targetZone !== 'leader' && targetCard && targetCard.name === "白鱗の竜人") {
+      damageToDeal -= 2; if (damageToDeal < 0) damageToDeal = 0;
+  }
+  if (targetZone !== 'leader' && targetCard && targetCard.name === "魔導騎兵") {
+      damageToDeal -= 1; if (damageToDeal < 0) damageToDeal = 0;
+  }
+  if (targetZone === 'center' && targetCard && (targetCard.skillType === "guard" || targetCard.name === "黒鱗の竜人")) {
+      damageToDeal = 1;
   }
   
   if (attackerCard.burnActive && attackerCard.name === "\"Re Born in 2600\" BNR34" && targetZone === 'leader') {
@@ -1379,7 +1429,10 @@ function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
       showFloatingTextOnElement(`p${targetPid}-stage-${targetZone}`, actualDamageDealt, 'damage'); 
     }
     
-    oppCounterAtk = targetCard.attack + (targetCard.turnAttackBoost || 0); 
+    let targetBonusAttack = 0; 
+    Object.values(targetPlayer.stage).forEach(c => { if(c && c.name === "戦女神の加護") targetBonusAttack += c.effectValue; });
+    
+    oppCounterAtk = targetCard.attack + (targetCard.turnAttackBoost || 0) + targetBonusAttack; 
     if (targetCard.name === "海神 アオクジラ" && targetPlayer.lostZone.length > 0 && targetCard.soul) {
         oppCounterAtk += targetCard.soul.length;
     }
@@ -1408,28 +1461,31 @@ function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
   }
 
   let actualCounterDealt = 0;
-  if(attackerZone !== 'leader' && oppCounterAtk > 0) {
-    let counterDmg = oppCounterAtk;
-    if (attackerCard.name === "老練なる有段者") {
-        counterDmg -= 2;
-        if (counterDmg < 0) counterDmg = 0;
-    }
+  let counterDmg = oppCounterAtk;
 
-    if (counterDmg > 0) {
-      if (attackerCard.hasBarrier) {
-        attackerCard.hasBarrier = false; 
-      } else {
-        attackerCard.hp -= counterDmg; 
-        actualCounterDealt = counterDmg;
-        
-        triggerConnection(attackerCard, 'damage', actualCounterDealt, attackerLinkedId); 
+  // 👇 追加・修正：キャラが攻撃した時の反撃処理を正しいカッコで囲み直す
+  if (attackerZone !== 'leader') {
+      if (attackerCard.name === "白鱗の竜人" || attackerCard.name === "白鱗の竜人") {
+          counterDmg -= 2; if (counterDmg < 0) counterDmg = 0;
+      }
+      if (attackerCard.name === "魔導騎兵") {
+          counterDmg -= 1; if (counterDmg < 0) counterDmg = 0;
+      }
+      if (counterDmg > 0) {
+        if (attackerCard.hasBarrier) {
+          attackerCard.hasBarrier = false; 
+        } else {
+          attackerCard.hp -= counterDmg; 
+          actualCounterDealt = counterDmg;
+          
+          triggerConnection(attackerCard, 'damage', actualCounterDealt, attackerLinkedId); 
 
-        showFloatingTextOnElement(`p${attackerPid}-stage-${attackerZone}`, actualCounterDealt, 'damage'); 
-        if(attackerCard.hp <= 0) { 
-          destroyCard(attackerPid, attackerZone, false); 
+          showFloatingTextOnElement(`p${attackerPid}-stage-${attackerZone}`, actualCounterDealt, 'damage'); 
+          if(attackerCard.hp <= 0) { 
+            destroyCard(attackerPid, attackerZone, false); 
+          }
         }
       }
-    }
   } else if (attackerZone === 'leader') {
     if (attackerLeader.name === "王国の勇者" && targetCard && targetCard.type === "monster" && oppCounterAtk > 0) {
         if (attackerLeader.hasBarrier) {
@@ -1614,18 +1670,83 @@ function playCard(cardId, targetZone, pId) {
       }
       if (playedCard.name === "\"Greater Than 2nd\" 911GT2RS") { drawCard(pId); drawCard(pId); }
       
-      if (playedCard.name === "ライトブラザーズ") {
-          p.hp += 1; if (p.hp > p.maxHp) p.hp = p.maxHp;
-          triggerConnection(p.leader, 'heal', 1); 
-          showFloatingTextOnElement(`p${pId}-leader-zone`, 1, 'heal');
-          if (tZone === 'left' && !p.stage['right']) {
-            let clone = JSON.parse(JSON.stringify(playedCard));
-            clone.id = playedCard.id + "-right"; 
-            if (p.leader && p.leader.name === "\"Absolutely Main Gamer\" ONE") { clone.soul.push({name: "オーラ", type: "soul"}); }
-            p.stage['right'] = clone;
-            p.hp += 1; if (p.hp > p.maxHp) p.hp = p.maxHp;
-            triggerConnection(p.leader, 'heal', 1); 
-            showFloatingTextOnElement(`p${pId}-leader-zone`, 1, 'heal');
+      else if (playedCard.name === "ヴァンパイア") {
+          let emptyZones = ['left', 'center', 'right'].filter(z => p.stage[z] === null);
+          let cloneCount = 0;
+          for (let z of emptyZones) {
+              if (cloneCount >= 2) break;
+              let clone = JSON.parse(JSON.stringify(playedCard));
+              clone.id = playedCard.id + "-clone-" + cloneCount;
+              p.stage[z] = clone;
+              cloneCount++;
+          }
+      }
+      else if (playedCard.name === "魔法科学生") {
+          let magicCards = p.deck.filter(c => c.type === "magic" && c.originalCost === 1);
+          if (magicCards.length > 0) {
+              let randIndex = Math.floor(Math.random() * magicCards.length);
+              let pulled = magicCards.splice(randIndex, 1)[0];
+              p.hand.push(pulled);
+          }
+      }
+      else if (playedCard.name === "魔導騎兵") {
+          let oppZone = getOppositeZone(tZone);
+          let oppCard = players[oppId].stage[oppZone];
+          if (oppCard && oppCard.type === "monster") {
+              let dmg = 2;
+              if (oppCard.name === "白鱗の竜人") { dmg -= 2; if(dmg<0) dmg=0; }
+              if (oppCard.name === "黒鱗の竜人" && oppZone === 'center') { dmg = 1; }
+              if (oppCard.name === "魔導騎兵") { dmg -= 1; if(dmg<0) dmg=0; }
+              if (dmg > 0) {
+                  if (oppCard.hasBarrier) oppCard.hasBarrier = false;
+                  else { oppCard.hp -= dmg; if(oppCard.hp <= 0) destroyCard(oppId, oppZone, false); }
+                  triggerConnection(oppCard, 'damage', dmg);
+                  showFloatingTextOnElement(`p${oppId}-stage-${oppZone}`, dmg, 'damage');
+                  const el = document.getElementById(`p${oppId}-stage-${oppZone}`);
+                  if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
+              }
+          }
+      }
+      else if (playedCard.name === "地縛霊 プイズ") {
+          ['left', 'center', 'right'].forEach(z => {
+              let tCard = players[oppId].stage[z];
+              if (tCard && tCard.type === "monster") {
+                  let dmg = 1;
+                  if (tCard.name === "白鱗の竜人") { dmg -= 2; if(dmg<0) dmg=0; }
+                  if (tCard.name === "黒鱗の竜人" && z === 'center') { dmg = 1; }
+                  if (tCard.name === "魔導騎兵") { dmg -= 1; if(dmg<0) dmg=0; }
+                  if (dmg > 0) {
+                      if (tCard.hasBarrier) tCard.hasBarrier = false;
+                      else { tCard.hp -= dmg; if(tCard.hp <= 0) destroyCard(oppId, z, false); }
+                      triggerConnection(tCard, 'damage', dmg);
+                      showFloatingTextOnElement(`p${oppId}-stage-${z}`, dmg, 'damage');
+                      const el = document.getElementById(`p${oppId}-stage-${z}`);
+                      if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
+                  }
+              }
+          });
+      }
+      else if (playedCard.name === "フェアリー") {
+          let targets = ['left', 'center', 'right'].filter(z => {
+             let c = players[oppId].stage[z];
+             return c && c.type === "monster" && c.attackCount >= (c.doubleAttack ? 2 : 1);
+          });
+          if (targets.length > 0 && !(isSoloMode && pId === 2)) {
+              isSelectingStage = true;
+              window.cancelActionCallback = revertSummon;
+              selectionStageCallback = function(tPid, selZone) {
+                  if (tPid !== oppId || selZone === 'leader') return;
+                  let c = players[oppId].stage[selZone];
+                  if (!c || c.attackCount < (c.doubleAttack ? 2 : 1)) {
+                      alert("レスト状態のキャラを選んでください！"); return;
+                  }
+                  window.cancelActionCallback = null;
+                  destroyCard(oppId, selZone, false);
+                  isSelectingStage = false; selectionStageCallback = null; pendingSelection = null;
+                  infoPanel.style.backgroundColor = "#ecf0f1"; renderAll(); sendGameState();
+              };
+              infoPanel.innerHTML = `破壊する相手のレスト状態のキャラを選択してください`;
+              infoPanel.style.backgroundColor = "#e74c3c"; renderAll(); return true;
           }
       }
 
@@ -1654,7 +1775,7 @@ function playCard(cardId, targetZone, pId) {
         }
       }
       else if (playedCard.name === "冬辞 アオトウ") {
-          let targets = ['left', 'center', 'right'].filter(z => players[oppId].stage[z] !== null);
+          let targets = ['left', 'center', 'right'].filter(z => players[oppId].stage[z] !== null && players[oppId].stage[z].type === "monster");
           if (targets.length > 0) {
               if (isSoloMode && pId === 2) {
                   let randZone = targets[Math.floor(Math.random() * targets.length)];
@@ -1795,60 +1916,13 @@ function playCard(cardId, targetZone, pId) {
         }
     };
 
-    let isTargetedMagic = ["アイススピアー！", "あなたをおしえて", "信用"].includes(card.name);
+    let isTargetedMagic = ["あなたをおしえて", "信用"].includes(card.name);
     if (card.name === "侵界の光" && p.hand.length > 0 && !(isSoloMode && pId === 2)) {
         isTargetedMagic = true;
     }
 
     // 対象を取らない魔法なら、ここで即座にコストを払う
     if (!isTargetedMagic) { consumeThisMagic(); }
-
-    if (card.name === "アイススピアー！") {
-      isSelectingStage = true;
-      selectionStageCallback = function(targetPid, targetZone) {
-        if (targetPid !== oppId || targetZone === 'leader') return; 
-        let targetCard = players[oppId].stage[targetZone];
-        if (!targetCard) return;
-        if (targetCard.name === "≪Overconfidence≫ スターレット") {
-            alert("「スターレット」は選択できません");
-            return;
-        } 
-
-        consumeThisMagic();
-
-        let dmg = card.effectValue + extraMagicDmg; 
-        if (p.weapon && p.weapon.name === "魔法の杖") dmg += 1;
-        
-        if (targetCard.name === "老練なる有段者") {
-            dmg -= 2;
-            if (dmg < 0) dmg = 0;
-        }
-        if (targetCard.name === "重装歩兵" && targetZone === 'center') { dmg = 1; }
-
-        if (targetCard.hasBarrier) {
-            targetCard.hasBarrier = false;
-        } else {
-            targetCard.hp -= dmg;
-            if (targetCard.hp <= 0) destroyCard(oppId, targetZone, false);
-        }
-        
-        const targetEl = document.getElementById(`p${oppId}-stage-${targetZone}`);
-        if(targetEl){ targetEl.classList.add("damage-anim"); setTimeout(() => targetEl.classList.remove("damage-anim"), 300); }
-
-        isSelectingStage = false;
-        selectionStageCallback = null; pendingSelection = null; 
-        infoPanel.style.backgroundColor = "#ecf0f1"; 
-        
-        showCardEffect(card); 
-        if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card });
-        renderAll(); sendGameState(); 
-      };
-      
-      infoPanel.innerHTML = `キャラ1枚を選択してください`;
-      infoPanel.style.backgroundColor = "#f1c40f"; 
-      renderAll();
-      return; 
-    }
     
     if (card.name === "RBA") {
         p.leader.hasBarrier = true;
@@ -1872,7 +1946,7 @@ function playCard(cardId, targetZone, pId) {
         if (tCard) {
             let dmg = 1 + extraMagicDmg;
             if (p.weapon && p.weapon.name === "魔法の杖") dmg += 1;
-            if (tCard.name === "老練なる有段者") { dmg -= 2; if(dmg<0)dmg=0; }
+            if (tCard.name === "白鱗の竜人") { dmg -= 2; if(dmg<0)dmg=0; }
             if (dmg > 0) {
                 if (tCard.hasBarrier) tCard.hasBarrier = false;
                 else { 
@@ -1900,31 +1974,106 @@ function playCard(cardId, targetZone, pId) {
         } else {
             players[oppId].hp -= dmg;
             triggerConnection(players[oppId].leader, 'damage', dmg);
+            
+            // 👇 ここに1行追加！これで数値が表示され、10以上なので連動して画面も揺れます！
+            showFloatingTextOnElement(`p${oppId}-leader-zone`, dmg, 'damage');
+            
             const targetEl = document.getElementById(`p${oppId}-leader-zone`);
             if(targetEl){ targetEl.classList.add("damage-anim"); setTimeout(() => targetEl.classList.remove("damage-anim"), 300); }
         }
     }
-    else if (card.name === "サンダーストーム！") {
-      let dmg = card.effectValue + extraMagicDmg; 
-      if (p.weapon && p.weapon.name === "魔法の杖") dmg += 1;
-      
-      ['left', 'center', 'right'].forEach(z => {
-        let targetCard = players[oppId].stage[z];
-        if (targetCard) {
-            let currentDmg = dmg;
-            if (targetCard.name === "老練なる有段者") { currentDmg -= 2; if (currentDmg < 0) currentDmg = 0; }
-            if (currentDmg > 0) {
-                if (targetCard.hasBarrier) { targetCard.hasBarrier = false; } 
-                else { 
-                    targetCard.hp -= currentDmg; 
-                    triggerConnection(targetCard, 'damage', currentDmg);
-                    if (targetCard.hp <= 0) destroyCard(oppId, z, false); 
+    else if (card.name === "スプリングティー") {
+        ['left', 'center', 'right'].forEach(z => {
+          let c = p.stage[z];
+          if(c && c.type === "monster") {
+            c.hp += 2; triggerConnection(c, 'heal', 2); showFloatingTextOnElement(`p${pId}-stage-${z}`, 2, 'heal');
+          }
+        });
+        p.hp += 2; if(p.hp > p.maxHp) p.hp = p.maxHp; 
+        triggerConnection(p.leader, 'heal', 2); showFloatingTextOnElement(`p${pId}-leader-zone`, 2, 'heal');
+    }
+    else if (card.name === "黒炎弾") {
+        for(let i=0; i<2; i++) {
+            let targets = ['left', 'center', 'right'].filter(z => players[oppId].stage[z] !== null && players[oppId].stage[z].type === "monster");
+            if(targets.length > 0) {
+                let randZone = targets[Math.floor(Math.random() * targets.length)];
+                let tCard = players[oppId].stage[randZone];
+                let dmg = 1 + extraMagicDmg;
+                if (p.weapon && p.weapon.name === "魔法の杖") dmg += 1;
+                if (tCard.name === "白鱗の竜人") { dmg -= 2; if(dmg<0) dmg=0; }
+                if (tCard.name === "魔導騎兵") { dmg -= 1; if(dmg<0) dmg=0; }
+                if (dmg > 0) {
+                    if (tCard.hasBarrier) tCard.hasBarrier = false;
+                    else { tCard.hp -= dmg; if(tCard.hp<=0) destroyCard(oppId, randZone, false); }
+                    triggerConnection(tCard, 'damage', dmg);
+                    showFloatingTextOnElement(`p${oppId}-stage-${randZone}`, dmg, 'damage');
+                    const el = document.getElementById(`p${oppId}-stage-${randZone}`);
+                    if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
                 }
-                const targetEl = document.getElementById(`p${oppId}-stage-${z}`);
-                if(targetEl){ targetEl.classList.add("damage-anim"); setTimeout(() => targetEl.classList.remove("damage-anim"), 300); }
             }
         }
-      });
+    }
+    else if (card.name === "フロストバブル") {
+        let targets = ['left', 'center', 'right'].filter(z => players[oppId].stage[z] !== null);
+        if(targets.length > 0) {
+            let randZone = targets[Math.floor(Math.random() * targets.length)];
+            let tCard = players[oppId].stage[randZone];
+            let dmg = 4 + extraMagicDmg;
+            if (p.weapon && p.weapon.name === "魔法の杖") dmg += 1;
+            if (tCard.name === "白鱗の竜人") { dmg -= 2; if(dmg<0) dmg=0; }
+            if (tCard.name === "黒鱗の竜人" && randZone === 'center') { dmg = 1; }
+            if (tCard.name === "魔導騎兵") { dmg -= 1; if(dmg<0) dmg=0; }
+            if (dmg > 0) {
+                if (tCard.hasBarrier) tCard.hasBarrier = false;
+                else { tCard.hp -= dmg; if(tCard.hp<=0) destroyCard(oppId, randZone, false); }
+                triggerConnection(tCard, 'damage', dmg);
+                showFloatingTextOnElement(`p${oppId}-stage-${randZone}`, dmg, 'damage');
+                const el = document.getElementById(`p${oppId}-stage-${randZone}`);
+                if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
+            }
+        }
+        let leaderDmg = 1 + extraMagicDmg;
+        if (p.weapon && p.weapon.name === "魔法の杖") leaderDmg += 1;
+        if(players[oppId].leader.hasBarrier) players[oppId].leader.hasBarrier = false;
+        else {
+            players[oppId].hp -= leaderDmg;
+            triggerConnection(players[oppId].leader, 'damage', leaderDmg);
+            showFloatingTextOnElement(`p${oppId}-leader-zone`, leaderDmg, 'damage');
+            const el = document.getElementById(`p${oppId}-leader-zone`);
+            if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
+        }
+    }
+    else if (card.name === "サンダーボルト！") {
+        let dmg = 2 + extraMagicDmg; 
+        if (p.weapon && p.weapon.name === "魔法の杖") dmg += 1;
+        ['left', 'center', 'right'].forEach(z => {
+          let tCard = players[oppId].stage[z];
+          if (tCard && tCard.type === "monster") {
+              let currentDmg = dmg;
+              if (tCard.name === "白鱗の竜人") { currentDmg -= 2; if(currentDmg<0) currentDmg=0; }
+              if (tCard.name === "黒鱗の竜人" && z === 'center') { currentDmg = 1; }
+              if (tCard.name === "魔導騎兵") { currentDmg -= 1; if(currentDmg<0) currentDmg=0; }
+              if (currentDmg > 0) {
+                  if (tCard.hasBarrier) { tCard.hasBarrier = false; } 
+                  else { 
+                      tCard.hp -= currentDmg; 
+                      triggerConnection(tCard, 'damage', currentDmg);
+                      showFloatingTextOnElement(`p${oppId}-stage-${z}`, currentDmg, 'damage');
+                      if (tCard.hp <= 0) destroyCard(oppId, z, false); 
+                  }
+                  const targetEl = document.getElementById(`p${oppId}-stage-${z}`);
+                  if(targetEl){ targetEl.classList.add("damage-anim"); setTimeout(() => targetEl.classList.remove("damage-anim"), 300); }
+              }
+          }
+        });
+        ['left', 'center', 'right'].forEach(z => {
+            let myCard = p.stage[z];
+            if (myCard) {
+                myCard.turnAttackBoost = (myCard.turnAttackBoost || 0) + 1;
+                triggerConnection(myCard, 'attack_boost', 1);
+                showFloatingTextOnElement(`p${pId}-stage-${z}`, 1, 'attack_boost');
+            }
+        });
     }
     else if (card.name === "海神の権能") {
       let targets = [];
@@ -1980,25 +2129,11 @@ function playCard(cardId, targetZone, pId) {
       }
     }
     else if (card.name === "侵界の雨") {
-      ['left', 'center', 'right'].forEach(z => { destroyCard(pId, z, true); destroyCard(oppId, z, true); });
+      ['left', 'center', 'right'].forEach(z => { if (p.stage[z] && p.stage[z].type === "monster") destroyCard(pId, z, true); if (players[oppId].stage[z] && players[oppId].stage[z].type === "monster") destroyCard(oppId, z, true); });
       if (p.weapon) { p.lostZone.push(resetCardState(p.weapon)); p.weapon = null; }
       if (players[oppId].weapon) { players[oppId].lostZone.push(resetCardState(players[oppId].weapon)); players[oppId].weapon = null; }
       p.hand.forEach(c => p.lostZone.push(resetCardState(c))); p.hand = [];
       players[oppId].hand.forEach(c => players[oppId].lostZone.push(resetCardState(c))); players[oppId].hand = [];
-    }
-    else if(card.name === "ファイアボール") {
-      let dmg = card.effectValue + extraMagicDmg;
-      if (p.weapon && p.weapon.name === "魔法の杖") dmg += 1;
-
-      if (players[oppId].leader.hasBarrier) {
-        players[oppId].leader.hasBarrier = false; 
-      } else {
-        players[oppId].hp -= dmg;
-        triggerConnection(players[oppId].leader, 'damage', dmg);
-        const targetEl = document.getElementById(`p${oppId}-leader-zone`);
-        if(targetEl){ targetEl.classList.add("damage-anim"); setTimeout(() => targetEl.classList.remove("damage-anim"), 300); }
-        showFloatingTextOnElement(`p${oppId}-leader-zone`, dmg, 'damage');
-      }
     } else if(card.name === "ヒール") {
       ['left', 'center', 'right'].forEach(z => {
         let c = p.stage[z];
@@ -2059,7 +2194,7 @@ function playCard(cardId, targetZone, pId) {
         isSelectingStage = true;
         selectionStageCallback = function(tPid, tZone) {
             if (tZone === 'leader') return;
-            let tCard = players[tPid].stage[tZone];
+            let tCard = players[tPid].stage[tZone]; if (!tCard || tCard.type !== "monster") { alert("キャラを選択してください"); return; }
             if (!tCard) return;
             
             // 相手のスターレットは選べない
@@ -2114,11 +2249,15 @@ function playCard(cardId, targetZone, pId) {
   }
 
   if (isSuccess) { 
+      if (card.type === "magic" && p.weapon && p.weapon.name === "魔法の杖") {
+          p.mp = Math.min(p.maxMp, p.mp + 1);
+      }
       showCardEffect(card); 
       if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card }); 
   }
   renderAll(); sendGameState(); 
-} // 👈👈👈 【超重要！】ここで playCard の箱を完全に閉じる！！
+} 
+// 👆👆 playCard 関数はここで終わり 👆👆
 
 function endTurnProcess(pId) {
   if (isGameOver) return;
@@ -2166,19 +2305,38 @@ function endTurnProcess(pId) {
     });
   });
 
-  if (p.leader && p.leader.name === "森の長") {
-      let consumedMp = p.mp;
+  if (p.leader && p.leader.name === "森林の長 フォルエル") {
+      // ① 残りPPが2以上なら、相手の全キャラに1ダメージ
+      if (p.mp >= 2) {
+          ['left', 'center', 'right'].forEach(z => {
+              let c = players[nextPId].stage[z];
+              if (c && c.type === "monster") {
+                  if (c.hasBarrier) c.hasBarrier = false;
+                  else {
+                      c.hp -= 1;
+                      triggerConnection(c, 'damage', 1);
+                      showFloatingTextOnElement(`p${nextPId}-stage-${z}`, 1, 'damage');
+                      if (c.hp <= 0) destroyCard(nextPId, z, false);
+                  }
+                  const el = document.getElementById(`p${nextPId}-stage-${z}`);
+                  if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
+              }
+          });
+      }
+      
+      // ② 残ったPPを全て消費して回復
+      let consumedMp = p.mp; 
       p.mp = 0;
-      p.hp += consumedMp;
+      p.hp += consumedMp; 
       if (p.hp > p.maxHp) p.hp = p.maxHp;
-      if (consumedMp > 0) {
-          triggerConnection(p.leader, 'heal', consumedMp);
-          showFloatingTextOnElement(`p${pId}-leader-zone`, consumedMp, 'heal');
+      if (consumedMp > 0) { 
+          triggerConnection(p.leader, 'heal', consumedMp); 
+          showFloatingTextOnElement(`p${pId}-leader-zone`, consumedMp, 'heal'); 
       }
   }
-  ['left', 'center', 'right'].forEach(z => {
+      ['left', 'center', 'right'].forEach(z => {
       let c = p.stage[z];
-      if (c && c.name === "ユニコ") {
+      if (c && c.name === "月ウサギ アイリス") {
           c.hp += 1;
           p.hp += 1;
           triggerConnection(c, 'heal', 1);
@@ -2191,10 +2349,10 @@ function endTurnProcess(pId) {
       if (c && c.name === "“絶対依存の情” マッハ") {
           let oppZone = getOppositeZone(z);
           let oppCard = players[nextPId].stage[oppZone];
-          if (oppCard) {
+          if (oppCard && oppCard.type === "monster") {
               let dmg = 11;
-              if (oppCard.name === "老練なる有段者") { dmg -= 2; if (dmg < 0) dmg = 0; }
-              if (oppCard.name === "重装歩兵" && oppZone === 'center') { dmg = 1; }
+              if (oppCard.name === "白鱗の竜人") { dmg -= 2; if (dmg < 0) dmg = 0; }
+              if (oppCard.name === "黒鱗の竜人" && oppZone === 'center') { dmg = 1; }
               
               if (dmg > 0) {
                   if (oppCard.hasBarrier) {
@@ -2220,10 +2378,16 @@ function endTurnProcess(pId) {
           p.stage[z].burnActive = false;
       }
   });
-
   let altarPP = 0; let extraDraw = 0;
-  Object.values(nextP.stage).forEach(c => { if(c && c.name === "豊穣の祭壇") altarPP++; if(c && c.skillType === "draw") extraDraw += c.skillValue; });
-
+  Object.values(nextP.stage).forEach(c => { 
+      if(c && c.name === "生命の象徴 千年樹") {
+          altarPP++;
+          nextP.hp += 1; if(nextP.hp > nextP.maxHp) nextP.hp = nextP.maxHp;
+          triggerConnection(nextP.leader, 'heal', 1);
+          showFloatingTextOnElement(`p${nextPId}-leader-zone`, 1, 'heal');
+      }
+      if(c && c.skillType === "draw") extraDraw += c.skillValue; 
+  });
   if(nextP.maxMp < 10) nextP.maxMp++; nextP.maxMp += altarPP; if(nextP.maxMp > 10) nextP.maxMp = 10; nextP.mp = nextP.maxMp;
   nextP.leaderAttackCount = 0; Object.values(nextP.stage).forEach(c => { if(c) c.attackCount = 0; }); 
 
@@ -2312,12 +2476,12 @@ async function playAITurn() {
       }
   } else if (p2.leader.name === "大悪魔 サタン") {
       infoPanel.innerHTML = `👿 サタンの破滅の炎！！`;
-      let targets = ['left', 'center', 'right'].filter(z => p1.stage[z] !== null);
+      let targets = ['left', 'center', 'right'].filter(z => p1.stage[z] !== null && p1.stage[z].type === "monster");
       if (targets.length > 0) {
           let randZone = targets[Math.floor(Math.random() * targets.length)];
           let tCard = p1.stage[randZone];
           let dmg = 4;
-          if (tCard.name === "老練なる有段者") { dmg -= 2; if(dmg<0)dmg=0; }
+          if (tCard.name === "白鱗の竜人") { dmg -= 2; if(dmg<0)dmg=0; }
           
           if (dmg > 0) {
               if (tCard.hasBarrier) tCard.hasBarrier = false;
@@ -2370,7 +2534,7 @@ async function playAITurn() {
           targets.forEach(z => {
               let tCard = p1.stage[z];
               let dmg = 3;
-              if (tCard.name === "老練なる有段者") { dmg -= 2; if(dmg<0)dmg=0; } // 有段者の軽減を適用
+              if (tCard.name === "白鱗の竜人") { dmg -= 2; if(dmg<0)dmg=0; } // 有段者の軽減を適用
               
               if (dmg > 0) {
                   if (tCard.hasBarrier) tCard.hasBarrier = false;
@@ -2530,7 +2694,7 @@ document.addEventListener("click", (e) => {
       window.cancelActionCallback = null;
   }
 
-  // 1. カード上の【起動】【燃焼】ボタンをすべて消す
+  // 1. カード上の【アクト】【燃焼】ボタンをすべて消す
   document.querySelectorAll('.card-action-overlay').forEach(o => o.remove());
 
   // 2. 「対象を選択してください」などの選択モードをすべて強制解除

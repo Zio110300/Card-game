@@ -11,8 +11,9 @@ body { font-family: 'Courier New', Courier, monospace; background-color: #1a252f
 .card { width: 120px; height: 160px; background-color: white; border-radius: 4px; color: black; display: flex; flex-direction: column; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.5); transition: 0.2s; cursor: pointer; border: 2px solid transparent; }
 /* デッキ編成画面専用のカードサイズ調整 */
 #deck-edit-screen .card {
-  width: 60px !important;
-  height: 80px !important;
+  width: 90px !important;
+  height: 120px !important;
+  flex-shrink: 0 !important; /* 👇追加：横並びになった時にカードが潰れないようにする */
 }
 
 /* 合わせてコストやステータスのバッジも少し小さくすると綺麗に収まります */
@@ -233,8 +234,8 @@ hr { margin: 5px 0 !important; border-width: 1px !important; }
 
 /* 3. デッキ編集画面・カタログ画面の中だけは、少し小さめの横長にする */
 #deck-edit-screen .leader-card { 
-  width: 105px !important; 
-  height: 70px !important; 
+  width: 160px !important; 
+  height: 120px !important; 
 }
 
 /* =========================================
@@ -361,3 +362,113 @@ hr { margin: 5px 0 !important; border-width: 1px !important; }
 .floating-text.attack_boost {
   color: #e74c3c;
 }
+
+/* =========================================
+   デッキ編集画面の横スクロール化
+========================================= */
+#my-deck-board, #catalog-board {
+  flex-wrap: nowrap !important;
+  justify-content: flex-start !important;
+  align-items: center !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  padding-bottom: 15px !important; /* スクロールバー表示用の余白 */
+}
+
+/* カスタムスクロールバー（横スクロールを見やすく操作しやすくする） */
+#my-deck-board::-webkit-scrollbar, #catalog-board::-webkit-scrollbar {
+  height: 12px;
+}
+#my-deck-board::-webkit-scrollbar-track, #catalog-board::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+}
+#my-deck-board::-webkit-scrollbar-thumb, #catalog-board::-webkit-scrollbar-thumb {
+  background: #7f8c8d;
+  border-radius: 6px;
+}
+#my-deck-board::-webkit-scrollbar-thumb:hover, #catalog-board::-webkit-scrollbar-thumb:hover {
+  background: #bdc3c7;
+}
+
+/* =========================================
+   ホーム画面 ファンタジーUI
+========================================= */
+.fantasy-bg {
+  /* 深い夜と魔法を連想させる放射状グラデーション */
+  background: radial-gradient(circle at center, #2c3e50 0%, #0a0a0a 100%) !important;
+}
+
+.fantasy-panel {
+  background: linear-gradient(135deg, rgba(44, 62, 80, 0.9), rgba(26, 37, 47, 0.9));
+  padding: 30px;
+  border-radius: 12px;
+  border: 2px solid #d4af37; /* 重厚なゴールドの枠線 */
+  box-shadow: inset 0 0 15px rgba(212, 175, 55, 0.2), 0 10px 20px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* パネルの内側にうっすら光るエフェクト */
+.fantasy-panel::before {
+  content: "";
+  position: absolute; top: 0; left: 0; width: 100%; height: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.1), transparent);
+  pointer-events: none;
+}
+
+.fantasy-title {
+  margin-top: 0;
+  color: #f1c40f;
+  font-size: 24px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(241, 196, 15, 0.5);
+  font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+}
+
+.fantasy-select, .fantasy-input {
+  font-size: 16px;
+  padding: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 6px;
+  border: 1px solid #7f8c8d;
+  margin-bottom: 10px;
+  background-color: rgba(236, 240, 241, 0.95);
+  color: #2c3e50;
+  font-weight: bold;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+}
+
+.fantasy-select:focus, .fantasy-input:focus {
+  outline: none;
+  border-color: #d4af37;
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.8);
+}
+
+.fantasy-btn {
+  font-size: 16px;
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  color: white;
+  transition: all 0.2s ease-in-out;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+}
+
+.fantasy-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 15px rgba(0,0,0,0.6);
+  filter: brightness(1.2);
+}
+
+/* ファンタジー風の重厚なグラデーションボタン */
+.btn-purple { background: linear-gradient(180deg, #9b59b6, #6c3483); }
+.btn-blue   { background: linear-gradient(180deg, #3498db, #21618c); }
+.btn-green  { background: linear-gradient(180deg, #2ecc71, #1e8449); }
+.btn-red    { background: linear-gradient(180deg, #e74c3c, #922b21); border-color: #f1c40f;}
