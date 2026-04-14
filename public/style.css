@@ -472,3 +472,50 @@ hr { margin: 5px 0 !important; border-width: 1px !important; }
 .btn-blue   { background: linear-gradient(180deg, #3498db, #21618c); }
 .btn-green  { background: linear-gradient(180deg, #2ecc71, #1e8449); }
 .btn-red    { background: linear-gradient(180deg, #e74c3c, #922b21); border-color: #f1c40f;}
+
+/* style.cssの適当な場所に追加してください */
+
+/* 反転能力を使用したカードのイラストに適用するクラス */
+.inverted-card-image {
+  /* 左右反転 */
+  transform: scaleX(-1);
+  /* 色反転（1は100%の意味。0〜1の間で調整可能） */
+  filter: invert(1);
+}
+
+/* =========================================
+   引いたばかりのカードのアニメーション
+========================================= */
+.just-drawn-anim {
+  animation: drawFlash 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 100; /* 他のカードより手前に表示 */
+}
+
+@keyframes drawFlash {
+  0% { transform: translateY(-40px) scale(1.15); box-shadow: 0 0 40px #f1c40f, 0 0 20px #fff inset; border-color: #f1c40f; }
+  40% { transform: translateY(-20px) scale(1.05); box-shadow: 0 0 20px rgba(241, 196, 15, 0.8); border-color: rgba(241, 196, 15, 0.8); }
+  100% { transform: translateY(0) scale(1); box-shadow: 0 4px 8px rgba(0,0,0,0.5); border-color: transparent; }
+}
+
+/* =========================================
+   破壊とロストの演出アニメーション
+========================================= */
+/* 💥 破壊演出（パリンと割れて砕け落ちる） */
+.destroy-anim {
+  animation: shatterAnim 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+@keyframes shatterAnim {
+  0% { transform: scale(1) rotate(0deg); opacity: 1; filter: brightness(1); }
+  30% { transform: scale(1.15) rotate(5deg); opacity: 1; filter: brightness(1.5) drop-shadow(0 0 15px white); }
+  100% { transform: scale(0.6) translateY(60px) rotate(-20deg); opacity: 0; filter: brightness(0) blur(4px); }
+}
+
+/* 🌌 ロスト演出（闇に吸い込まれる） */
+.lost-anim {
+  animation: voidAnim 0.6s ease-in forwards;
+}
+@keyframes voidAnim {
+  0% { transform: scale(1); opacity: 1; filter: blur(0px); }
+  50% { transform: scale(0.5) rotate(180deg); opacity: 0.8; filter: blur(5px) brightness(0.5) drop-shadow(0 0 20px #9b59b6); }
+  100% { transform: scale(0) rotate(360deg); opacity: 0; filter: blur(10px) brightness(0); }
+}
