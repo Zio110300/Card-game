@@ -1,0 +1,521 @@
+body { font-family: 'Courier New', Courier, monospace; background-color: #1a252f; color: white; margin: 0; padding: 2px; display: flex; flex-direction: column; align-items: center; }
+
+/* タイトルと全体の幅・隙間の拡大 */
+.area-title { font-size: 20px; font-weight: bold; margin-bottom: 5px; margin-top: 5px; text-align: center; width: 100%; }
+.board { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; width: 100%; max-width: 1400px; margin-bottom: 5px; }
+
+/* 情報パネルの拡大 */
+.info-panel { background-color: rgba(236, 240, 241, 0.8); color: #ffffff; padding: 15px; border-radius: 8px; width: 90%; max-width: 1000px; text-align: left; font-size: 24px; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.3); transition: 0.2s; min-height: 30px; line-height: 1.5; margin: 0 auto 15px auto;}
+
+/* ★ 通常カード本体のサイズ（120x160） */
+.card { width: 120px; height: 160px; background-color: white; border-radius: 4px; color: black; display: flex; flex-direction: column; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.5); transition: 0.2s; cursor: pointer; border: 2px solid transparent; }
+/* デッキ編成画面専用のカードサイズ調整 */
+#deck-edit-screen .card {
+  width: 90px !important;
+  height: 120px !important;
+  flex-shrink: 0 !important; /* 👇追加：横並びになった時にカードが潰れないようにする */
+}
+
+/* 合わせてコストやステータスのバッジも少し小さくすると綺麗に収まります */
+#deck-edit-screen .card-cost {
+  width: 15px !important;
+  height: 15px !important;
+  font-size: 8px !important;
+  top: -10px;
+  left: -10px;
+}
+#deck-edit-screen .stat-attack, 
+#deck-edit-screen .stat-hp {
+  width: 15px !important;
+  height: 15px !important;
+  font-size: 8px !important;
+  bottom: -10px;
+}
+#deck-edit-screen .stat-attack { left: -10px; }
+#deck-edit-screen .stat-hp { right: -10px; }
+.hand-board .card:hover:not(.dragging):not(.disabled) { transform: translateY(-10px); box-shadow: 0 8px 16px rgba(0,0,0,0.6); }
+
+/* ★ リーダーカード専用サイズ（160x120・横長） */
+.leader-zone .card { width: 160px !important; height: 120px !important; flex-direction: row; }
+.leader-zone .card-image { font-size: 24px !important; } /* 画像(絵文字)を少し小さく */
+
+/* ====== スタイリッシュなカードデザイン（フルイラスト＆丸型バッジ） ====== */
+
+/* 1. 全体を細い枠線で囲む */
+.card { border: 2px solid #ecf0f1 !important; overflow: visible !important; }
+
+/* 2. ヘッダー背景を透明にし、名前を非表示にする */
+.card-header { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent !important; padding: 0; pointer-events: none; z-index: 20; }
+.card-name { display: none; } 
+
+/* 3. コストバッジ（左上にはみ出す・黄緑） */
+.card-cost { position: absolute; top: -15px; left: -15px; background-color: #8bc34a !important; color: white !important; width: 40px !important; height: 40px !important; border-radius: 50% !important; display: flex; justify-content: center; align-items: center; font-size: 22px !important; font-weight: bold; border: 3px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.5); text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+
+/* 4. イラストをカード全面に広げる */
+.card-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 0 !important; border-radius: 4px; overflow: hidden; z-index: 1; background-color: #34495e !important; }
+.card-image img { width: 100%; height: 100%; object-fit: cover; }
+
+/* 5. ステータス背景を透明化し、JSのレイアウト設定を上書き */
+.card-stats { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; padding: 0 !important; background: transparent !important; pointer-events: none; z-index: 20; }
+.card-stats > div { display: block !important; position: absolute; width: 100%; height: 100%; top: 0; left: 0; }
+
+/* 6. 攻撃力（左下・赤）とHP（右下・水色）のバッジ */
+.stat-attack, .stat-hp { position: absolute; width: 40px; height: 40px; border-radius: 50%; color: white !important; font-size: 18px; font-weight: bold; display: flex; justify-content: center; align-items: center; border: 3px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.5); text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+.stat-attack { bottom: -15px; left: -15px; background-color: #e74c3c; }
+.stat-hp     { bottom: -15px; right: -15px; background-color: #00bcd4; }
+
+.magic-desc { display: none; } /* テキストはホバー時の情報パネルに任せるので非表示 */
+
+/* ボタン類の拡大 */
+.retry-btn, .end-turn-btn { background-color: #f39c12; color: white; border: none; font-weight: bold; border-radius: 50px; cursor: pointer; box-shadow: 0 6px 6px rgba(0,0,0,0.3); transition: 0.2s; padding: 48px 24px !important; font-size: 24px !important; margin: 0 10px; }
+.end-turn-btn { background-color: #00bcd4; }
+.end-turn-btn:hover { background-color: #0097a7; transform: scale(1.05); }
+.retry-btn:hover { background-color: #e67e22; transform: scale(1.05); }
+
+/* プレイヤー陣地の余白拡大 */
+.player-area { width: 100%; max-width: 1400px; padding: 20px; border-radius: 12px; border: 3px solid transparent; transition: 0.3s; margin-bottom: 20px; }
+.p1-theme { background-color: rgba(52, 152, 219, 0.05); }
+.p2-theme { background-color: rgba(231, 76, 60, 0.05); }
+.active-turn.p1-theme { border-color: #3498db; box-shadow: 0 0 15px rgba(52, 152, 219, 0.5); background-color: rgba(52, 152, 219, 0.15); }
+.active-turn.p2-theme { border-color: #e74c3c; box-shadow: 0 0 15px rgba(231, 76, 60, 0.5); background-color: rgba(231, 76, 60, 0.15); }
+
+/* ステータスバー（ライフ・PPなど）の拡大 */
+.player-status-area { display: flex; justify-content: space-around; align-items: center; background-color: rgba(0,0,0,0.6); padding: 10px; border-radius: 8px; margin: 15px 0; }
+.hp-display { font-size: 18px; font-weight: bold; color: #e74c3c; }
+.mp-display { font-size: 18px; font-weight: bold; color: #3498db; }
+.deck-display { font-size: 18px; font-weight: bold; color: #f1c40f; }
+.trash-display { font-size: 18px; font-weight: bold; color: #7f8c8d; cursor: pointer; transition: 0.2s; }
+.lost-display { font-size: 18px; font-weight: bold; color: #9b59b6; cursor: pointer; transition: 0.2s; }
+.trash-display:hover, .lost-display:hover { color: #ecf0f1; transform: scale(1.05); }
+
+/* ★ ステージ（場）のサイズ調整（カードより少し大きい 80x115） */
+.stage-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 10px; }
+.stage-zone { width: 120px; min-height: 160px; background-color: rgba(255,255,255,0.1); border: 3px dashed #7f8c8d; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; transition: 0.2s; }
+
+/* ★ リーダーエリアのサイズ調整 */
+.leader-zone { background-color: rgba(241, 196, 15, 0.1); border-color: #f1c40f; width: 115px; height: 80px; min-height: 80px; flex-direction: row; }
+
+/* 状態異常・エフェクト・ラベルの縮小 */
+.card.dragging { opacity: 0.5; transform: scale(1.05); }
+.action-done { filter: grayscale(80%) brightness(70%); opacity: 0.8; cursor: not-allowed; }
+
+/* 👇 追加：レスト状態のカードに「REST」のスタンプを押すエフェクト！ */
+.action-done::after {
+  content: "REST";
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) rotate(-15deg);
+  font-size: 28px; font-weight: bold; color: rgba(255, 255, 255, 0.8);
+  border: 4px solid rgba(255, 255, 255, 0.8); border-radius: 8px;
+  padding: 2px 10px; z-index: 30; background: rgba(0,0,0,0.4);
+  pointer-events: none; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+}
+
+.card.disabled { filter: brightness(50%); cursor: not-allowed; }
+
+/* =========================================
+   カード種類ごとのスタイリッシュ設定（イラスト表示＆枠線カラー）
+========================================= */
+/* 古いヘッダーの色塗りを透明化してイラストを見せる！ */
+.magic-header, .set-magic-header, .item-header, .skill-monster-header { background-color: transparent !important; }
+
+/* 🔮 魔法カード */
+.magic-card { border-color: #9b59b6 !important; background-color: transparent !important; }
+.magic-card .card-stats { display: none !important; } /* 魔法はバッジ非表示 */
+
+/* ⚙️ 設置魔法カード */
+.set-magic-card { border-color: #3498db !important; background-color: transparent !important; }
+
+/* 🗡️ アイテムカード */
+.item-card { border-color: #7f8c8d !important; background-color: transparent !important; }
+
+/* ⚡ スキルモンスターカード */
+.skill-monster-card { border-color: #e67e22 !important; background-color: transparent !important; }
+.skill-monster-card { border-color: #e67e22 !important; background-color: #fdf2e9 !important; }
+.card-label { color: white; padding: 1px 3px; border-radius: 2px; font-size: 6px; font-weight: bold; position: absolute; top: -5px; z-index: 10; }
+.set-magic-label { background-color: black; left: 3px; }
+.skill-label { background-color: #e67e22; right: 3px; }
+.item-label { background-color: #34495e; left: 3px; }
+
+/* ターゲット選択時と被ダメ時のエフェクト縮小 */
+.damage-anim { animation: shake 0.3s; animation-iteration-count: 1; border-color: red !important; box-shadow: 0 0 10px red !important; }
+@keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 20% { transform: translate(-1px, 0px) rotate(2deg); } 40% { transform: translate(1px, -1px) rotate(0deg); } 60% { transform: translate(-1px, 1px) rotate(-2deg); } 80% { transform: translate(1px, 0px) rotate(2deg); } 100% { transform: translate(0px, 0px) rotate(0deg); } }
+
+body.attack-dragging .stage-zone.drag-over { background-color: rgba(231, 76, 60, 0.3) !important; border-color: #e74c3c !important; box-shadow: 0 0 8px rgba(231, 76, 60, 0.5) !important; }
+
+.selected-attacker { box-shadow: 0 0 10px #f1c40f, 0 0 20px #f1c40f inset !important; transform: scale(1.05) !important; border: 2px solid #f1c40f !important; animation: pulse 1s infinite alternate; }
+@keyframes pulse { from { box-shadow: 0 0 5px #f1c40f; } to { box-shadow: 0 0 15px #f1c40f; } }
+body.targeting-mode .player-area:not(.active-turn) .stage-zone { cursor: crosshair; }
+body.targeting-mode .player-area:not(.active-turn) .stage-zone:hover { background-color: rgba(231, 76, 60, 0.2); border-color: #e74c3c; box-shadow: 0 0 10px rgba(231, 76, 60, 0.5); transform: scale(1.05); }
+
+/* 中央の区切り線の余白を極限まで縮小 */
+hr { margin: 5px 0 !important; border-width: 1px !important; }
+
+/* モーダル（ドロップゾーン）の調整 */
+.modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
+.modal-content { background-color: #f5f5f5; padding: 10px; border-radius: 8px; width: 90%; max-width: 600px; max-height: 80%; overflow-y: auto; position: relative; box-shadow: 0 3px 10px rgba(0,0,0,0.5); }
+.close-btn { color: #aaa; position: absolute; top: 2px; right: 10px; font-size: 20px; font-weight: bold; cursor: pointer; }
+.close-btn:hover { color: #333; }
+
+/* =========================================
+   フルスクリーン背景用設定
+========================================= */
+#game-wrap {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background-color: #111; z-index: 50; overflow: hidden;
+}
+#game-container {
+  position: absolute; top: 50%; left: 50%;
+  width: 1920px; height: 1080px;
+  transform-origin: center center; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.bg-asset {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background-image: url('images/background.png'); 
+  background-size: cover; background-position: center; 
+  z-index: -1; opacity: 0.7; /* 背景を少し暗くしてカードを見やすく */
+}
+
+/* =========================================
+   絶対配置（Absolute）レイアウト定義
+   1920x1080キャンバス用
+========================================= */
+.absolute-item {
+  position: absolute !important;
+  margin: 0 !important;
+}
+
+/* --- 相手の陣地（P2） --- */
+.pos-p2-leader { left: 880px; top: 80px; }
+.pos-p2-item   { left: 1060px; top: 20px; }
+.pos-p2-left   { left: 1350px; top: 110px; }
+.pos-p2-center { left: 900px; top: 210px; }
+.pos-p2-right  { left: 450px; top: 110px; }
+.pos-p2-status { left: 1040px; top: 10px; }
+
+/* --- 自分の陣地（P1） --- */
+.pos-p1-leader { left: 880px; top: 680px; }
+.pos-p1-item   { left: 710px; top: 620px; }
+.pos-p1-left   { left: 450px; top: 520px; }
+.pos-p1-center { left: 900px; top: 490px; }
+.pos-p1-right  { left: 1350px; top: 520px; }
+.pos-p1-status { left: 10px; top: 840px; }
+
+/* --- UI・システム --- */
+/* 11. 手札 */
+.pos-p1-hand    { left: 0px; top: 900px; width: 100%; justify-content: center; max-width: none !important; }
+.pos-p2-hand    { display: none !important; } 
+/* 12. ターン終了ボタン */
+.pos-end-turn   { left: 1650px; top: 750px; z-index: 1000; }
+/* 13. 降参ボタン */
+.pos-surrender  { left: 10px; top: 790px; z-index: 1001; }
+/* 14. 情報パネル */
+.pos-info-panel { left: 0px; top: 0px; width: 100%; z-index: 1000; }
+
+/* =========================================
+   👑 リーダーカード強制横長化の絶対ルール
+========================================= */
+
+/* 1. カード本体をどこにいても強制的に横長にする（枠に押し潰されないように flex-shrink: 0 を追加） */
+.leader-card { 
+  width: 160px !important; 
+  height: 120px !important; 
+  flex-shrink: 0 !important; 
+  flex-direction: row !important; 
+}
+
+/* 2. 戦闘画面の「置く枠」もカードに合わせて拡大する */
+.leader-zone { 
+  width: 160px !important; 
+  height: 130px !important; 
+  min-height: 130px !important; 
+}
+
+/* 3. デッキ編集画面・カタログ画面の中だけは、少し小さめの横長にする */
+#deck-edit-screen .leader-card { 
+  width: 160px !important; 
+  height: 120px !important; 
+}
+
+/* =========================================
+   🔥 カード中央に浮かび上がるスキルボタン
+========================================= */
+.card-action-overlay {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+  display: flex; flex-direction: column; gap: 5px; width: 80%; align-items: center;
+}
+.card-center-btn {
+  border: 2px solid white; border-radius: 6px; padding: 8px 10px;
+  font-size: 16px; font-weight: bold; cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.8); transition: 0.2s;
+  width: 100%; text-align: center; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+.card-center-btn:hover { transform: scale(1.1); box-shadow: 0 6px 15px rgba(0,0,0,0.9); }
+
+/* 回復エフェクト（緑色に光る） */
+.heal-anim { animation: healFlash 0.3s; animation-iteration-count: 1; border-color: #2ecc71 !important; box-shadow: 0 0 15px #2ecc71 !important; }
+@keyframes healFlash { 0% { filter: brightness(1); } 50% { filter: brightness(1.5) drop-shadow(0 0 10px #2ecc71); } 100% { filter: brightness(1); } }
+
+/* --- 回復・接続エフェクト --- */
+.heal-anim { animation: healFlash 0.3s; animation-iteration-count: 1; border-color: #2ecc71 !important; box-shadow: 0 0 15px #2ecc71 !important; }
+@keyframes healFlash { 0% { filter: brightness(1); } 50% { filter: brightness(1.5) drop-shadow(0 0 10px #2ecc71); } 100% { filter: brightness(1); } }
+
+/* --- フローティングテキスト（ダメージ・回復数値表示） --- */
+.floating-text-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* クリックなどを透過させる */
+  z-index: 10000; /* 最前面に表示 */
+}
+
+.floating-text {
+  position: absolute;
+  font-size: 50px; /* 数値を大きくド派手に！ */
+  font-weight: bold;
+  font-family: 'Anton', sans-serif; /* もしGoogle Fontsなどがあればカッコいいフォントに */
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0,0,0,0.5);
+  animation: floatFade 1.2s cubic-bezier(0.215, 0.610, 0.355, 1.000) forwards; /* 緩急のある動き */
+  pointer-events: none;
+  opacity: 0;
+  white-space: nowrap;
+}
+
+.floating-text.damage {
+  color: #e74c3c; /* 鮮やかな赤 */
+}
+
+.floating-text.heal {
+  color: #2ecc71; /* 鮮やかな緑 */
+}
+
+@keyframes floatFade {
+  0% {
+    transform: translateY(20px) scale(0.5); /* 下から小さく登場 */
+    opacity: 0;
+  }
+  20% {
+    transform: translateY(0) scale(1.2); /* 少し大きくバウンド */
+    opacity: 1;
+  }
+  80% {
+    transform: translateY(-50px) scale(1); /* ゆっくり浮き上がる */
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-70px) scale(0.8); /* 小さくなりながら消える */
+    opacity: 0;
+  }
+}
+
+/* --- ディザスター専用エフェクト --- */
+/* 画面全体を闇と炎でフラッシュさせる */
+.disaster-attack-anim {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999; /* 最前面に表示 */
+  pointer-events: none; /* クリックなどを透過させる */
+  animation: disasterFlash 1.5s ease-out forwards; /* 1.5秒かけてフラッシュ */
+}
+
+/* 画面全体を激しく揺らす (game-containerに適用) */
+.screen-shake-anim {
+  animation: screenShake 0.5s linear infinite; /* 0.5秒の揺れを無限ループ */
+}
+
+/* 画面の色を闇紫から深紅、そして赤黒へ */
+@keyframes disasterFlash {
+  0% { background-color: rgba(0, 0, 0, 0); box-shadow: inset 0 0 0px #000; }
+  10% { background-color: rgba(75, 0, 130, 0.7); box-shadow: inset 0 0 100px #000; } /* 闇紫 */
+  40% { background-color: rgba(139, 0, 0, 0.8); box-shadow: inset 0 0 150px #ff4500; } /* 深紅と橙 */
+  100% { background-color: rgba(0, 0, 0, 0.3); box-shadow: inset 0 0 200px #8b0000; } /* 赤黒く残る */
+}
+
+/* 激しい画面揺れ */
+@keyframes screenShake {
+  0% { transform: translate(2px, 2px) rotate(0deg); }
+  10% { transform: translate(-2px, -3px) rotate(-1deg); }
+  20% { transform: translate(-5px, 0px) rotate(1deg); }
+  30% { transform: translate(5px, 3px) rotate(0deg); }
+  40% { transform: translate(2px, -2px) rotate(1deg); }
+  50% { transform: translate(-2px, 3px) rotate(-1deg); }
+  60% { transform: translate(-5px, 2px) rotate(0deg); }
+  70% { transform: translate(5px, 2px) rotate(-1deg); }
+  80% { transform: translate(-2px, -2px) rotate(1deg); }
+  90% { transform: translate(2px, 3px) rotate(0deg); }
+  100% { transform: translate(2px, -3px) rotate(-1deg); }
+}
+/* --- 攻撃力アップエフェクト（赤く光る） --- */
+.attack-anim { animation: attackFlash 0.3s; animation-iteration-count: 1; border-color: #e74c3c !important; box-shadow: 0 0 15px #e74c3c !important; }
+@keyframes attackFlash { 0% { filter: brightness(1); } 50% { filter: brightness(1.5) drop-shadow(0 0 10px #e74c3c); } 100% { filter: brightness(1); } }
+
+/* 数字の色を赤にする */
+.floating-text.attack_boost {
+  color: #e74c3c;
+}
+
+/* =========================================
+   デッキ編集画面の横スクロール化
+========================================= */
+#my-deck-board, #catalog-board {
+  flex-wrap: nowrap !important;
+  justify-content: flex-start !important;
+  align-items: center !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  padding-bottom: 15px !important; /* スクロールバー表示用の余白 */
+}
+
+/* カスタムスクロールバー（横スクロールを見やすく操作しやすくする） */
+#my-deck-board::-webkit-scrollbar, #catalog-board::-webkit-scrollbar {
+  height: 12px;
+}
+#my-deck-board::-webkit-scrollbar-track, #catalog-board::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+}
+#my-deck-board::-webkit-scrollbar-thumb, #catalog-board::-webkit-scrollbar-thumb {
+  background: #7f8c8d;
+  border-radius: 6px;
+}
+#my-deck-board::-webkit-scrollbar-thumb:hover, #catalog-board::-webkit-scrollbar-thumb:hover {
+  background: #bdc3c7;
+}
+
+/* =========================================
+   ホーム画面 ファンタジーUI
+========================================= */
+.fantasy-bg {
+  /* 深い夜と魔法を連想させる放射状グラデーション */
+  background: radial-gradient(circle at center, #2c3e50 0%, #0a0a0a 100%) !important;
+}
+
+.fantasy-panel {
+  background: linear-gradient(135deg, rgba(44, 62, 80, 0.9), rgba(26, 37, 47, 0.9));
+  padding: 30px;
+  border-radius: 12px;
+  border: 2px solid #d4af37; /* 重厚なゴールドの枠線 */
+  box-shadow: inset 0 0 15px rgba(212, 175, 55, 0.2), 0 10px 20px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* パネルの内側にうっすら光るエフェクト */
+.fantasy-panel::before {
+  content: "";
+  position: absolute; top: 0; left: 0; width: 100%; height: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.1), transparent);
+  pointer-events: none;
+}
+
+.fantasy-title {
+  margin-top: 0;
+  color: #f1c40f;
+  font-size: 24px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(241, 196, 15, 0.5);
+  font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+}
+
+.fantasy-select, .fantasy-input {
+  font-size: 16px;
+  padding: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 6px;
+  border: 1px solid #7f8c8d;
+  margin-bottom: 10px;
+  background-color: rgba(236, 240, 241, 0.95);
+  color: #2c3e50;
+  font-weight: bold;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+}
+
+.fantasy-select:focus, .fantasy-input:focus {
+  outline: none;
+  border-color: #d4af37;
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.8);
+}
+
+.fantasy-btn {
+  font-size: 16px;
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  color: white;
+  transition: all 0.2s ease-in-out;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+}
+
+.fantasy-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 15px rgba(0,0,0,0.6);
+  filter: brightness(1.2);
+}
+
+/* ファンタジー風の重厚なグラデーションボタン */
+.btn-purple { background: linear-gradient(180deg, #9b59b6, #6c3483); }
+.btn-blue   { background: linear-gradient(180deg, #3498db, #21618c); }
+.btn-green  { background: linear-gradient(180deg, #2ecc71, #1e8449); }
+.btn-red    { background: linear-gradient(180deg, #e74c3c, #922b21); border-color: #f1c40f;}
+
+/* style.cssの適当な場所に追加してください */
+
+/* 反転能力を使用したカードのイラストに適用するクラス */
+.inverted-card-image {
+  /* 左右反転 */
+  transform: scaleX(-1);
+  /* 色反転（1は100%の意味。0〜1の間で調整可能） */
+  filter: invert(1);
+}
+
+/* =========================================
+   引いたばかりのカードのアニメーション
+========================================= */
+.just-drawn-anim {
+  animation: drawFlash 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 100; /* 他のカードより手前に表示 */
+}
+
+@keyframes drawFlash {
+  0% { transform: translateY(-40px) scale(1.15); box-shadow: 0 0 40px #f1c40f, 0 0 20px #fff inset; border-color: #f1c40f; }
+  40% { transform: translateY(-20px) scale(1.05); box-shadow: 0 0 20px rgba(241, 196, 15, 0.8); border-color: rgba(241, 196, 15, 0.8); }
+  100% { transform: translateY(0) scale(1); box-shadow: 0 4px 8px rgba(0,0,0,0.5); border-color: transparent; }
+}
+
+/* =========================================
+   破壊とロストの演出アニメーション
+========================================= */
+/* 💥 破壊演出（パリンと割れて砕け落ちる） */
+.destroy-anim {
+  animation: shatterAnim 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+@keyframes shatterAnim {
+  0% { transform: scale(1) rotate(0deg); opacity: 1; filter: brightness(1); }
+  30% { transform: scale(1.15) rotate(5deg); opacity: 1; filter: brightness(1.5) drop-shadow(0 0 15px white); }
+  100% { transform: scale(0.6) translateY(60px) rotate(-20deg); opacity: 0; filter: brightness(0) blur(4px); }
+}
+
+/* 🌌 ロスト演出（闇に吸い込まれる） */
+.lost-anim {
+  animation: voidAnim 0.6s ease-in forwards;
+}
+@keyframes voidAnim {
+  0% { transform: scale(1); opacity: 1; filter: blur(0px); }
+  50% { transform: scale(0.5) rotate(180deg); opacity: 0.8; filter: blur(5px) brightness(0.5) drop-shadow(0 0 20px #9b59b6); }
+  100% { transform: scale(0) rotate(360deg); opacity: 0; filter: blur(10px) brightness(0); }
+}
