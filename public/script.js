@@ -1705,7 +1705,7 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
       if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
       damageToDeal = 0; 
     } else if (targetLeader.hasBarrier) {
-      targetLeader.hasBarrier = false; damageToDeal = 0; 
+          targetLeader.hasBarrier = false; damageToDeal = 0; playSound('barrier');
     } else {
       targetPlayer.hp -= damageToDeal; 
       actualDamageDealt = damageToDeal;
@@ -1768,14 +1768,14 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
       if (destroyResult.destroyed && (attackerCard.pierce || isSuperPierce) && targetZone === 'center' && damageToDeal > 0) {
         let pierceDamage = isSuperPierce ? finalAtk * 2 : finalAtk;
         if (targetLeader.reflector) {
-          targetLeader.reflector = false;
+          targetLeader.reflector = false; playSound('barrier'); // 👈 音を追加！
           attackerPlayer.hp -= pierceDamage;
           triggerConnection(attackerPlayer.leader, 'damage', pierceDamage);
           showFloatingTextOnElement(`p${attackerPid}-leader-zone`, pierceDamage, 'damage');
           const elLeader = document.getElementById(`p${attackerPid}-leader-zone`);
           if(elLeader) { elLeader.classList.add("damage-anim"); setTimeout(() => elLeader.classList.remove("damage-anim"), 300); }
         } else if (targetLeader.hasBarrier) {
-          targetLeader.hasBarrier = false; damageToDeal = 0; playSound('barrier'); 
+          targetLeader.hasBarrier = false; damageToDeal = 0; playSound('barrier');
         } else {
           targetPlayer.hp -= pierceDamage;
           drainAmount += pierceDamage; 
@@ -1838,16 +1838,16 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
         }
       }
   } else if (attackerZone === 'leader') {
-      if (attackerLeader.name === "王国の勇者" && targetCard && targetCard.type === "monster" && oppCounterAtk > 0) {
-          if (attackerLeader.reflector) {
-              attackerLeader.reflector = false;
+          if (attackerLeader.name === "王国の勇者" && targetCard && targetCard.type === "monster" && oppCounterAtk > 0) {
+              if (attackerLeader.reflector) {
+                  attackerLeader.reflector = false; playSound('barrier');
               targetPlayer.hp -= oppCounterAtk;
               triggerConnection(targetPlayer.leader, 'damage', oppCounterAtk);
               showFloatingTextOnElement(`p${targetPid}-leader-zone`, oppCounterAtk, 'damage');
               const el = document.getElementById(`p${targetPid}-leader-zone`);
               if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
           } else if (attackerLeader.hasBarrier) {
-              attackerLeader.hasBarrier = false;
+                  attackerLeader.hasBarrier = false; playSound('barrier');
           } else {
             attackerPlayer.hp -= oppCounterAtk;
             actualCounterDealt = oppCounterAtk;
