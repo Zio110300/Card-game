@@ -56,3 +56,37 @@ const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
   console.log(`サーバー起動！ 👉 http://localhost:${PORT}`);
 });
+
+// ランダムマッチ用の待機プレイヤーを記憶する変数（io.on の外か上に置いてください）
+    // let waitingRandomPlayer = null; 
+
+    // ランダムマッチの受付処理
+    socket.on('join_random_room', (data) => {
+        if (waitingRandomPlayer) {
+            // 既に待っている人がいれば、マッチング成立！
+            let newRoomId = "random_" + Math.random().toString(36).substring(2, 9); // ランダムな部屋名を作成
+            
+            // ① 待っていた人を部屋に入れる
+            waitingRandomPlayer.socket.join(newRoomId);
+            waitingRandomPlayer.socket.emit("room_assigned", newRoomId);
+            
+            // ② 今アクセスした人を部屋に入れる
+            socket.join(newRoomId);
+            socket.emit("room_assigned", newRoomId);
+            
+            // ③ ゲームを開始させる（通常の join_room と同じように、1Pと2Pを割り振る処理をここで行います）
+            // ※既存の join_room で行っている「プレイヤー番号の割り当て（assign_player）」などを実行してください。
+            
+            waitingRandomPlayer = null; // 待機列を空にする
+        } else {
+            // 誰もいなければ、自分が待機列の1番目になる
+            waitingRandomPlayer = { socket: socket, data: data };
+        }
+    });
+
+    // 待機中に切断されたら列から外す処理
+    socket.on('disconnect', () => {
+        if (waitingRandomPlayer && waitingRandomPlayer.socket.id === socket.id) {
+            waitingRandomPlayer = null;
+        }
+    });
