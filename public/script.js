@@ -132,6 +132,7 @@ function resetCardState(card) {
     newCard.infection = false;
     newCard.burnActive = false;
     newCard.invertUsed = false;
+    newCard.isInverted = false; // 👈 追加：見た目の反転状態を記憶するスイッチ！
     newCard.turnAttackBoost = 0;
     newCard.soul = [];
     newCard.isConnected = false; 
@@ -654,7 +655,7 @@ function generateCardHtml(card, extraAttrs = "", extraClass = "", badgeCount = 1
               <span class="card-name">${card.name}</span>
               ${costHtml}
             </div>
-            <div class="card-image ${card.invertUsed ? 'inverted-card-image' : ''}" style="font-size:40px; padding: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; background-color: #ecf0f1;">
+            <div class="card-image ${card.isInverted ? 'inverted-card-image' : ''}" style="font-size:40px; padding: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; background-color: #ecf0f1;">
               ${imageDisplay}
             </div>
             <div class="card-stats" style="position: relative;">${statsHtml}</div>
@@ -2937,12 +2938,13 @@ function endTurnProcess(pId) {
       p.leader.burnActive = false;
   }
   if (p.weapon) {
-      p.weapon.invertUsed = false; // 👈 復活：アイテムの反転権をターン終了時に回復させる！
+      p.weapon.invertUsed = false; 
   }
   ['left', 'center', 'right'].forEach(z => {
       if (p.stage[z]) {
           p.stage[z].turnAttackBoost = 0;
           p.stage[z].burnActive = false;
+          p.stage[z].invertUsed = false; // 👈 追加：キャラの反転権も毎ターン復活させる！
       }
   });
   let altarPP = 0; let extraDraw = 0;
@@ -3654,6 +3656,7 @@ window.useInvertSkill = function(zone) {
   }
   
   card.invertUsed = true; 
+  card.isInverted = !card.isInverted; // 👈 追加：スキルを使うたびに「見た目スイッチ」をパチッと切り替える！
   window.triggerInvertEffects(myPlayerId, card); 
 
   playSound('buff');
