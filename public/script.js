@@ -12,6 +12,21 @@ let isSoloMode = false;
 
 const DECK_LIMIT = 40;
 
+// 👇👇 ここから追加：処理中のユーザー操作ブロック機能 👇👇
+window.isActionLocked = false; // 処理中かどうかを判定するロック
+
+// 画面のどこをクリック・ドラッグしても、ロック中なら強制キャンセルする最強のバリア！
+document.addEventListener("click", (e) => {
+    if (window.isActionLocked) { e.stopPropagation(); e.preventDefault(); }
+}, true);
+document.addEventListener("dragstart", (e) => {
+    if (window.isActionLocked) { e.stopPropagation(); e.preventDefault(); }
+}, true);
+document.addEventListener("drop", (e) => {
+    if (window.isActionLocked) { e.stopPropagation(); e.preventDefault(); }
+}, true);
+// 👆👆 追加ここまで 👆👆
+
 // 👇👇 ここからサウンドエフェクト（SE）の設定を追加 👇👇
 const sounds = {
   draw: new Audio('audio/draw.mp3'),
@@ -21,8 +36,10 @@ const sounds = {
   huge_damage: new Audio('audio/huge_damage.mp3'),
   heal: new Audio('audio/heal.mp3'),
   buff: new Audio('audio/buff.mp3'),
-  destroy: new Audio('audio/destroy.mp3'), // 👈 追加：破壊された時の音！
-  lost: new Audio('audio/lost.mp3'),       // 👈 追加：ロストされた時の音！
+  barrier: new Audio('audio/barrier.mp3'), // 👈 追加：バリア/リフレクターの音！
+  click: new Audio('audio/click.mp3'),     // 👈 追加：ボタンを押した時の音！
+  destroy: new Audio('audio/destroy.mp3'), 
+  lost: new Audio('audio/lost.mp3'),       
   burn: new Audio('audio/burn.mp3'),
   win: new Audio('audio/win.mp3'),
   lose: new Audio('audio/lose.mp3')
@@ -108,19 +125,25 @@ if (!myLeaderCard) { myLeaderCard = getCardTypes().find(c => c.type === "leader"
 function resetCardState(card) {
   const template = getCardTypes().find(c => c.name === card.name);
   if (template) {
-    if (template.attack !== undefined) card.attack = template.attack;
-    if (template.hp !== undefined) card.hp = template.hp;
-    if (template.effectValue !== undefined) card.effectValue = template.effectValue;
-    card.cost = card.originalCost !== undefined ? card.originalCost : template.cost;
-    card.reflector = template.reflector || false;
+    let newCard = JSON.parse(JSON.stringify(template));
+    newCard.id = card.id; // 盤面の固有IDだけは引き継ぐ
+    newCard.attackCount = 0;
+    newCard.hasBarrier = false;
+    newCard.infection = false;
+    newCard.burnActive = false;
+    newCard.invertUsed = false;
+    newCard.turnAttackBoost = 0;
+    newCard.soul = [];
+    newCard.isConnected = false; 
+    newCard.justDrawn = false;
+    
+    // 👇 強制リセットの安全装置：大元のテンプレートから直接HPと攻撃力を上書き！
+    if (template.hp !== undefined) newCard.hp = template.hp;
+    if (template.attack !== undefined) newCard.attack = template.attack;
+    if (template.cost !== undefined) newCard.cost = template.cost;
+    
+    return newCard;
   }
-  card.attackCount = 0;
-  card.hasBarrier = false;
-  card.infection = false;
-  card.burnActive = false;
-  card.invertUsed = false;
-  card.turnAttackBoost = 0;
-  card.soul = [];
   return card;
 }
 
@@ -241,6 +264,7 @@ deckSelect.addEventListener("change", (e) => {
 });
 
 newDeckBtn.addEventListener("click", () => {
+  playSound('click');
   savedDecks.push({ name: `新規デッキ ${savedDecks.length + 1}`, deck: [], leader: null });
   currentDeckIndex = savedDecks.length - 1;
   localStorage.setItem("savedDecks", JSON.stringify(savedDecks));
@@ -252,6 +276,7 @@ newDeckBtn.addEventListener("click", () => {
 });
 
 copyDeckBtn.addEventListener("click", () => {
+  playSound('click');
   let currentDeck = savedDecks[currentDeckIndex];
   let newDeck = JSON.parse(JSON.stringify(currentDeck));
   newDeck.name = currentDeck.name + " (コピー)";
@@ -266,11 +291,13 @@ copyDeckBtn.addEventListener("click", () => {
 });
 
 editDeckBtn.addEventListener("click", () => {
+  playSound('click'); // 👈 これを追加！
   if (!myLeaderCard) myLeaderCard = getCardTypes().find(c => c.type === "leader");
   openDeckEditor();
 });
 
 deleteDeckBtn.addEventListener("click", () => {
+  playSound('click');
   if (confirm("本当にこのデッキを削除しますか？\n（この操作は取り消せません）")) {
     savedDecks.splice(currentDeckIndex, 1);
     if (savedDecks.length === 0) {
@@ -309,8 +336,32 @@ joinRoomBtn.addEventListener("click", () => {
   } else { alert("合言葉を入力してください！"); }
 });
 
+const randomMatchBtn = document.getElementById("random-match-btn");
+
+randomMatchBtn.addEventListener("click", () => {
+  playSound('click');
+  if (myCustomDeck.length !== DECK_LIMIT) { alert(`デッキは必ず ${DECK_LIMIT}枚 にしてください！（現在 ${myCustomDeck.length}枚）`); return; }
+  
+  isSoloMode = false;
+  homeScreen.style.display = "none"; 
+  document.getElementById('game-wrap').style.display = 'block';
+  resizeGame();
+  
+  infoPanel.innerHTML = `🎲 対戦相手を探しています...`;
+  infoPanel.style.backgroundColor = "#9b59b6";
+  
+  // サーバーに「ランダムマッチ待機列に入れて！」とお願いする
+  socket.emit("join_random_room", { deck: myCustomDeck, leader: myLeaderCard, playerId: myPlayerId }); 
+});
+
+// サーバーから「相手が見つかって部屋ができたよ！」と返ってきた時の処理
+socket.on('room_assigned', (roomId) => {
+    myRoomId = roomId; // 割り当てられた部屋番号をセット
+});
+
 // ★ ボス選択の処理を追加
 soloModeBtn.addEventListener("click", () => {
+  playSound('click'); // 👈 これを追加！
   if (myCustomDeck.length !== DECK_LIMIT) { alert(`デッキは必ず ${DECK_LIMIT}枚 にしてください！（現在 ${myCustomDeck.length}枚）`); return; }
   isSoloMode = true;
   myRoomId = "solo-room"; 
@@ -342,6 +393,7 @@ soloModeBtn.addEventListener("click", () => {
 });
 
 saveDeckBtn.addEventListener("click", () => {
+  playSound('click');
   if (myCustomDeck.length !== DECK_LIMIT && myCustomDeck.length > 0) {
     if(!confirm(`デッキが${DECK_LIMIT}枚ではありません（現在${myCustomDeck.length}枚）。\nこのまま保存して戻りますか？`)) return;
   }
@@ -602,7 +654,7 @@ function generateCardHtml(card, extraAttrs = "", extraClass = "", badgeCount = 1
               <span class="card-name">${card.name}</span>
               ${costHtml}
             </div>
-            <div class="card-image" style="font-size:40px; padding: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; background-color: #ecf0f1;">
+            <div class="card-image ${card.invertUsed ? 'inverted-card-image' : ''}" style="font-size:40px; padding: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; background-color: #ecf0f1;">
               ${imageDisplay}
             </div>
             <div class="card-stats" style="position: relative;">${statsHtml}</div>
@@ -1337,11 +1389,14 @@ function renderAll() {
 function attachHandListeners() {
   document.querySelectorAll(".hand-board .card").forEach(el => {
     el.addEventListener("dragstart", (e) => { 
-      if(isSelectingHand || isSelectingStage) { e.preventDefault(); return; } 
+      // 👇 変更：window.isActionLocked を条件に追加！
+      if(window.isActionLocked || isSelectingHand || isSelectingStage) { e.preventDefault(); return; } 
       if(el.dataset.id) { e.dataTransfer.setData("text/plain", JSON.stringify({ type: 'hand', id: el.dataset.id })); el.classList.add("dragging"); } 
     });
     el.addEventListener("dragend", () => el.classList.remove("dragging"));
     el.addEventListener("click", () => {
+      // 👇 追加：クリック時もロックをチェック！
+      if(window.isActionLocked) return;
       if(!el.dataset.pid) return; const pid = Number(el.dataset.pid); if(pid !== myPlayerId) return; 
       if (isSelectingStage) return;
 
@@ -1376,13 +1431,16 @@ function attachHandListeners() {
 function attachStageListeners() {
   document.querySelectorAll(".stage-zone .card").forEach(el => {
     el.addEventListener("dragstart", (e) => {
-      if (isSelectingHand || isSelectingStage) { e.preventDefault(); return; } 
+      // 👇 変更：window.isActionLocked を条件に追加！
+      if (window.isActionLocked || isSelectingHand || isSelectingStage) { e.preventDefault(); return; } 
       const pid = Number(el.dataset.pid); const zone = el.dataset.zone;
       e.dataTransfer.setData("text/plain", JSON.stringify({ type: 'attack', pid: pid, zone: zone }));
       el.classList.add("dragging"); document.body.classList.add("attack-dragging"); 
     });
     el.addEventListener("dragend", () => { el.classList.remove("dragging"); document.body.classList.remove("attack-dragging"); });
     el.addEventListener("click", () => {
+      // 👇 追加：クリック時もロックをチェック！
+      if(window.isActionLocked) return;
       const pid = Number(el.dataset.pid); const zone = el.dataset.zone; const p = players[pid];
       
       if (isSelectingStage) {
@@ -1569,6 +1627,9 @@ function showFloatingTextOnElement(elementId, value, type) {
 
 // 👇 変更：async を付けて「待機（await）」ができるようにする！
 async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
+  let wasLocked = window.isActionLocked;
+  window.isActionLocked = true; // 🔒 処理開始！操作をロックする
+  try {
   const attackerPlayer = players[attackerPid]; const targetPlayer = players[targetPid];
   const attackerLeader = attackerPlayer.leader; const targetLeader = targetPlayer.leader;
   let drainAmount = 0;
@@ -1631,7 +1692,7 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
   
   if (targetZone === 'leader') { 
     if (targetLeader.reflector) {
-      targetLeader.reflector = false; 
+      targetLeader.reflector = false; playSound('barrier');
       attackerPlayer.hp -= damageToDeal; 
       triggerConnection(attackerPlayer.leader, 'damage', damageToDeal); 
       showFloatingTextOnElement(`p${attackerPid}-leader-zone`, damageToDeal, 'damage'); 
@@ -1660,7 +1721,7 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
     oppCounterAtk = 0; 
   } else { 
     if (targetCard.reflector) {
-      targetCard.reflector = false; 
+      targetCard.reflector = false; playSound('barrier'); 
       attackerPlayer.hp -= damageToDeal; 
       triggerConnection(attackerPlayer.leader, 'damage', damageToDeal); 
       showFloatingTextOnElement(`p${attackerPid}-leader-zone`, damageToDeal, 'damage'); 
@@ -1668,7 +1729,7 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
       if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
       damageToDeal = 0; 
     } else if (targetCard.hasBarrier) {
-      targetCard.hasBarrier = false; damageToDeal = 0; 
+      targetCard.hasBarrier = false; damageToDeal = 0; playSound('barrier'); 
     } else {
       targetCard.hp -= damageToDeal; 
       actualDamageDealt = damageToDeal;
@@ -1709,7 +1770,7 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
           const elLeader = document.getElementById(`p${attackerPid}-leader-zone`);
           if(elLeader) { elLeader.classList.add("damage-anim"); setTimeout(() => elLeader.classList.remove("damage-anim"), 300); }
         } else if (targetLeader.hasBarrier) {
-          targetLeader.hasBarrier = false; 
+          targetLeader.hasBarrier = false; damageToDeal = 0; playSound('barrier'); 
         } else {
           targetPlayer.hp -= pierceDamage;
           drainAmount += pierceDamage; 
@@ -1742,7 +1803,7 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
       }
       if (counterDmg > 0) {
         if (attackerCard.reflector) {
-          attackerCard.reflector = false;
+          attackerCard.reflector = false; playSound('barrier');
           targetPlayer.hp -= counterDmg;
           triggerConnection(targetPlayer.leader, 'damage', counterDmg);
           showFloatingTextOnElement(`p${targetPid}-leader-zone`, counterDmg, 'damage');
@@ -1750,7 +1811,7 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
           if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
           actualCounterDealt = 0; 
         } else if (attackerCard.hasBarrier) {
-          attackerCard.hasBarrier = false; 
+          attackerCard.hasBarrier = false; playSound('barrier'); 
         } else {
           attackerCard.hp -= counterDmg; 
           actualCounterDealt = counterDmg;
@@ -1823,6 +1884,9 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
   }
 
   renderAll(); sendGameState(); 
+  } finally {
+    if (!wasLocked) window.isActionLocked = false; // 🔓 処理完了！ロックを解除する
+  }
 }
 
 function playCard(cardId, targetZone, pId) {
@@ -1865,7 +1929,7 @@ function playCard(cardId, targetZone, pId) {
           let emptyZ = emptyZones[0]; 
           
           p.trash.splice(index, 1);
-          targetCard.attackCount = 0; targetCard.hasBarrier = false; targetCard.soul = []; targetCard.infection = false; targetCard.turnAttackBoost = 0; targetCard.burnActive = false;
+          targetCard = resetCardState(targetCard); // 👈 リセット追加！
           targetCard.hp = 1;
           p.stage[emptyZ] = targetCard;
           
@@ -1925,7 +1989,7 @@ function playCard(cardId, targetZone, pId) {
                   let targetCard = p.trash[index]; if (!targetCard || targetCard.type !== "monster") return;
                   window.cancelActionCallback = null;
                   p.trash.splice(index, 1);
-                  targetCard.attackCount = 0; targetCard.hasBarrier = false; targetCard.soul = []; targetCard.infection = false; targetCard.turnAttackBoost = 0; targetCard.burnActive = false;
+                  targetCard = resetCardState(targetCard); // 👈 リセット追加！
                   p.stage[emptyZones[0]] = targetCard;
                   ['left', 'center', 'right'].forEach(z => {
                       if (p.stage[z] && p.stage[z].type === "monster") {
@@ -2589,7 +2653,7 @@ function playCard(cardId, targetZone, pId) {
                     let targetCard = p.trash[index]; if (!targetCard || targetCard.type !== "monster") return;
                     consumeThisMagic(); // ここでコスト消費
                     p.trash.splice(index, 1);
-                    targetCard.attackCount = 0; targetCard.hasBarrier = false; targetCard.soul = []; targetCard.infection = false; targetCard.turnAttackBoost = 0; targetCard.burnActive = false;
+                    targetCard = resetCardState(targetCard); // 👈 リセット追加！
                     p.stage.center = targetCard;
                     
                     window.isSelectingTrash = false; window.selectionTrashCallback = null; pendingSelection = null;
@@ -2639,7 +2703,7 @@ function playCard(cardId, targetZone, pId) {
         if (monsters.length > 0 && emptyZone) {
             let randIndex = Math.floor(Math.random() * monsters.length);
             let recoveredCard = monsters.splice(randIndex, 1)[0];
-            recoveredCard.attackCount = 0; recoveredCard.hasBarrier = false; recoveredCard.soul = []; recoveredCard.infection = false; recoveredCard.turnAttackBoost = 0; recoveredCard.burnActive = false;
+            recoveredCard = resetCardState(recoveredCard); // 👈 リセット追加！
             p.stage[emptyZone] = recoveredCard;
         }
         drawCard(pId); drawCard(pId); drawCard(pId);
@@ -2686,12 +2750,16 @@ function playCard(cardId, targetZone, pId) {
   }
 
   if (isSuccess) { 
-      playSound('play'); // 👈 追加：カードを出した・魔法を唱えた音！
+      playSound('play'); 
       if (card.type === "magic" && p.weapon && p.weapon.name === "魔法の杖") {
           p.mp = Math.min(p.maxMp, p.mp + 1);
       }
       showCardEffect(card); 
       if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card }); 
+
+      // 👇 追加：カードを出した直後、0.3秒間は他のすべての操作をロック（停止）する！
+      window.isActionLocked = true;
+      setTimeout(() => { window.isActionLocked = false; }, 300);
   }
   renderAll(); sendGameState(); 
 } 
@@ -2802,18 +2870,27 @@ function endTurnProcess(pId) {
           });
       }
       if (c && c.name === "影陰る瞳 インサイト") {
-          c.hp -= 2; triggerConnection(c, 'damage', 2);
-          showFloatingTextOnElement(`p${pId}-stage-${z}`, 2, 'damage');
-          const el = document.getElementById(`p${pId}-stage-${z}`); // 👈 追加
-          if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); } // 👈 追加
-          if (c.hp <= 0) destroyCard(pId, z, false);
+          if (c.reflector) { c.reflector = false; } // 👈 追加：自身へのダメージなので反射は消えるだけ
+          else if (c.hasBarrier) { c.hasBarrier = false; } // 👈 追加：バリアで防ぐ
+          else {
+              c.hp -= 2; triggerConnection(c, 'damage', 2);
+              showFloatingTextOnElement(`p${pId}-stage-${z}`, 2, 'damage');
+              const el = document.getElementById(`p${pId}-stage-${z}`); 
+              if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); } 
+              if (c.hp <= 0) destroyCard(pId, z, false);
+          }
       }
       if (c && c.name === "反光 シェード") {
-          c.hp -= 1; c.reflector = true; triggerConnection(c, 'damage', 1);
-          showFloatingTextOnElement(`p${pId}-stage-${z}`, 1, 'damage');
-          const el = document.getElementById(`p${pId}-stage-${z}`); // 👈 追加
-          if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); } // 👈 追加
-          if (c.hp <= 0) destroyCard(pId, z, false);
+          if (c.reflector) { c.reflector = false; } // 👈 追加：自身へのダメージなので反射は消えるだけ
+          else if (c.hasBarrier) { c.hasBarrier = false; } // 👈 追加：バリアで防ぐ
+          else {
+              c.hp -= 1; triggerConnection(c, 'damage', 1);
+              showFloatingTextOnElement(`p${pId}-stage-${z}`, 1, 'damage');
+              const el = document.getElementById(`p${pId}-stage-${z}`); 
+              if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); } 
+              if (c.hp <= 0) destroyCard(pId, z, false);
+          }
+          c.reflector = true; // 👈 追加：ダメージ処理の後にリフレクターを張り直す！
       }
       if (c && c.name === "白鯨神") {
           ['left', 'center', 'right'].forEach(oz => {
@@ -2835,7 +2912,14 @@ function endTurnProcess(pId) {
               if (oppCard.name === "黒鱗の竜人" && oppZone === 'center') { dmg = 1; }
               
               if (dmg > 0) {
-                  if (oppCard.hasBarrier) {
+                  if (oppCard.reflector) { // 👈 追加：リフレクター処理
+                      oppCard.reflector = false;
+                      p.hp -= dmg;
+                      triggerConnection(p.leader, 'damage', dmg);
+                      showFloatingTextOnElement(`p${pId}-leader-zone`, dmg, 'damage');
+                      const el = document.getElementById(`p${pId}-leader-zone`);
+                      if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
+                  } else if (oppCard.hasBarrier) {
                       oppCard.hasBarrier = false;
                   } else {
                       oppCard.hp -= dmg;
@@ -2853,13 +2937,12 @@ function endTurnProcess(pId) {
       p.leader.burnActive = false;
   }
   if (p.weapon) {
-      p.weapon.invertUsed = false; // 👈 追加：ターン終了時にアイテムの反転権を復活させる！
+      p.weapon.invertUsed = false; // 👈 復活：アイテムの反転権をターン終了時に回復させる！
   }
   ['left', 'center', 'right'].forEach(z => {
       if (p.stage[z]) {
           p.stage[z].turnAttackBoost = 0;
           p.stage[z].burnActive = false;
-          p.stage[z].invertUsed = false;
       }
   });
   let altarPP = 0; let extraDraw = 0;
@@ -2895,7 +2978,9 @@ endTurnBtn.addEventListener("click", () => {
 
 async function playAITurn() {
   if (isGameOver || currentTurn !== 2) return;
-  
+  let wasLocked = window.isActionLocked;
+  window.isActionLocked = true; // 🔒 処理開始！操作をロックする
+  try {
   let bossName = players[2].leader.name;
   infoPanel.innerHTML = `🤖 ${bossName}のターン...`;
   renderAll();
@@ -3046,6 +3131,9 @@ async function playAITurn() {
   // 👆👆 ここまで追加 👆👆
 
   endTurnProcess(2);
+  } finally {
+      if (!wasLocked) window.isActionLocked = false; // 🔓 処理完了！ロックを解除する
+  }
 }
 
 // =========================================================
@@ -3470,7 +3558,7 @@ window.useNoroshiSkill = function(zone) {
         let targetCard = p.trash[index]; if (!targetCard || targetCard.type !== "monster") return;
         
         p.trash.splice(index, 1);
-        targetCard.attackCount = 0; targetCard.hasBarrier = false; targetCard.soul = []; targetCard.infection = false; targetCard.turnAttackBoost = 0; targetCard.burnActive = false;
+        targetCard = resetCardState(targetCard); // 👈 リセット追加！
         
         // 👇 修正：新しくキャラを配置する「前」に、反逆の光旗を破壊して場所を空ける！
         destroyCard(myPlayerId, zone, false);
