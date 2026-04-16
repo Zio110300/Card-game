@@ -500,14 +500,16 @@ hr { margin: 5px 0 !important; border-width: 1px !important; }
 /* =========================================
    破壊とロストの演出アニメーション
 ========================================= */
-/* 💥 破壊演出（パリンと割れて砕け落ちる） */
+/* 💥 破壊演出（閃光と共にその場で霧散する、拡大なし） */
 .destroy-anim {
-  animation: shatterAnim 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  animation: burstFadeAnim 0.4s ease-out forwards; /* アニメーション名を変更 */
 }
-@keyframes shatterAnim {
-  0% { transform: scale(1) rotate(0deg); opacity: 1; filter: brightness(1); }
-  30% { transform: scale(1.15) rotate(5deg); opacity: 1; filter: brightness(1.5) drop-shadow(0 0 15px white); }
-  100% { transform: scale(0.6) translateY(60px) rotate(-20deg); opacity: 0; filter: brightness(0) blur(4px); }
+@keyframes burstFadeAnim {
+  0% { transform: scale(1); opacity: 1; filter: brightness(1); }
+  /* 一瞬だけ強烈に発光するが、サイズはそのまま */
+  20% { transform: scale(1); opacity: 1; filter: brightness(2.5) drop-shadow(0 0 30px #fff) drop-shadow(0 0 15px #f1c40f); }
+  /* その場でブラー（ぼかし）と共にフェードアウトして消える */
+  100% { transform: scale(1); opacity: 0; filter: brightness(3) blur(10px); }
 }
 
 /* 🌌 ロスト演出（闇に吸い込まれる） */
@@ -518,4 +520,47 @@ hr { margin: 5px 0 !important; border-width: 1px !important; }
   0% { transform: scale(1); opacity: 1; filter: blur(0px); }
   50% { transform: scale(0.5) rotate(180deg); opacity: 0.8; filter: blur(5px) brightness(0.5) drop-shadow(0 0 20px #9b59b6); }
   100% { transform: scale(0) rotate(360deg); opacity: 0; filter: blur(10px) brightness(0); }
+}
+
+/* =========================================
+   コール＆蘇生アニメーション
+========================================= */
+/* 🌟 魔法陣展開コール */
+.magic-circle-effect {
+  position: absolute; top: 50%; left: 50%;
+  width: 140px; height: 140px;
+  margin-top: -70px; margin-left: -70px;
+  border-radius: 50%;
+  border: 4px dashed rgba(0, 210, 255, 0.8); 
+  box-shadow: 0 0 25px #00d2ff, inset 0 0 25px #00d2ff;
+  pointer-events: none; z-index: 50000;
+  display: flex; justify-content: center; align-items: center;
+  animation: magicCircleAnim 0.8s ease-out forwards;
+}
+.magic-circle-effect::after {
+  content: "✡"; font-size: 80px; color: rgba(0, 210, 255, 0.8); 
+  text-shadow: 0 0 20px #00d2ff;
+  animation: magicCircleInner 0.8s linear forwards;
+}
+@keyframes magicCircleAnim {
+  0% { transform: scale(0) rotate(0deg); opacity: 0; filter: brightness(2); }
+  30% { transform: scale(1.2) rotate(90deg); opacity: 1; filter: brightness(1.5); }
+  100% { transform: scale(1.5) rotate(180deg); opacity: 0; filter: brightness(1); }
+}
+@keyframes magicCircleInner { 0% { transform: rotate(0deg); } 100% { transform: rotate(-180deg); } }
+
+/* 🔄 蘇生コール（破片が集まる） */
+.revive-effect-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50000; }
+.revive-shard {
+  position: absolute; top: 50%; left: 50%;
+  width: 20px; height: 20px; background: rgba(155, 89, 182, 0.9);
+  box-shadow: 0 0 15px #9b59b6, 0 0 30px #e74c3c;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  animation: reviveShardAnim 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+@keyframes reviveShardAnim {
+  0% { transform: translate(var(--startX), var(--startY)) rotate(var(--startRot)) scale(0); opacity: 0; filter: brightness(3); }
+  20% { opacity: 1; scale: 1.5; }
+  80% { transform: translate(-50%, -50%) rotate(0deg) scale(1.2); opacity: 1; filter: brightness(2); }
+  100% { transform: translate(-50%, -50%) rotate(0deg) scale(2); opacity: 0; filter: brightness(4); }
 }
