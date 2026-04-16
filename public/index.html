@@ -9,6 +9,10 @@
   
   <div id="home-screen" class="fantasy-bg" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center;">
     
+    <div style="position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; z-index: 10000;">
+      <button id="bgm-toggle-btn" class="fantasy-btn btn-blue" style="padding: 8px 15px; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.5);">🎵 BGM: ON</button>
+      <button id="se-toggle-btn" class="fantasy-btn btn-green" style="padding: 8px 15px; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.5);">🔊 SE: ON</button>
+    </div>
     <h1 style="color: #f1c40f; font-size: 56px; margin-bottom: 50px; text-shadow: 0 0 20px #f1c40f, 3px 3px 5px #000; font-family: 'Palatino Linotype', serif; letter-spacing: 4px;">⚔️ CARD BATTLE ⚔️</h1>
     
     <div style="display: flex; flex-direction: row; justify-content: center; align-items: stretch; gap: 40px; width: 90%; max-width: 1200px;">
@@ -51,6 +55,13 @@
     </div>
   </div>
 
+  <div id="waiting-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: radial-gradient(circle, #2c3e50 0%, #0a0a0a 100%); z-index: 42000; flex-direction: column; justify-content: center; align-items: center;">
+    <h2 id="waiting-title" style="color: #f1c40f; font-size: 36px; margin-bottom: 30px; text-shadow: 0 0 15px #f1c40f; font-style: italic;">対戦相手を探しています...</h2>
+    <div id="waiting-card-container" style="display: flex; flex-direction: column; align-items: center; background: rgba(0,0,0,0.5); padding: 30px; border-radius: 15px; border: 2px solid #7f8c8d; box-shadow: 0 0 20px rgba(0,0,0,0.8);">
+       <div id="waiting-card"></div>
+       <div id="waiting-flavor" style="color: #ecf0f1; font-size: 18px; font-style: italic; margin-top: 20px; max-width: 400px; text-align: center; line-height: 1.5; font-weight: bold;"></div>
+    </div>
+  </div>
   <div id="deck-edit-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #2c3e50; z-index: 10000; display: none; flex-direction: column; align-items: center; overflow-y: auto; padding: 20px 0;">
     
     <div style="display: flex; width: 95%; max-width: 1200px; gap: 15px; margin-bottom: 15px;">
@@ -169,6 +180,21 @@
     </div>
   </div>
 
+  <div id="vs-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 45000; flex-direction: row; justify-content: center; align-items: center; overflow: hidden; background-image: radial-gradient(circle, rgba(44,62,80,0.9) 0%, rgba(0,0,0,0.95) 100%);">
+    
+    <div id="vs-p1-container" style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; transform: translateX(-100vw); transition: transform 0.4s ease-out;">
+      <div id="vs-p1-name" style="color: #3498db; font-size: 48px; font-weight: bold; margin-bottom: 50px; text-shadow: 0 0 15px #3498db, 0 0 5px #fff; font-family: 'Palatino Linotype', serif;">PLAYER 1</div>
+      <div id="vs-p1-card"></div>
+    </div>
+    
+    <div id="vs-text" style="font-size: 150px; font-weight: bold; color: #f1c40f; font-style: italic; text-shadow: 0 0 40px #f1c40f, 0 0 10px #fff; transform: scale(0); transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10; margin: 0 -50px;">VS</div>
+    
+    <div id="vs-p2-container" style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; transform: translateX(100vw); transition: transform 0.4s ease-out;">
+      <div id="vs-p2-name" style="color: #e74c3c; font-size: 48px; font-weight: bold; margin-bottom: 50px; text-shadow: 0 0 15px #e74c3c, 0 0 5px #fff; font-family: 'Palatino Linotype', serif;">PLAYER 2</div>
+      <div id="vs-p2-card"></div>
+    </div>
+
+  </div>
   <div id="floating-text-container" class="floating-text-container"></div>
   <script src="/socket.io/socket.io.js"></script>
   <script>const socket = io();</script>
