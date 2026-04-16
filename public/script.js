@@ -51,15 +51,26 @@ Object.values(sounds).forEach(audio => {
     audio.volume = 0.5;
 });
 
+// 👇 追加：tension（タメの音）の再生速度を1.5倍速にして緊迫感を出す！
+if (sounds.tension) sounds.tension.playbackRate = 1.5; // (2.0で2倍速になります)
+
 // 👇👇 追加：BGMの設定 👇👇
 const bgm = {
   home: new Audio('audio/home_bgm.mp3'),
-  battle: new Audio('audio/battle_bgm.mp3')
+  battle1: new Audio('audio/battle_bgm1.mp3'),
+  battle2: new Audio('audio/battle_bgm2.mp3'),
+  battle3: new Audio('audio/battle_bgm3.mp3'),
+  battle4: new Audio('audio/battle_bgm4.mp3'),
+  battle5: new Audio('audio/battle_bgm5.mp3'),
+  boss: new Audio('audio/boss_bgm.mp3')
 };
 Object.values(bgm).forEach(audio => { audio.volume = 0.3; audio.loop = true; }); // BGMはループ再生＆少し控えめな音量に
 
 let currentBGM = null;
 let fadeOutInterval = null; // 👈 追加：フェードアウト用のタイマー変数
+
+// 👇 追加：現在のバトルBGMの種類を記憶する変数
+window.currentBattleBgmType = 'battle1';
 
 // 👇 追加：サウンドのON/OFF状態を保存する変数（ブラウザに記憶させます） 👇
 let isBgmOn = localStorage.getItem('isBgmOn') !== 'false'; // デフォルトON
@@ -361,7 +372,8 @@ if (bgmToggleBtn) {
         localStorage.setItem("isBgmOn", isBgmOn); // 設定を保存
         updateSoundToggleUI();
         if (isBgmOn) {
-            if (isGameStarted && !isGameOver) playBGM('battle');
+            // 👇 修正：ONにした時、現在設定されているランダムバトルBGM（またはボスBGM）を鳴らす！
+            if (isGameStarted && !isGameOver) playBGM(window.currentBattleBgmType);
             else playBGM('home');
         } else {
             if (currentBGM) currentBGM.pause(); // OFFにした瞬間に止める
@@ -907,7 +919,12 @@ socket.on('game_updated', (gameState) => {
          document.getElementById("waiting-overlay").style.display = "none";
          document.getElementById('game-wrap').style.display = 'block';
          resizeGame();
-         playBGM('battle'); // バトルBGMスタート
+         
+         // 👇 修正：P2側もランダム（またはボス）BGMを決めて再生する！
+         if (isSoloMode) window.currentBattleBgmType = 'boss';
+         else window.currentBattleBgmType = 'battle' + (Math.floor(Math.random() * 5) + 1);
+         playBGM(window.currentBattleBgmType);
+         
          showVsScreen();    // P2もVS画面を出す！
      }
      
@@ -1033,7 +1050,16 @@ function getCardTypes() {
 function startGame() {
   isGameOver = false; 
   window.isResultProcessing = false; // 👈 リザルト処理のストッパーをリセット！
-  playBGM('battle');
+  
+  // 👇 修正：ボス戦なら専用BGM、対人戦なら1〜5のランダムBGMを決定して流す！
+  if (isSoloMode) {
+      window.currentBattleBgmType = 'boss';
+  } else {
+      let rand = Math.floor(Math.random() * 5) + 1; // 1〜5のランダムな数字を作る
+      window.currentBattleBgmType = 'battle' + rand;
+  }
+  playBGM(window.currentBattleBgmType);
+  
   currentTurn = Math.random() < 0.5 ? 1 : 2; 
   isGameStarted = true;
   isSelectingHand = false; selectionCallback = null;
@@ -1224,7 +1250,10 @@ window.useLeaderSkill = async function() {
       playSound('play');
       showCardEffect(p.leader);
       if (!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: p.leader }); 
-      await new Promise(r => setTimeout(r, 2200)); 
+      
+      // 👇 修正：ダメージ発生前の「タメ」のタイミングでtensionを鳴らす！
+      playSound('tension');
+      await new Promise(r => setTimeout(r, 1500)); // 👈 2200から1500に変更し、音と完璧に同期！
       
       let oppId = myPlayerId === 1 ? 2 : 1;
       let oppP = players[oppId];
@@ -1855,11 +1884,7 @@ function showFloatingTextOnElement(elementId, value, type) {
               gameWrap.classList.remove("screen-shake-anim");
           }, 500); // 0.5秒間揺らして止める
       }
-      
-      // 👇 追加：大ダメージの「間（タメ）」の最中に効果音を鳴らす！
-      setTimeout(() => {
-          playSound('tension'); 
-      }, 400); // 激しい揺れと轟音が落ち着いた直後（0.4秒後）の静寂に鳴らす！
+      // 🌟 ここにあった playSound('tension') を削除しました（ダメージ発生前に移動するため） 🌟
   }
 }
 // 👆👆ここまで追加👆👆
@@ -1892,6 +1917,11 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
   else if (targetZone !== 'leader' && (!targetCard || targetCard.type !== "monster")) { return; }
 
   if (targetCard && targetCard.name === "\"Born from competition\" GR") { return; }
+
+  // 👇 追加：攻撃先が確定したこの瞬間に、行動済み（レスト）状態にして画面を更新する！
+  if (attackerZone === 'leader') attackerPlayer.leaderAttackCount++; 
+  else attackerCard.attackCount = (attackerCard.attackCount || 0) + 1;
+  renderAll(); // 👈 すぐに画面を暗く（レスト状態に）して操作感をアップ！
 
   let bonusAttack = 0; Object.values(attackerPlayer.stage).forEach(c => { if(c && c.name === "戦女神の加護") bonusAttack += c.effectValue; });
   let finalAtk = 0;
@@ -1927,6 +1957,16 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
   if (attackerCard.burnActive && attackerCard.name === "\"To Just Zero\" A8000" && targetZone !== 'leader') {
       damageToDeal += 2;
   }
+
+  // 👇 修正：通常攻撃や「反射」で10以上の大ダメージが発生する直前にタメを作る！
+  let willReflect = (targetZone === 'leader') ? targetLeader.reflector : (targetCard && targetCard.reflector);
+  let willBarrier = (targetZone === 'leader') ? targetLeader.hasBarrier : (targetCard && targetCard.hasBarrier);
+  
+  if (damageToDeal >= 10 && (!willBarrier || willReflect)) {
+      playSound('tension');
+      await new Promise(r => setTimeout(r, 1200));
+  }
+  // 👆 追加ここまで
 
   let oppCounterAtk = 0; 
   let actualDamageDealt = 0;
@@ -2009,6 +2049,13 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
         await new Promise(r => setTimeout(r, 600)); // 👈 追加①：貫通が当たる前に、センターの破壊演出を見せるための「間」
 
         let pierceDamage = isSuperPierce ? finalAtk * 2 : finalAtk;
+        
+        // 👇 追加：貫通（超貫通）ダメージが10以上の時、リーダーに当たる直前にタメを作る！
+        if (pierceDamage >= 10 && (!targetLeader.hasBarrier || targetLeader.reflector)) {
+            playSound('tension');
+            await new Promise(r => setTimeout(r, 1200));
+        }
+
         if (targetLeader.reflector) {
           targetLeader.reflector = false; playSound('barrier');
           attackerPlayer.hp -= pierceDamage;
@@ -2056,6 +2103,14 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
       if (attackerCard.name === "魔導騎兵") {
           counterDmg -= 1; if (counterDmg < 0) counterDmg = 0;
       }
+      
+      // 👇 修正：反撃や「反撃の反射」で大ダメージが発生する直前にタメを作る！
+      if (counterDmg >= 10 && (!attackerCard.hasBarrier || attackerCard.reflector)) {
+          playSound('tension');
+          await new Promise(r => setTimeout(r, 1200));
+      }
+      // 👆 追加ここまで
+
       if (counterDmg > 0) {
         if (attackerCard.reflector) {
           attackerCard.reflector = false; playSound('barrier');
@@ -2125,8 +2180,7 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
       else if (attackerCard) attackerCard.infection = true;
   }
 
-  if (attackerZone === 'leader') attackerPlayer.leaderAttackCount++; 
-  else attackerCard.attackCount = (attackerCard.attackCount || 0) + 1;
+  // 🌟 ここにあった attackCount を増やす処理は上（確定時）に移動したため削除しました！ 🌟
 
   if (attackerCard && attackerCard.drain && drainAmount > 0) {
     if (attackerZone === 'leader') {
@@ -2662,13 +2716,16 @@ async function playCard(cardId, targetZone, pId) {
     if (!isTargetedMagic) { 
         consumeThisMagic(); 
         
-        // 👇 修正：魔法の効果ダメージが入る「前」にプレイ演出を出す！
         playSound('play');
         showCardEffect(card);
         if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card });
 
-        // 👇 追加：カードのカットインをしっかり見せるための「間（0.6秒）」を作る！
-        await new Promise(r => setTimeout(r, 1200)); 
+        // 👇 修正：大ダメージを伴う魔法なら「tension」と長いタメを入れるが、それ以外は間を開けない！
+        if (card.name === "Absolute punisher！" || card.name === "Erotion the future" || card.name === "侵界の雨") {
+            playSound('tension');
+            await new Promise(r => setTimeout(r, 1500)); // 👈 大ダメージ用の緊張感あるタメ！
+        } 
+        // 🌟 ここにあった else の待機時間を削除し、ドローや回復などは瞬時に効果が出るようにしました！
     }
     
     if (card.name === "RBA") {
@@ -3397,6 +3454,9 @@ async function playAITurn() {
       const gameContainer = document.getElementById("game-wrap"); // 👈 ここを変更！
       gameContainer.classList.add("screen-shake-anim");
       
+      // 👇 追加：ディザスターの大ダメージ技の発動前にも tension音 を鳴らす！
+      playSound('tension'); 
+      
       // 3. アニメーション終了後にエフェクトを削除 (1.5秒 = 1500ms)
       setTimeout(() => {
           flashEl.remove();
@@ -3566,15 +3626,26 @@ document.getElementById("new-retry-btn").addEventListener("click", () => {
 
 document.getElementById("back-home-btn").addEventListener("click", () => {
   playSound('click'); 
-  window.fadeOutResultSound(); // 👈 追加：ホームへ戻る時もwin/lose音をフェードアウト！
+  window.fadeOutResultSound(); 
 
-  // 👇 追加：ボタンを消して、戻るまでの「間（2.5秒）」を作る！
   document.getElementById("new-retry-btn").style.display = "none";
   document.getElementById("back-home-btn").style.display = "none";
   document.getElementById("result-message").innerText = `ホーム画面へ戻ります...`;
 
   setTimeout(() => {
-      location.reload();
+      // 👇👇 ここから修正：リロードせずに画面だけを切り替えてホームへ戻る！ 👇👇
+      hideResultScreen();
+      document.getElementById('game-wrap').style.display = 'none';
+      document.getElementById('home-screen').style.display = 'flex';
+      
+      // ゲームの状態をリセット
+      isGameStarted = false;
+      isGameOver = false;
+      isSoloMode = false;
+      myRoomId = "";
+      
+      playBGM('home'); // 👈 ブラウザの制限に引っかからないので、スムーズにBGMが鳴り始める！
+      // 👆👆 修正ここまで 👆👆
   }, 2500); 
 });
 
