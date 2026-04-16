@@ -42,7 +42,8 @@ const sounds = {
   lost: new Audio('audio/lost.mp3'),       
   burn: new Audio('audio/burn.mp3'),
   win: new Audio('audio/win.mp3'),
-  lose: new Audio('audio/lose.mp3')
+  lose: new Audio('audio/lose.mp3'),
+  tension: new Audio('audio/tension.mp3') // 👈 追加：大ダメージの「間（タメ）」に鳴らす音！
 };
 
 // 全体の音量調整（0.0 ～ 1.0）
@@ -50,14 +51,96 @@ Object.values(sounds).forEach(audio => {
     audio.volume = 0.5;
 });
 
-// 音を鳴らす魔法の関数
-function playSound(type) {
-  if (sounds[type]) {
-    sounds[type].currentTime = 0; // 連続で鳴らせるようにリセット
-    sounds[type].play().catch(e => console.log("ブラウザの自動再生ブロック:", e));
+// 👇👇 追加：BGMの設定 👇👇
+const bgm = {
+  home: new Audio('audio/home_bgm.mp3'),
+  battle: new Audio('audio/battle_bgm.mp3')
+};
+Object.values(bgm).forEach(audio => { audio.volume = 0.3; audio.loop = true; }); // BGMはループ再生＆少し控えめな音量に
+
+let currentBGM = null;
+let fadeOutInterval = null; // 👈 追加：フェードアウト用のタイマー変数
+
+// 👇 追加：サウンドのON/OFF状態を保存する変数（ブラウザに記憶させます） 👇
+let isBgmOn = localStorage.getItem('isBgmOn') !== 'false'; // デフォルトON
+let isSeOn = localStorage.getItem('isSeOn') !== 'false';   // デフォルトON
+
+function playBGM(type) {
+  if (fadeOutInterval) clearInterval(fadeOutInterval); // 👈 フェードアウト中に別の曲が呼ばれたらキャンセル
+  if (currentBGM) { currentBGM.pause(); currentBGM.volume = 0.3; } // 👈 音量を戻して停止
+  
+  if (!isBgmOn) return; // 👈 追加：BGMがOFFならここで止める！
+
+  if (bgm[type]) {
+    currentBGM = bgm[type];
+    currentBGM.currentTime = 0;
+    currentBGM.volume = 0.3; // 👈 再生開始時に確実に元の音量(0.3)にする
+    currentBGM.play().catch(e => console.log("BGM自動再生ブロック:", e));
   }
 }
+
+function stopBGM() { 
+  if (!currentBGM) return;
+  if (fadeOutInterval) clearInterval(fadeOutInterval); // タイマーの重複を防ぐ
+  
+  let fadeAudio = currentBGM;
+  
+  // 100ミリ秒ごとに音量を少しずつ下げる（合計2秒かけてフェードアウト！）
+  fadeOutInterval = setInterval(() => {
+    let nextVolume = fadeAudio.volume - 0.015; 
+    if (nextVolume > 0) {
+      fadeAudio.volume = nextVolume;
+    } else {
+      clearInterval(fadeOutInterval); // 音量が0になったらタイマーを止める
+      fadeAudio.pause();
+      fadeAudio.volume = 0.3; // 次に鳴らす時のために標準音量(0.3)に戻しておく
+    }
+  }, 100);
+}
+
+// 👇👇 ここに追加：リザルト音（win/lose）をフェードアウトさせる関数 👇👇
+window.fadeOutResultSound = function() {
+  ['win', 'lose'].forEach(type => {
+    let audio = sounds[type];
+    if (audio && !audio.paused) {
+      let vol = audio.volume;
+      let fadeInterval = setInterval(() => {
+        vol -= 0.05;
+        if (vol <= 0) {
+          clearInterval(fadeInterval);
+          audio.pause();
+          audio.currentTime = 0;
+          audio.volume = 0.5; // 次回のために元の音量に戻す
+        } else {
+          audio.volume = vol;
+        }
+      }, 100);
+    }
+  });
+};
 // 👆👆 追加ここまで 👆👆
+
+// 画面をクリックしたらホームBGMを再生（ブラウザの自動再生制限を回避するため）
+document.body.addEventListener('click', function initBGM() {
+  if (!isGameStarted) playBGM('home');
+  document.body.removeEventListener('click', initBGM);
+}, { once: true });
+// 👆👆 BGM設定ここまで 👆👆
+
+
+function playSound(type, isFromNetwork = false) {
+  // 👇 修正：SEがONの時だけ自分の画面で音を鳴らす！（通信は飛ばす）
+  if (isSeOn && sounds[type]) {
+    sounds[type].currentTime = 0; 
+    sounds[type].play().catch(e => console.log("ブラウザの自動再生ブロック:", e));
+  }
+  // 相手に送信しない個人的な音（クリック音やドロー音、勝敗音など）
+  const localOnly = ['click', 'draw', 'win', 'lose'];
+  if (!isFromNetwork && !localOnly.includes(type) && !isSoloMode && myRoomId) {
+    // サーバーの「カード効果（show_card_effect）」の通信を間借りして、音の信号を相手に送る！
+    socket.emit('show_card_effect', { roomId: myRoomId, card: { isSoundEvent: true, soundType: type } });
+  }
+}
 
 // 画面サイズ自動調整
 function resizeGame() {
@@ -116,6 +199,14 @@ let pendingSelection = null;
 
 const infoPanel = document.getElementById("info-panel");
 const deckInfoPanel = document.getElementById("deck-info-panel");
+
+// 👇 追加：情報パネルの表示をデフォルトに戻す専用関数
+window.clearCardInfo = function() {
+    if (!isGameStarted || isGameOver) return;
+    infoPanel.style.backgroundColor = "rgba(236, 240, 241, 0.8)";
+    infoPanel.innerHTML = (myPlayerId === currentTurn) ? `あなたのターン` : `相手のターン中...`;
+};
+
 const endTurnBtn = document.getElementById("end-turn-btn");
 const retryBtn = document.getElementById("retry-btn");
 const surrenderBtn = document.getElementById("surrender-btn");
@@ -235,10 +326,61 @@ function showCardEffect(card) {
   overlay.style.opacity = "1"; container.style.transform = "scale(1.2)";
   setTimeout(() => { overlay.style.opacity = "0"; container.style.transform = "scale(0.5)"; }, 1500);
 }
-if (!isSoloMode) socket.on('show_card_effect', (card) => { showCardEffect(card); });
+// 👇 修正：音の信号を受信した時は音を鳴らし、カードの時はエフェクトを出す！
+if (!isSoloMode) socket.on('show_card_effect', (card) => { 
+    if (card && card.isSoundEvent) {
+        playSound(card.soundType, true); // 受信した音を鳴らす（trueで無限ループ防止）
+    } else {
+        showCardEffect(card); 
+    }
+});
 
 const homeScreen = document.getElementById("home-screen");
 const deckEditScreen = document.getElementById("deck-edit-screen");
+
+// 👇👇 ここから追加：BGM・SE トグルボタンの設定 👇👇
+const bgmToggleBtn = document.getElementById("bgm-toggle-btn");
+const seToggleBtn = document.getElementById("se-toggle-btn");
+
+function updateSoundToggleUI() {
+    if(bgmToggleBtn) {
+        bgmToggleBtn.innerText = isBgmOn ? "🎵 BGM: ON" : "🎵 BGM: OFF";
+        bgmToggleBtn.style.opacity = isBgmOn ? "1" : "0.5";
+        bgmToggleBtn.style.filter = isBgmOn ? "none" : "grayscale(80%)"; // OFFの時はグレーにする
+    }
+    if(seToggleBtn) {
+        seToggleBtn.innerText = isSeOn ? "🔊 SE: ON" : "🔊 SE: OFF";
+        seToggleBtn.style.opacity = isSeOn ? "1" : "0.5";
+        seToggleBtn.style.filter = isSeOn ? "none" : "grayscale(80%)";
+    }
+}
+
+if (bgmToggleBtn) {
+    bgmToggleBtn.addEventListener("click", () => {
+        isBgmOn = !isBgmOn;
+        localStorage.setItem("isBgmOn", isBgmOn); // 設定を保存
+        updateSoundToggleUI();
+        if (isBgmOn) {
+            if (isGameStarted && !isGameOver) playBGM('battle');
+            else playBGM('home');
+        } else {
+            if (currentBGM) currentBGM.pause(); // OFFにした瞬間に止める
+        }
+        if (isSeOn) playSound('click');
+    });
+}
+
+if (seToggleBtn) {
+    seToggleBtn.addEventListener("click", () => {
+        isSeOn = !isSeOn;
+        localStorage.setItem("isSeOn", isSeOn); // 設定を保存
+        updateSoundToggleUI();
+        if (isSeOn) playSound('click'); // ONにした瞬間だけカチッと鳴らす
+    });
+}
+updateSoundToggleUI(); // 最初（ロード時）に見た目を合わせる
+// 👆👆 追加ここまで 👆👆
+
 const joinRoomBtn = document.getElementById("join-room-btn");
 const roomIdInput = document.getElementById("room-id-input");
 const saveDeckBtn = document.getElementById("save-deck-btn");
@@ -330,14 +472,15 @@ function openDeckEditor() {
 }
 
 joinRoomBtn.addEventListener("click", () => {
+  playSound('click'); // 👈 クリック音追加
   const val = roomIdInput.value.trim(); 
   if (val !== "") {
     if (myCustomDeck.length !== DECK_LIMIT) { alert(`デッキは必ず ${DECK_LIMIT}枚 にしてください！（現在 ${myCustomDeck.length}枚）`); return; }
     isSoloMode = false;
     myRoomId = val; 
-    homeScreen.style.display = "none"; 
-    document.getElementById('game-wrap').style.display = 'block';
-    resizeGame();
+    
+    showWaitingScreen(false); // 👈 修正：いきなりゲーム画面ではなく待機画面を出す！
+    
     socket.emit("join_room", { roomId: myRoomId, deck: myCustomDeck, leader: myLeaderCard, playerId: myPlayerId }); 
   } else { alert("合言葉を入力してください！"); }
 });
@@ -349,14 +492,9 @@ randomMatchBtn.addEventListener("click", () => {
   if (myCustomDeck.length !== DECK_LIMIT) { alert(`デッキは必ず ${DECK_LIMIT}枚 にしてください！（現在 ${myCustomDeck.length}枚）`); return; }
   
   isSoloMode = false;
-  homeScreen.style.display = "none"; 
-  document.getElementById('game-wrap').style.display = 'block';
-  resizeGame();
   
-  infoPanel.innerHTML = `🎲 対戦相手を探しています...`;
-  infoPanel.style.backgroundColor = "#9b59b6";
+  showWaitingScreen(true); // 👈 修正：ランダムマッチも待機画面を出す！
   
-  // サーバーに「ランダムマッチ待機列に入れて！」とお願いする
   socket.emit("join_random_room", { deck: myCustomDeck, leader: myLeaderCard, playerId: myPlayerId }); 
 });
 
@@ -673,6 +811,34 @@ function generateCardHtml(card, extraAttrs = "", extraClass = "", badgeCount = 1
 // ★ 通信と対戦の処理
 // =========================================================
 
+// 👇👇 ここに追加：待機画面を表示する関数 👇👇
+window.showWaitingScreen = function(isRandom) {
+  const overlay = document.getElementById("waiting-overlay");
+  const title = document.getElementById("waiting-title");
+  const cardArea = document.getElementById("waiting-card");
+  const flavorArea = document.getElementById("waiting-flavor");
+
+  title.innerText = isRandom ? "🎲 対戦相手を探しています..." : "🚪 相手の入室を待っています...";
+
+  // デッキの中からランダムなカードを1枚選ぶ（空ならリーダー）
+  let randCard = null;
+  if (myCustomDeck && myCustomDeck.length > 0) {
+      randCard = myCustomDeck[Math.floor(Math.random() * myCustomDeck.length)];
+  } else {
+      randCard = myLeaderCard;
+  }
+
+  // 1.5倍サイズでカッコよくカードを描画！
+  cardArea.innerHTML = generateCardHtml(randCard, "", "box-shadow: 0 0 20px rgba(255,255,255,0.5); transform: scale(1.5); margin: 40px;");
+  flavorArea.innerText = randCard.flavor ? `「${randCard.flavor}」` : "";
+
+  document.getElementById("home-screen").style.display = "none";
+  overlay.style.display = "flex";
+  
+  playBGM('home'); // 待機中はホームBGMを鳴らす
+};
+// 👆👆 追加ここまで 👆👆
+
 socket.on('connect', () => {
   if (myRoomId !== "" && !isSoloMode) { 
     socket.emit("join_room", { roomId: myRoomId, deck: myCustomDeck, leader: myLeaderCard, playerId: myPlayerId }); 
@@ -689,7 +855,20 @@ socket.on('disconnect', () => {
 socket.on('p2_ready', (p2Data) => {
   if (isSoloMode) return;
   opponentDeck = p2Data.deck; opponentLeader = p2Data.leader; 
-  if (!isGameStarted) { startGame(); sendGameState(); }
+  
+  if (!isGameStarted) { 
+      // 👈 修正：P1側 マッチング成立時に演出を入れ、2.5秒待つ！
+      document.getElementById("waiting-title").innerText = "🔥 マッチング成立！ バトル開始！";
+      playSound('buff'); 
+      
+      setTimeout(() => {
+          document.getElementById("waiting-overlay").style.display = "none";
+          document.getElementById('game-wrap').style.display = 'block';
+          resizeGame();
+          startGame(); 
+          sendGameState(); 
+      }, 2500); 
+  }
 });
 
 socket.on('assign_player', (num) => {
@@ -700,23 +879,37 @@ socket.on('assign_player', (num) => {
      sendGameState(); 
      infoPanel.innerHTML = `🟢 復帰しました！`;
   } else {
-     if (myPlayerId === 1) { infoPanel.innerHTML = `🟢 [部屋: ${myRoomId}] 🔵プレイヤー1（先攻）<br>相手を待っています...`; }
-     else if (myPlayerId === 2) { infoPanel.innerHTML = `⏳ [部屋: ${myRoomId}] 🔴プレイヤー2（後攻）<br>相手を待っています...`; }
-     else { infoPanel.innerHTML = `[部屋: ${myRoomId}] 満員のため、観戦モードです。`; }
+     // 👈 修正：P2側（後から入ったプレイヤー）もマッチング成立演出を出す！
+     if (myPlayerId === 2) {
+         document.getElementById("waiting-title").innerText = "🔥 マッチング成立！ バトル開始！";
+         playSound('buff');
+     }
   }
   renderAll();
 });
 
 socket.on('game_updated', (gameState) => {
   if (isSoloMode) return;
+  let wasNotStarted = !isGameStarted; // 👈 追加：新しくゲームが始まったかどうかの判定
+  
   players = gameState.players; currentTurn = gameState.currentTurn; isGameOver = gameState.isGameOver; 
   isGameStarted = true;
   infoPanel.style.backgroundColor = "#ecf0f1"; 
   
   if (!isGameOver) {
-     // 👇 追加：新しいゲームが始まっていたらリザルト画面を強制的に消す！
-     if (typeof hideResultScreen === 'function') hideResultScreen(); 
+    window.fadeOutResultSound();
+
+    if (typeof hideResultScreen === 'function') hideResultScreen(); 
      window.isResultProcessing = false;
+
+     // 👈 追加：P2側 待機画面を消してゲーム画面（VS画面）へ移行する！
+     if (wasNotStarted) {
+         document.getElementById("waiting-overlay").style.display = "none";
+         document.getElementById('game-wrap').style.display = 'block';
+         resizeGame();
+         playBGM('battle'); // バトルBGMスタート
+         showVsScreen();    // P2もVS画面を出す！
+     }
      
      if (myPlayerId === currentTurn) { infoPanel.innerHTML = `🟢 あなたのターンです！`; } 
      else { infoPanel.innerHTML = `⏳ 相手のターンです...`; }
@@ -727,12 +920,18 @@ socket.on('game_updated', (gameState) => {
 socket.on('game_retry', () => {
   if (isSoloMode) return;
   infoPanel.style.backgroundColor = "#ecf0f1";
-  
-  if (typeof hideResultScreen === 'function') hideResultScreen(); // 👈 この1行を追加！！
 
-  if (myPlayerId === 1) { 
+  window.fadeOutResultSound(); 
+  document.getElementById("new-retry-btn").style.display = "none"; 
+  document.getElementById("result-message").innerText = `次のバトルへ移行中...`; 
+  
+  if (typeof hideResultScreen === 'function') hideResultScreen(); 
+
+  if (myPlayerId === 1) {
+    setTimeout(() => { 
     isGameStarted = false; 
     startGame(); sendGameState();
+    }, 2500);
   }
 });
 
@@ -796,7 +995,7 @@ function getCardTypes() {
     { category: "pack_2", type: "magic", name: "RBA", originalCost: 1, cost: 1, image: "images/pack_2/RBA.jpg", attribute: "bice", flavor: "リカバリー・バトル・エリア！", desc: "<br>■自分のリーダーにバリア付与。自分のステージに「GR」がいるなら、自分のドロップからランダムにキャラを1枚手札に加える。" },
     { category: "pack_2", type: "magic", name: "Absolute enforcer", originalCost: 4, cost: 4, image: "images/pack_2/enforcer.jpg", attribute: "bice", flavor: "絶対の規律を、ここに執行する。", desc: "<br>■相手のステージにいるキャラ全ての攻撃力を-2する。" },
     { category: "pack_2", type: "magic", name: "Exaust re boost", originalCost: 1, cost: 1, image: "images/pack_2/boost.jpg", attribute: "bice", flavor: "まだまだいけるぜ！ブースト全開！", desc: "<br>■このターン中、自分のステージにいる属性「BICE」のキャラ全ての攻撃力を+1する。" },
-    { category: "pack_2", type: "magic", name: "Absolute punisher！", originalCost: 11, cost: 11, image: "images/pack_2/punisher.jpg", attribute: "bice", flavor: "完璧なんていない！絶対はない！それでも信じて進むんだ！！", desc: "<br>■自分の場のキャラが破壊された時、このカードのコストを-1する。<br>■リーダーが「ONE」でお互いセンターが空なら使える。<br>■相手リーダーにダメージ11！" },
+    { category: "pack_2", type: "magic", name: "Absolute punisher！", originalCost: 11, cost: 11, image: "images/pack_2/punisher.jpg", attribute: "bice", flavor: "完璧なんていない！絶対はない！それでも信じて進むんだ！！", desc: "<br>■自分のターン中、自分のステージにいるキャラが破壊されたとき、このカードのコストを-1する。<br>■リーダーが「ONE」でお互いセンターが空なら使える。<br>■相手リーダーにダメージ11！" },
     { category: "pack_2", type: "magic", name: "Drive for future", originalCost: 1, cost: 1, image: "images/pack_2/future.jpg", attribute: "bice_epic", flavor: "駆けろ！燃やせ！未来へ繋げ！", desc: "<br>■自分のステージにいるキャラ1枚を選択し、破壊する。その後、自分のドロップゾーンから同じ属性を持つ名前の違うキャラをランダムに1枚、自分のライトにコールする。" },
 
     { category: "pack_3", type: "leader", name: "≪Conecting other world≫ ヴァイス&シュヴァルツ", originalCost: 0, cost: 0, attack: 0, hp: 20, image: "images/pack_3/shirokuro.jpg", attribute: "reliance", connectSkill: true, flavor: "光と闇、二つの力が交わる時、新たな世界が扉を開く。", desc: "<br>■【コネクト】自分のステージからキャラ1枚を選択し、このカードと「接続」する。<br>■自分のステージのキャラが「接続」状態になったとき、そのキャラのライフを+2する。" },
@@ -834,6 +1033,7 @@ function getCardTypes() {
 function startGame() {
   isGameOver = false; 
   window.isResultProcessing = false; // 👈 リザルト処理のストッパーをリセット！
+  playBGM('battle');
   currentTurn = Math.random() < 0.5 ? 1 : 2; 
   isGameStarted = true;
   isSelectingHand = false; selectionCallback = null;
@@ -878,8 +1078,12 @@ function startGame() {
   
   renderAll();
   
+  // 👇 追加：ゲーム開始時にド派手なVS画面（カットイン演出）を表示！
+  showVsScreen();
+  
   if (isSoloMode && currentTurn === 2) {
-    setTimeout(playAITurn, 1500);
+    // 👇 変更：VS画面が終わるまで（約4秒追加して）AIの攻撃を待たせる！
+    setTimeout(playAITurn, 5500); 
   }
 }
 
@@ -990,7 +1194,7 @@ function destroyCard(playerId, zone, isLost = false, isDirectDrop = false) { // 
   return { destroyed: true };
 }
 
-window.useLeaderSkill = function() {
+window.useLeaderSkill = async function() {
   let p = players[myPlayerId];
   if (isSelectingHand || isSelectingStage) return; 
 
@@ -1017,6 +1221,11 @@ window.useLeaderSkill = function() {
       if (p.mp < 6 || p.leaderAttackCount >= maxAttacks) return;
       p.leaderAttackCount++;
       p.mp -= 6;
+      playSound('play');
+      showCardEffect(p.leader);
+      if (!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: p.leader }); 
+      await new Promise(r => setTimeout(r, 2200)); 
+      
       let oppId = myPlayerId === 1 ? 2 : 1;
       let oppP = players[oppId];
       if (oppP.leader.hasBarrier) {
@@ -1026,9 +1235,14 @@ window.useLeaderSkill = function() {
           triggerConnection(oppP.leader, 'damage', 12);
           showFloatingTextOnElement(`p${oppId}-leader-zone`, 12, 'damage');
           const targetEl = document.getElementById(`p${oppId}-leader-zone`);
-          if(targetEl){ targetEl.classList.add("damage-anim"); setTimeout(() => targetEl.classList.remove("damage-anim"), 300); }
+          if(targetEl){ 
+            targetEl.classList.add("damage-anim"); setTimeout(() => targetEl.classList.remove("damage-anim"), 300); }
+            let hpText = document.getElementById(`p${oppId}-hp-text`); // 👈 即時更新
+            if(hpText) hpText.innerText = `${oppP.hp} / ${oppP.maxHp}`;
       }
-  } else if (p.leader.name === "\"Absolutely Main Gamer\" ONE") {
+      await new Promise(r => setTimeout(r, 1200));
+
+    } else if (p.leader.name === "\"Absolutely Main Gamer\" ONE") {
       if (p.mp < 1) return;
       p.mp -= 1;
       p.leader.turnAttackBoost = (p.leader.turnAttackBoost || 0) + 1;
@@ -1036,7 +1250,10 @@ window.useLeaderSkill = function() {
       showFloatingTextOnElement(`p${myPlayerId}-leader-zone`, 1, 'attack_boost'); // 👈 'heal' から変更
   }
   
-  if (!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: p.leader }); 
+  // 👇 修正：大魔術師はすでに上で送信済みなので、それ以外の時に送信する！
+  if (p.leader.name !== "狂気の大魔術師" && !isSoloMode) {
+      socket.emit('show_card_effect', { roomId: myRoomId, card: p.leader }); 
+  }
   renderAll(); sendGameState();
 }
 window.useSkahaSkill1 = function() {
@@ -1182,6 +1399,7 @@ window.useInvertSkill = function(zone) {
   renderAll(); sendGameState();
 }
 window.confirmSelection = function() {
+    window.clearCardInfo(); // 👈 追加：確定ボタンを押した瞬間にパネルを消す！
     if (isSelectingStage && pendingSelection && pendingSelection.type === 'stage') {
         let pid = pendingSelection.pid;
         let zone = pendingSelection.zone;
@@ -1336,7 +1554,10 @@ function renderAll() {
     }
 
     let leaderCard = p.leader;
-    if (leaderCard) {
+    const leaderBox = document.getElementById(`p${pId}-leader-zone`); // 👈 枠の取得を上に移動
+    
+    // 👇 修正：リーダーが存在し、かつ「破壊されていない」場合のみ描画する！
+    if (leaderCard && !leaderCard.isDestroyed) {
       let baseAttack = leaderCard.attack + (p.weapon ? p.weapon.effectValue : 0);
       let displayLeader = { ...leaderCard, attack: baseAttack, hp: p.hp, hasBarrier: leaderCard.hasBarrier, soul: leaderCard.soul, infection: leaderCard.infection, burnActive: leaderCard.burnActive, turnAttackBoost: leaderCard.turnAttackBoost }; 
       
@@ -1346,10 +1567,11 @@ function renderAll() {
       const canLeaderAttack = isMyTurn && isMe && realAtk > 0 && p.leaderAttackCount < maxLeaderAttacks && !isGameOver && !isSelectingHand && !isSelectingStage;
       
       const leaderDraggable = canLeaderAttack ? 'draggable="true"' : 'draggable="false"';
-      const leaderBox = document.getElementById(`p${pId}-leader-zone`);
 
       let extraStyle = "margin:0;";
       leaderBox.innerHTML = `<div class="zone-label" style="top:-25px;">` + generateCardHtml(displayLeader, `data-pid="${pId}" data-zone="leader" ${leaderDraggable} style="${extraStyle}"`, leaderActionDone);
+    } else if (leaderBox) {
+      leaderBox.innerHTML = ""; // 👈 追加：破壊されたら枠の中身を完全に消去する！
     }
 
     // ★ アイテム枠の描画処理
@@ -1475,6 +1697,11 @@ function attachStageListeners() {
         text += `<br><button onclick="useLeaderSkill()" style="margin-top:8px; padding:8px 16px; background:#1abc9c; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">👑 スキル発動（PP1消費: 攻撃力+1）</button>`;
         overlayBtnHtml += `<button class="card-center-btn" style="background:#1abc9c; color:white;" onclick="event.stopPropagation(); useLeaderSkill();">アクト</button>`; // 👈 追加
       }
+      // 👇 追加：狂気の大魔術師のアクトボタン表示処理！
+      if (zone === 'leader' && card.name === "狂気の大魔術師" && pid === myPlayerId && currentTurn === myPlayerId && p.mp >= 6 && p.leaderAttackCount < maxAttacks && !isGameOver && !isSelectingHand) {
+        text += `<br><button onclick="useLeaderSkill()" style="margin-top:8px; padding:8px 16px; background:#9b59b6; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">🔮 スキル発動（PP6消費: 12ダメージ）</button>`;
+        overlayBtnHtml += `<button class="card-center-btn" style="background:#9b59b6; color:white;" onclick="event.stopPropagation(); useLeaderSkill();">アクト</button>`;
+      }
       if (card.type === "monster" && card.name === "くノ一" && pid === myPlayerId && currentTurn === myPlayerId && !isGameOver && !isSelectingHand) {
         text += `<br><button onclick="useKunoichiSkill('${zone}')" style="...">💨 アクト（手札に戻る）</button>`;
         overlayBtnHtml += `<button class="card-center-btn" style="..." onclick="event.stopPropagation(); useKunoichiSkill('${zone}');">アクト</button>`;
@@ -1540,6 +1767,9 @@ function attachStageListeners() {
       // 👇👇 ここから下を追加！クリックしたカードの真ん中にボタンを貼り付ける処理 👇👇
       document.querySelectorAll('.card-action-overlay').forEach(o => o.remove()); // 前に出たボタンを消す
       if (overlayBtnHtml !== "") {
+        // 👇 追加：生成された全てのスキルボタンに「パネルを消す処理」を自動で仕込む！
+        overlayBtnHtml = overlayBtnHtml.replace(/onclick="/g, 'onclick="window.clearCardInfo(); ');
+
         let overlay = document.createElement("div");
         overlay.className = "card-action-overlay";
         overlay.innerHTML = overlayBtnHtml;
@@ -1625,6 +1855,11 @@ function showFloatingTextOnElement(elementId, value, type) {
               gameWrap.classList.remove("screen-shake-anim");
           }, 500); // 0.5秒間揺らして止める
       }
+      
+      // 👇 追加：大ダメージの「間（タメ）」の最中に効果音を鳴らす！
+      setTimeout(() => {
+          playSound('tension'); 
+      }, 400); // 激しい揺れと轟音が落ち着いた直後（0.4秒後）の静寂に鳴らす！
   }
 }
 // 👆👆ここまで追加👆👆
@@ -1634,6 +1869,7 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
   let wasLocked = window.isActionLocked;
   window.isActionLocked = true; // 🔒 処理開始！操作をロックする
   try {
+  playSound('attack'); // 👈 追加：攻撃した瞬間に音を鳴らす！（自動で相手にも送信されます）
   const attackerPlayer = players[attackerPid]; const targetPlayer = players[targetPid];
   const attackerLeader = attackerPlayer.leader; const targetLeader = targetPlayer.leader;
   let drainAmount = 0;
@@ -1760,20 +1996,32 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
     }
 
     if(targetCard.hp <= 0) { 
-      await new Promise(r => setTimeout(r, 600)); // 👈 ここで0.6秒の「タメ」を作る！！
+      // 👇 追加：10以上の大ダメージで倒した時は、演出の余韻を残すために1.2秒（1200ms）待つ！
+      let delayTime = actualDamageDealt >= 10 ? 1200 : 300; 
+      await new Promise(r => setTimeout(r, delayTime)); 
+      
       let destroyResult = destroyCard(targetPid, targetZone, false); 
 
       let isSuperPierce = attackerCard.superPierce || (attackerCard.burnActive && attackerCard.name === "\"Get Ready Going To\" LFA");
 
       if (destroyResult.destroyed && (attackerCard.pierce || isSuperPierce) && targetZone === 'center' && damageToDeal > 0) {
+        
+        await new Promise(r => setTimeout(r, 600)); // 👈 追加①：貫通が当たる前に、センターの破壊演出を見せるための「間」
+
         let pierceDamage = isSuperPierce ? finalAtk * 2 : finalAtk;
         if (targetLeader.reflector) {
-          targetLeader.reflector = false; playSound('barrier'); // 👈 音を追加！
+          targetLeader.reflector = false; playSound('barrier');
           attackerPlayer.hp -= pierceDamage;
           triggerConnection(attackerPlayer.leader, 'damage', pierceDamage);
           showFloatingTextOnElement(`p${attackerPid}-leader-zone`, pierceDamage, 'damage');
           const elLeader = document.getElementById(`p${attackerPid}-leader-zone`);
-          if(elLeader) { elLeader.classList.add("damage-anim"); setTimeout(() => elLeader.classList.remove("damage-anim"), 300); }
+          if(elLeader) { 
+              elLeader.classList.add("damage-anim"); setTimeout(() => elLeader.classList.remove("damage-anim"), 300); 
+              const hpText = document.getElementById(`p${attackerPid}-hp-text`); // 👈 即時更新
+              if (hpText) hpText.innerText = `${attackerPlayer.hp} / ${attackerPlayer.maxHp}`;
+          }
+          let delayTime = pierceDamage >= 10 ? 1200 : 300;
+          await new Promise(r => setTimeout(r, delayTime)); // 👈 追加②：反射大ダメージの余韻
         } else if (targetLeader.hasBarrier) {
           targetLeader.hasBarrier = false; damageToDeal = 0; playSound('barrier');
         } else {
@@ -1786,6 +2034,8 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
               const hpText = document.getElementById(`p${targetPid}-hp-text`);
               if (hpText) hpText.innerText = `${targetPlayer.hp} / ${targetPlayer.maxHp}`;
           }
+          let delayTime = pierceDamage >= 10 ? 1200 : 300;
+          await new Promise(r => setTimeout(r, delayTime)); // 👈 追加③：貫通大ダメージの余韻
         }
       }
     } 
@@ -1832,7 +2082,10 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
           }
 
           if(attackerCard.hp <= 0) { 
-            await new Promise(r => setTimeout(r, 600)); // 👈 反撃でやられた時もタメを作る！
+            // 👇 追加：反撃で10以上の大ダメージを受けた時も、1.2秒（1200ms）待つ！
+            let delayTime = actualCounterDealt >= 10 ? 1200 : 600; 
+            await new Promise(r => setTimeout(r, delayTime)); 
+            
             destroyCard(attackerPid, attackerZone, false); 
           }
         }
@@ -1894,7 +2147,7 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
   }
 }
 
-function playCard(cardId, targetZone, pId) {
+async function playCard(cardId, targetZone, pId) {
   const p = players[pId]; const cardIndex = p.hand.findIndex(c => c.id === cardId); if(cardIndex === -1) return; const card = p.hand[cardIndex];
   if(p.mp < card.cost) { return; }
 
@@ -1937,6 +2190,7 @@ function playCard(cardId, targetZone, pId) {
           targetCard = resetCardState(targetCard); // 👈 リセット追加！
           targetCard.hp = 1;
           p.stage[emptyZ] = targetCard;
+          window.showReviveEffect(pId, emptyZ); // 👈 追加！
           
           window.isSelectingTrash = false; window.selectionTrashCallback = null; pendingSelection = null;
           window.hantenResolved = true; closeZoneView();
@@ -1994,8 +2248,10 @@ function playCard(cardId, targetZone, pId) {
                   let targetCard = p.trash[index]; if (!targetCard || targetCard.type !== "monster") return;
                   window.cancelActionCallback = null;
                   p.trash.splice(index, 1);
-                  targetCard = resetCardState(targetCard); // 👈 リセット追加！
+                  targetCard = resetCardState(targetCard); 
                   p.stage[emptyZones[0]] = targetCard;
+                  window.showReviveEffect(pId, emptyZones[0]); // 👈 蘇生エフェクト！
+
                   ['left', 'center', 'right'].forEach(z => {
                       if (p.stage[z] && p.stage[z].type === "monster") {
                           p.stage[z].hp += 1; triggerConnection(p.stage[z], 'heal', 1);
@@ -2005,7 +2261,6 @@ function playCard(cardId, targetZone, pId) {
                   window.isSelectingTrash = false; window.selectionTrashCallback = null; pendingSelection = null;
                   closeZoneView(); 
                   
-                  // 👇追加：蘇生が確定した瞬間に、プレイ時の音とエフェクトを鳴らす！
                   playSound('play'); 
                   showCardEffect(playedCard); 
                   if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: playedCard });
@@ -2026,6 +2281,7 @@ function playCard(cardId, targetZone, pId) {
                       let pulledCard = p.deck.splice(i, 1)[0];
                       pulledCard.attackCount = 0; pulledCard.hasBarrier = false; pulledCard.soul = []; pulledCard.infection = false; pulledCard.turnAttackBoost = 0; pulledCard.burnActive = false;
                       p.stage[emptyZone] = pulledCard; usedNames.push(pulledCard.name); lightCount++;
+                      window.showSummonEffect(pId, emptyZone); // 👈 魔法陣エフェクト！
                       if (lightCount >= 1) break;
                   }
               }
@@ -2038,6 +2294,7 @@ function playCard(cardId, targetZone, pId) {
               clone.id = playedCard.id + "-left";
               if (p.leader && p.leader.name === "\"Absolutely Main Gamer\" ONE") { clone.soul.push({name: "オーラ", type: "soul"}); }
               p.stage['left'] = clone;
+              window.showSummonEffect(pId, 'left'); // 👈 魔法陣エフェクト！
               connectCards(pId, tZone, pId, 'left');
               showFloatingTextOnElement(`p${pId}-stage-left`, "LINK!", "heal");
           }
@@ -2051,6 +2308,7 @@ function playCard(cardId, targetZone, pId) {
                   pulledCard.attackCount = 0; pulledCard.hasBarrier = false; pulledCard.soul = []; pulledCard.infection = false; pulledCard.turnAttackBoost = 0; pulledCard.burnActive = false;
                   if (p.leader && p.leader.name === "\"Absolutely Main Gamer\" ONE") { pulledCard.soul.push({name: "オーラ", type: "soul"}); }
                   p.stage[emptyZone] = pulledCard;
+                  window.showSummonEffect(pId, emptyZone); // 👈 魔法陣エフェクト！
               }
           }
           ['left', 'center', 'right'].forEach(z => {
@@ -2075,6 +2333,7 @@ function playCard(cardId, targetZone, pId) {
                       pulledCard.attackCount = 0; pulledCard.hasBarrier = false; pulledCard.soul = []; pulledCard.infection = false; pulledCard.turnAttackBoost = 0; pulledCard.burnActive = false;
                       if (p.leader && p.leader.name === "\"Absolutely Main Gamer\" ONE") { pulledCard.soul.push({name: "オーラ", type: "soul"}); }
                       p.stage[emptyZone] = pulledCard;
+                      window.showSummonEffect(pId, emptyZone); // 👈 魔法陣エフェクト！
                       usedNames.push(pulledCard.name);
                       pulledCount++;
                       if (pulledCount >= 2) break; // 2種類出したら終了
@@ -2091,6 +2350,7 @@ function playCard(cardId, targetZone, pId) {
               clone.id = playedCard.id + "-clone-" + cloneCount;
               if (p.leader && p.leader.name === "\"Absolutely Main Gamer\" ONE") { clone.soul.push({name: "オーラ", type: "soul"}); }
               p.stage[z] = clone;
+              window.showSummonEffect(pId, z); // 👈 魔法陣エフェクト！
               cloneCount++;
           }
       }
@@ -2124,6 +2384,7 @@ function playCard(cardId, targetZone, pId) {
                       pulledCard.attackCount = 0; pulledCard.hasBarrier = false; pulledCard.soul = []; pulledCard.infection = false; pulledCard.turnAttackBoost = 0; pulledCard.burnActive = false;
                       if (p.leader && p.leader.name === "\"Absolutely Main Gamer\" ONE") { pulledCard.soul.push({name: "オーラ", type: "soul"}); }
                       p.stage[emptyZone] = pulledCard;
+                      window.showSummonEffect(pId, emptyZone); // 👈 魔法陣エフェクト！
                       usedNames.push(pulledCard.name);
                       biceCount++;
                       if (biceCount >= 2) break;
@@ -2147,6 +2408,7 @@ function playCard(cardId, targetZone, pId) {
               let clone = JSON.parse(JSON.stringify(playedCard));
               clone.id = playedCard.id + "-clone-" + cloneCount;
               p.stage[z] = clone;
+              window.showSummonEffect(pId, z); // 👈 魔法陣エフェクト！
               cloneCount++;
           }
       }
@@ -2275,10 +2537,11 @@ function playCard(cardId, targetZone, pId) {
             clone.id = playedCard.id + "-" + z; 
             if (p.leader && p.leader.name === "\"Absolutely Main Gamer\" ONE") { clone.soul.push({name: "オーラ", type: "soul"}); }
             p.stage[z] = clone;
+            window.showSummonEffect(pId, z); // 👈 魔法陣エフェクト！
           }
         });
       }
-      return false; // 特に待機状態がなければ終了
+      return false; 
   };
   // 👆 内部関数ここまで 👆
 
@@ -2396,7 +2659,17 @@ function playCard(cardId, targetZone, pId) {
     let isTargetedMagic = ["あなたをおしえて", "狂依存","反天","Drive for future"].includes(card.name);
 
     // 対象を取らない魔法なら、ここで即座にコストを払う
-    if (!isTargetedMagic) { consumeThisMagic(); }
+    if (!isTargetedMagic) { 
+        consumeThisMagic(); 
+        
+        // 👇 修正：魔法の効果ダメージが入る「前」にプレイ演出を出す！
+        playSound('play');
+        showCardEffect(card);
+        if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card });
+
+        // 👇 追加：カードのカットインをしっかり見せるための「間（0.6秒）」を作る！
+        await new Promise(r => setTimeout(r, 1200)); 
+    }
     
     if (card.name === "RBA") {
         p.leader.hasBarrier = true;
@@ -2438,12 +2711,16 @@ function playCard(cardId, targetZone, pId) {
         } else {
             players[oppId].hp -= dmg;
             triggerConnection(players[oppId].leader, 'damage', dmg);
-            
-            // 👇 ここに1行追加！これで数値が表示され、10以上なので連動して画面も揺れます！
             showFloatingTextOnElement(`p${oppId}-leader-zone`, dmg, 'damage');
-            
             const targetEl = document.getElementById(`p${oppId}-leader-zone`);
-            if(targetEl){ targetEl.classList.add("damage-anim"); setTimeout(() => targetEl.classList.remove("damage-anim"), 300); }
+            if(targetEl){ 
+                targetEl.classList.add("damage-anim"); setTimeout(() => targetEl.classList.remove("damage-anim"), 300); 
+                let hpText = document.getElementById(`p${oppId}-hp-text`); // 👈 即時更新
+                if(hpText) hpText.innerText = `${players[oppId].hp} / ${players[oppId].maxHp}`;
+            }
+            
+            let delayTime = dmg >= 10 ? 2200 : 300;
+            await new Promise(r => setTimeout(r, delayTime)); // 👈 追加：魔法による大ダメージの余韻！
         }
     }
     else if (card.name === "スプリングティー") {
@@ -2559,6 +2836,7 @@ function playCard(cardId, targetZone, pId) {
                     pulledCard.attackCount = 0; pulledCard.hasBarrier = false; pulledCard.soul = []; pulledCard.infection = false; pulledCard.turnAttackBoost = 0; pulledCard.burnActive = false;
                     if (p.leader && p.leader.name === "\"Absolutely Main Gamer\" ONE") { pulledCard.soul.push({name: "オーラ", type: "soul"}); }
                     p.stage[emptyZone] = pulledCard;
+                    window.showSummonEffect(pId, emptyZone); 
                     pulledCount++;
                     if (pulledCount >= 3) break;
                 } else { break; } // 場が埋まったら終了
@@ -2658,8 +2936,9 @@ function playCard(cardId, targetZone, pId) {
                     let targetCard = p.trash[index]; if (!targetCard || targetCard.type !== "monster") return;
                     consumeThisMagic(); // ここでコスト消費
                     p.trash.splice(index, 1);
-                    targetCard = resetCardState(targetCard); // 👈 リセット追加！
+                    targetCard = resetCardState(targetCard); 
                     p.stage.center = targetCard;
+                    window.showReviveEffect(pId, 'center');
                     
                     window.isSelectingTrash = false; window.selectionTrashCallback = null; pendingSelection = null;
                     closeZoneView();
@@ -2708,8 +2987,9 @@ function playCard(cardId, targetZone, pId) {
         if (monsters.length > 0 && emptyZone) {
             let randIndex = Math.floor(Math.random() * monsters.length);
             let recoveredCard = monsters.splice(randIndex, 1)[0];
-            recoveredCard = resetCardState(recoveredCard); // 👈 リセット追加！
+            recoveredCard = resetCardState(recoveredCard);
             p.stage[emptyZone] = recoveredCard;
+            window.showReviveEffect(pId, emptyZone);
         }
         drawCard(pId); drawCard(pId); drawCard(pId);
     }
@@ -2757,9 +3037,9 @@ function playCard(cardId, targetZone, pId) {
                 
                 recoveredCard = resetCardState(recoveredCard);
                 
-                // ③ 自分のライトにコールする（すでにキャラがいる場合は破壊して上書き）
                 if (p.stage['right'] !== null) { destroyCard(pId, 'right', false); }
                 p.stage['right'] = recoveredCard;
+                window.showReviveEffect(pId, 'right'); // 👈 追加！
             }
             
             isSelectingStage = false; selectionStageCallback = null; pendingSelection = null;
@@ -2776,12 +3056,16 @@ function playCard(cardId, targetZone, pId) {
   }
 
   if (isSuccess) { 
-      playSound('play'); 
       if (card.type === "magic" && p.weapon && p.weapon.name === "魔法の杖") {
           p.mp = Math.min(p.maxMp, p.mp + 1);
       }
-      showCardEffect(card); 
-      if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card }); 
+      
+      // 👇 修正：対象を取らない魔法はすでに上で演出済みなのでスキップする！
+      if (card.type !== "magic") {
+          playSound('play'); 
+          showCardEffect(card); 
+          if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card }); 
+      }
 
       // 👇 追加：カードを出した直後、0.3秒間は他のすべての操作をロック（停止）する！
       window.isActionLocked = true;
@@ -3021,7 +3305,7 @@ async function playAITurn() {
     let emptyZones = ['center', 'left', 'right'].filter(z => p2.stage[z] === null);
     if (emptyZones.length > 0) {
       let targetZone = emptyZones[0]; 
-      playCard(card.id, targetZone, 2);
+      await playCard(card.id, targetZone, 2);
       await new Promise(r => setTimeout(r, 800)); 
     }
   }
@@ -3172,6 +3456,8 @@ function checkGameOver() {
     window.isResultProcessing = true; 
     isGameOver = true; 
     
+    stopBGM(); // 👈 追加：どちらかのHPが0になった瞬間にBGMをピタッと止める！
+    
     let isWin = false;
     let winnerName = "";
     
@@ -3185,13 +3471,42 @@ function checkGameOver() {
       winnerName = isSoloMode ? "あなた" : "プレイヤー1";
     }
     
-    infoPanel.innerHTML = `🏆 ゲーム終了！`; 
+    infoPanel.innerHTML = `-決着-`; 
     infoPanel.style.backgroundColor = "rgba(243, 156, 18, 0.5)";
     endTurnBtn.style.display = "none"; 
-    surrenderBtn.style.display = "none"; // ついでに降参ボタンも消す
+    surrenderBtn.style.display = "none";
     
-    // 👇 勝負がついた1秒後に、ド派手なリザルトを出す！
-    setTimeout(() => { showResultScreen(isWin, winnerName); }, 1000);
+    // 👇 修正：BGMが止まってから、1秒間（1000ms）の「タメ（静寂）」を作る！
+    setTimeout(() => {
+        // 👇👇 ここから追加：リーダー破壊のド派手なコンボ演出！ 👇👇
+        playSound('huge_damage'); // 轟音！
+        playSound('destroy');     // 破壊音！
+
+        // 10ダメージ時と同じ激しい画面揺れを発生させる
+        const gameWrap = document.getElementById("game-wrap");
+        if (gameWrap) {
+            gameWrap.classList.remove("screen-shake-anim");
+            void gameWrap.offsetWidth;
+            gameWrap.classList.add("screen-shake-anim");
+            setTimeout(() => { gameWrap.classList.remove("screen-shake-anim"); }, 500);
+        }
+
+        // 負けた方のリーダーに破壊エフェクトを適用し、元のカードを非表示にする
+        if (players[1].hp <= 0) {
+            showDestroyEffect(1, 'leader', false);
+            players[1].leader.isDestroyed = true;
+        }
+        if (players[2].hp <= 0) {
+            showDestroyEffect(2, 'leader', false);
+            players[2].leader.isDestroyed = true;
+        }
+        renderAll(); // 元のカードを消して、エフェクトのクローンだけを爆散させる！
+        // 👆👆 追加ここまで 👆👆
+
+        // 破壊演出が終わってから、さらに2.5秒後にリザルト画面を出す
+        setTimeout(() => { showResultScreen(isWin, winnerName); }, 2500);
+
+    }, 1000); // 👈 これが1秒間の「タメ」です！（数値を大きくするとタメが長くなります）
   }
 }
 
@@ -3200,7 +3515,7 @@ function showResultScreen(isWin, winnerName) {
   const title = document.getElementById("result-title");
   const message = document.getElementById("result-message");
   const buttons = document.getElementById("result-buttons");
-  
+
   if (isWin) {
     playSound('win');
     title.innerText = "YOU WIN!";
@@ -3225,23 +3540,42 @@ function showResultScreen(isWin, winnerName) {
 }
 
 document.getElementById("new-retry-btn").addEventListener("click", () => {
+  playSound('click'); // 👈 クリック音！
+  window.fadeOutResultSound(); // 👈 win/lose音をフェードアウト開始！
+
+  document.getElementById("new-retry-btn").style.display = "none";
+  document.getElementById("result-message").innerText = `次のバトルへ移行中...`;
+
   if (isSoloMode) {
-      hideResultScreen();
-      startGame();
+      setTimeout(() => {
+          hideResultScreen();
+          startGame();
+      }, 2500); // 👈 2.5秒待ってからゲーム開始！
       return;
   }
-  document.getElementById("new-retry-btn").style.display = "none";
-  document.getElementById("result-message").innerText = `相手の承認を待っています...`;
+  
   socket.emit('request_retry', myRoomId);
   if (myPlayerId === 1) {
-      hideResultScreen();
-      startGame();
-      sendGameState();
+      setTimeout(() => {
+          hideResultScreen();
+          startGame();
+          sendGameState();
+      }, 2500); // 👈 マルチでも2.5秒待つ！
   } 
 });
 
 document.getElementById("back-home-btn").addEventListener("click", () => {
-  location.reload();
+  playSound('click'); 
+  window.fadeOutResultSound(); // 👈 追加：ホームへ戻る時もwin/lose音をフェードアウト！
+
+  // 👇 追加：ボタンを消して、戻るまでの「間（2.5秒）」を作る！
+  document.getElementById("new-retry-btn").style.display = "none";
+  document.getElementById("back-home-btn").style.display = "none";
+  document.getElementById("result-message").innerText = `ホーム画面へ戻ります...`;
+
+  setTimeout(() => {
+      location.reload();
+  }, 2500); 
 });
 
 function hideResultScreen() {
@@ -3596,6 +3930,7 @@ window.useNoroshiSkill = function(zone) {
         
         // センターに配置
         p.stage.center = targetCard;
+        window.showReviveEffect(myPlayerId, 'center'); // 👈 追加！
         
         window.isSelectingTrash = false; window.selectionTrashCallback = null; pendingSelection = null;
         closeZoneView();
@@ -3610,6 +3945,42 @@ window.useNoroshiSkill = function(zone) {
 }
 // 👆👆 ここまで 👆👆
 
+// 👇👇 ここから追加：特殊コール演出（魔法陣＆蘇生） 👇👇
+window.showSummonEffect = function(playerId, zone) {
+    setTimeout(() => { // 👈 修正：画面の再描画が終わるまで一瞬だけ待つ！
+        let elId = zone === 'leader' ? `p${playerId}-leader-zone` : (zone === 'item' ? `p${playerId}-item-zone` : `p${playerId}-stage-${zone}`);
+        let zoneEl = document.getElementById(elId);
+        if (!zoneEl) return;
+        let circle = document.createElement("div");
+        circle.className = "magic-circle-effect";
+        zoneEl.appendChild(circle);
+        playSound('buff'); // 魔法陣の音
+        setTimeout(() => circle.remove(), 800);
+    }, 50); 
+};
+
+window.showReviveEffect = function(playerId, zone) {
+    setTimeout(() => { // 👈 修正：画面の再描画が終わるまで一瞬だけ待つ！
+        let elId = zone === 'leader' ? `p${playerId}-leader-zone` : (zone === 'item' ? `p${playerId}-item-zone` : `p${playerId}-stage-${zone}`);
+        let zoneEl = document.getElementById(elId);
+        if (!zoneEl) return;
+        let container = document.createElement("div");
+        container.className = "revive-effect-container";
+        for(let i=0; i<24; i++) { 
+            let shard = document.createElement("div");
+            shard.className = "revive-shard";
+            shard.style.setProperty('--startX', (Math.random() - 0.5) * 400 + "px"); // 少し散らばる範囲も広げました
+            shard.style.setProperty('--startY', (Math.random() - 0.5) * 400 + "px");
+            shard.style.setProperty('--startRot', (Math.random() * 360) + "deg");
+            container.appendChild(shard);
+        }
+        zoneEl.appendChild(container);
+        playSound('heal');
+        setTimeout(() => container.remove(), 800);
+    }, 50);
+};
+// 👆👆 ここまで追加 👆👆
+
 // 👇👇 ここから追加：破壊・ロスト時の視覚エフェクト 👇👇
 function showDestroyEffect(playerId, zone, isLost) {
   let elId = zone === 'leader' ? `p${playerId}-leader-zone` : (zone === 'item' ? `p${playerId}-item-zone` : `p${playerId}-stage-${zone}`);
@@ -3622,26 +3993,30 @@ function showDestroyEffect(playerId, zone, isLost) {
   // カードの見た目をそのままコピー（クローン）する
   let clone = cardEl.cloneNode(true);
   
-  // 画面上の絶対座標を取得して、全く同じ場所に配置
-  let rect = cardEl.getBoundingClientRect();
-  clone.style.position = "fixed";
-  clone.style.left = rect.left + "px";
-  clone.style.top = rect.top + "px";
-  clone.style.width = rect.width + "px";
-  clone.style.height = rect.height + "px";
+  // 👇 修正：画面全体が縮小（スケール）されている場合のズレを計算して補正する！
+  let container = document.getElementById('game-container');
+  let containerRect = container.getBoundingClientRect();
+  let cardRect = cardEl.getBoundingClientRect();
+  let scale = containerRect.width / 1920; // 現在の縮小率を計算
+  
+  clone.style.position = "absolute";
+  clone.style.left = ((cardRect.left - containerRect.left) / scale) + "px";
+  clone.style.top = ((cardRect.top - containerRect.top) / scale) + "px";
+  clone.style.width = (cardRect.width / scale) + "px";
+  clone.style.height = (cardRect.height / scale) + "px";
   clone.style.margin = "0";
   clone.style.zIndex = "99999"; // 一番手前に表示
   clone.style.pointerEvents = "none";
   clone.style.transition = "none";
 
-  // ロストか破壊かでアニメーションを分岐
   if (isLost) {
       clone.classList.add("lost-anim");
   } else {
       clone.classList.add("destroy-anim");
   }
 
-  document.body.appendChild(clone);
+  // document.body ではなく、縮小の影響を受ける container の中に追加する！
+  container.appendChild(clone);
   
   // アニメーションが終わる頃にダミー要素を消去
   setTimeout(() => {
@@ -3692,4 +4067,65 @@ window.useInvertSkill = function(zone) {
 
   if (!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card }); 
   renderAll(); sendGameState();
+}
+
+// =========================================================
+// ★ 対戦開始時のVS画面（カットイン演出）
+// =========================================================
+function showVsScreen() {
+    const vsOverlay = document.getElementById("vs-overlay");
+    const p1Container = document.getElementById("vs-p1-container");
+    const p2Container = document.getElementById("vs-p2-container");
+    const vsText = document.getElementById("vs-text");
+    const p1CardArea = document.getElementById("vs-p1-card");
+    const p2CardArea = document.getElementById("vs-p2-card");
+    const p1Name = document.getElementById("vs-p1-name");
+    const p2Name = document.getElementById("vs-p2-name");
+
+    if (!vsOverlay) return;
+
+    // 両者のリーダーカードを超巨大化してセット！
+    p1CardArea.innerHTML = generateCardHtml(players[1].leader, "", "box-shadow: 0 0 40px #3498db; transform: scale(1.8); margin: 60px;");
+    p2CardArea.innerHTML = generateCardHtml(players[2].leader, "", "box-shadow: 0 0 40px #e74c3c; transform: scale(1.8); margin: 60px;");
+
+    // 自分の側を「YOU」、相手を「OPPONENT」にする
+    if (myPlayerId === 1) {
+        p1Name.innerText = "YOU (先攻)"; p1Name.style.color = "#3498db"; p1Name.style.textShadow = "0 0 15px #3498db, 0 0 5px #fff";
+        p2Name.innerText = isSoloMode ? players[2].leader.name : "OPPONENT (後攻)"; p2Name.style.color = "#e74c3c"; p2Name.style.textShadow = "0 0 15px #e74c3c, 0 0 5px #fff";
+    } else {
+        p1Name.innerText = "OPPONENT (先攻)"; p1Name.style.color = "#e74c3c"; p1Name.style.textShadow = "0 0 15px #e74c3c, 0 0 5px #fff";
+        p2Name.innerText = "YOU (後攻)"; p2Name.style.color = "#3498db"; p2Name.style.textShadow = "0 0 15px #3498db, 0 0 5px #fff";
+    }
+    
+    // 初期状態にリセット
+    vsOverlay.style.display = "flex";
+    vsOverlay.style.opacity = "1";
+    p1Container.style.transform = "translateX(-100vw)";
+    p2Container.style.transform = "translateX(100vw)";
+    vsText.style.transform = "scale(0)";
+
+    // 1. 左右からスライドイン！
+    setTimeout(() => {
+        playSound('attack'); 
+        p1Container.style.transform = "translateX(0)";
+        p2Container.style.transform = "translateX(0)";
+    }, 100);
+
+    // 2. VSの文字がドーン！と出現＆画面揺れ
+    setTimeout(() => {
+        playSound('huge_damage'); 
+        vsText.style.transform = "scale(1)";
+        vsOverlay.classList.add("screen-shake-anim");
+        setTimeout(() => vsOverlay.classList.remove("screen-shake-anim"), 500);
+    }, 600);
+
+    // 3. 3.5秒後にフェードアウトしてゲーム開始！
+    setTimeout(() => {
+        vsOverlay.style.transition = "opacity 0.5s ease-out";
+        vsOverlay.style.opacity = "0";
+        setTimeout(() => {
+            vsOverlay.style.display = "none";
+            vsOverlay.style.transition = ""; 
+        }, 500);
+    }, 3500);
 }
