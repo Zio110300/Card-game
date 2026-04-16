@@ -134,6 +134,18 @@ window.fadeOutResultSound = function() {
 // 画面をクリックしたらホームBGMを再生（ブラウザの自動再生制限を回避するため）
 document.body.addEventListener('click', function initBGM() {
   if (!isGameStarted) playBGM('home');
+  
+  // 👇 追加：最初の1クリックの時に「すべてのBGM」を一瞬だけ再生して止めることで、ブラウザのブロックを完全に解除（アンロック）する裏技！
+  Object.values(bgm).forEach(audio => {
+      let playPromise = audio.play();
+      if (playPromise !== undefined) {
+          playPromise.then(() => {
+              audio.pause();
+              audio.currentTime = 0;
+          }).catch(err => { console.log("BGMアンロック待機:", err); });
+      }
+  });
+
   document.body.removeEventListener('click', initBGM);
 }, { once: true });
 // 👆👆 BGM設定ここまで 👆👆
@@ -871,7 +883,7 @@ socket.on('p2_ready', (p2Data) => {
   if (!isGameStarted) { 
       // 👈 修正：P1側 マッチング成立時に演出を入れ、2.5秒待つ！
       document.getElementById("waiting-title").innerText = "🔥 マッチング成立！ バトル開始！";
-      playSound('buff'); 
+      playSound('buff', true); // 👈 修正：ローカルでのみ鳴らす！
       
       setTimeout(() => {
           document.getElementById("waiting-overlay").style.display = "none";
@@ -894,7 +906,7 @@ socket.on('assign_player', (num) => {
      // 👈 修正：P2側（後から入ったプレイヤー）もマッチング成立演出を出す！
      if (myPlayerId === 2) {
          document.getElementById("waiting-title").innerText = "🔥 マッチング成立！ バトル開始！";
-         playSound('buff');
+         playSound('buff', true); // 👈 修正：ローカルでのみ鳴らす！
      }
   }
   renderAll();
@@ -943,6 +955,8 @@ socket.on('game_retry', () => {
   document.getElementById("result-message").innerText = `次のバトルへ移行中...`; 
   
   if (typeof hideResultScreen === 'function') hideResultScreen(); 
+
+  isGameStarted = false; // 👈 追加：相手が押した時もゲーム状態を確実にリセットしておく！
 
   if (myPlayerId === 1) {
     setTimeout(() => { 
@@ -1194,9 +1208,19 @@ function destroyCard(playerId, zone, isLost = false, isDirectDrop = false) { // 
   }
 
   if (targetCard.soulGuard && targetCard.soul && targetCard.soul.length > 0) {
+        // 👇 追加：一度「破壊」された演出（爆発と破壊音）を出す！
+        playSound('destroy');
+        showDestroyEffect(playerId, zone, false);
+
         let sacrificedSoul = targetCard.soul.pop(); 
         sendToTrashOrLost(playerId, [sacrificedSoul]); 
         targetCard.hp = 1; 
+
+        // 👇 追加：その後、ソウルを消費して「復活」する演出（破片集結と回復音）を出す！
+        setTimeout(() => {
+            window.showReviveEffect(playerId, zone);
+        }, 400);
+
         return { destroyed: false }; 
   }
   }
@@ -1863,7 +1887,7 @@ function showFloatingTextOnElement(elementId, value, type) {
   // 👇 追加：エフェクトの種類に合わせて音を鳴らす！
   if (type === 'damage') {
       if (value >= 10) {
-          playSound('huge_damage'); // 10ダメージ以上なら大ダメージ音！
+          playSound('huge_damage', true); // 👈 修正：大ダメージ音は通信しない！
       } else {
           playSound('damage');      // 9ダメージ以下なら通常のダメージ音を鳴らす！
       }
@@ -3539,8 +3563,8 @@ function checkGameOver() {
     // 👇 修正：BGMが止まってから、1秒間（1000ms）の「タメ（静寂）」を作る！
     setTimeout(() => {
         // 👇👇 ここから追加：リーダー破壊のド派手なコンボ演出！ 👇👇
-        playSound('huge_damage'); // 轟音！
-        playSound('destroy');     // 破壊音！
+        playSound('huge_damage', true); // 👈 修正：通信しない
+        playSound('destroy', true);     // 👈 修正：通信しない
 
         // 10ダメージ時と同じ激しい画面揺れを発生させる
         const gameWrap = document.getElementById("game-wrap");
@@ -3600,11 +3624,13 @@ function showResultScreen(isWin, winnerName) {
 }
 
 document.getElementById("new-retry-btn").addEventListener("click", () => {
-  playSound('click'); // 👈 クリック音！
-  window.fadeOutResultSound(); // 👈 win/lose音をフェードアウト開始！
+  playSound('click'); 
+  window.fadeOutResultSound(); 
 
   document.getElementById("new-retry-btn").style.display = "none";
   document.getElementById("result-message").innerText = `次のバトルへ移行中...`;
+
+  isGameStarted = false; // 👈 追加：押した瞬間にゲーム状態をリセットし、お互いにVS画面が出せるようにする！
 
   if (isSoloMode) {
       setTimeout(() => {
@@ -3656,6 +3682,7 @@ function hideResultScreen() {
   document.getElementById("result-message").style.opacity = "0";
   document.getElementById("result-buttons").style.opacity = "0";
   document.getElementById("new-retry-btn").style.display = "inline-block";
+  document.getElementById("back-home-btn").style.display = "inline-block"; // 👈 追加：ホームボタンもちゃんと表示させる！
 }
 
 retryBtn.addEventListener("click", () => {
@@ -4177,14 +4204,14 @@ function showVsScreen() {
 
     // 1. 左右からスライドイン！
     setTimeout(() => {
-        playSound('attack'); 
+        playSound('attack', true); // 👈 修正：相手には送らず、自分の画面だけで鳴らす！
         p1Container.style.transform = "translateX(0)";
         p2Container.style.transform = "translateX(0)";
     }, 100);
 
     // 2. VSの文字がドーン！と出現＆画面揺れ
     setTimeout(() => {
-        playSound('huge_damage'); 
+        playSound('huge_damage', true); // 👈 修正：相手には送らず、自分の画面だけで鳴らす！
         vsText.style.transform = "scale(1)";
         vsOverlay.classList.add("screen-shake-anim");
         setTimeout(() => vsOverlay.classList.remove("screen-shake-anim"), 500);
