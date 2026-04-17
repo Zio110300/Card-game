@@ -238,17 +238,37 @@ if (!savedDecks) {
   savedDecks.forEach(deckData => {
     if (deckData.deck) {
       deckData.deck = deckData.deck.map(savedCard => {
-        // 👇 追加：デッキに残っている古い名前の「ファイター」を自動で「歴戦のファイター」に進化させる！
-        if (savedCard.name === "ファイター") {
-            savedCard.name = "歴戦のファイター";
+        // 👇 修正：古い名前を最新の名前に一括で変換する「辞書」を作る！
+        const nameChanges = {
+            "ファイター": "歴戦のファイター",
+            "ゾンビ": "人工生物兵器 ゾンビ",
+            "魔導騎兵": "人工魔導兵器 No.71406202",
+            "吸血鬼 リリス": "ヴァンパイア リリス",
+            "くノ一": "見習いくノ一"
+            // ※もし他にも名前を変えたカードがあれば、ここに 「"古い名前": "新しい名前",」 と足すだけで全自動で直ります！
+        };
+        if (nameChanges[savedCard.name]) {
+            savedCard.name = nameChanges[savedCard.name];
             updated = true;
         }
+        
         let latestCard = allCards.find(c => c.name === savedCard.name);
         if (latestCard) { updated = true; return JSON.parse(JSON.stringify(latestCard)); }
         return savedCard;
       });
     }
     if (deckData.leader) {
+      // 👇 追加：リーダーの名前変更にも対応させる！
+      const leaderChanges = {
+          "ブレイブ": "王国の勇者 ブレイブ",
+          "フォルエル": "森林の長 フォルエル",
+          "魔女": "狂気の大魔術師"
+      };
+      if (leaderChanges[deckData.leader.name]) {
+          deckData.leader.name = leaderChanges[deckData.leader.name];
+          updated = true;
+      }
+      
       let latestLeader = allCards.find(c => c.name === deckData.leader.name);
       if (latestLeader) { updated = true; deckData.leader = JSON.parse(JSON.stringify(latestLeader)); }
     }
