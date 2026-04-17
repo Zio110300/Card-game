@@ -1033,13 +1033,13 @@ socket.on('game_updated', (gameState) => {
   infoPanel.style.backgroundColor = "#ecf0f1"; 
   
   if (!isGameOver) {
-    window.fadeOutResultSound();
 
-    if (typeof hideResultScreen === 'function') hideResultScreen(); 
-     window.isResultProcessing = false;
-
-     // 👈 追加：P2側 待機画面を消してゲーム画面（VS画面）へ移行する！
+     // 👈 修正：毎回BGMが止まってしまうバグを防ぐため、「最初（新しく始まった時）」のブロックの中に移動！
      if (wasNotStarted) {
+         window.fadeOutResultSound();
+         if (typeof hideResultScreen === 'function') hideResultScreen(); 
+         window.isResultProcessing = false;
+
          document.getElementById("waiting-overlay").style.display = "none";
          document.getElementById('game-wrap').style.display = 'block';
          resizeGame();
