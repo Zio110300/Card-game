@@ -41,18 +41,52 @@ const sounds = {
   destroy: new Audio('audio/destroy.mp3'), 
   lost: new Audio('audio/lost.mp3'),       
   burn: new Audio('audio/burn.mp3'),
-  win: new Audio('audio/win.mp3'),
-  lose: new Audio('audio/lose.mp3'),
   tension: new Audio('audio/tension.mp3') // 👈 追加：大ダメージの「間（タメ）」に鳴らす音！
 };
 
-// 全体の音量調整（0.0 ～ 1.0）
-Object.values(sounds).forEach(audio => {
-    audio.volume = 0.5;
-});
+// 👇 追加：ブラウザに保存されている音量（なければデフォルト値）を取得！
+let seVolume = localStorage.getItem('seVolume') !== null ? parseFloat(localStorage.getItem('seVolume')) : 0.5;
+let bgmVolume = localStorage.getItem('bgmVolume') !== null ? parseFloat(localStorage.getItem('bgmVolume')) : 0.3;
+
+// 👇👇 追加：SEごとの内部的な音量バランス調整（1.0を基準として微調整できます！） 👇👇
+const seRatios = {
+  draw: 0.5,         // ドロー音
+  play: 1.0,         // プレイ音
+  attack: 0.5,       // 攻撃音
+  damage: 1.0,       // 通常ダメージ
+  huge_damage: 1.5,  // 大ダメージ
+  heal: 1.0,         // 回復
+  buff: 1.0,         // バフ
+  barrier: 1.0,      // バリア
+  click: 0.7,        // 例：クリック音は少し控えめにする
+  destroy: 1.5,      // 破壊
+  lost: 1.0,         // ロスト
+  burn: 1.0,         // 燃焼
+  tension: 1.5       // タメの音は限界突破のまま！
+};
+
+// 👇👇 追加：SE「全体」にかかる内部的なマスター倍率（BGMとのバランス調整用）
+const seMasterRatio = 1.0; // 👈 例：0.6にすると、スライダーとは別にシステム内部でSE全体が60%の音量に抑えられます！
+
+// スライダーの値と内部倍率を掛け合わせて、全てのSEに適用する専用関数
+function applySeVolume() {
+    Object.keys(sounds).forEach(key => {
+        let ratio = seRatios[key] !== undefined ? seRatios[key] : 1.0;
+        
+        // 👇 修正：スライダー音量 × 個別の倍率 × 【全体のマスター倍率】 を掛け合わせる！
+        let finalVol = seVolume * ratio * seMasterRatio; 
+        
+        if (finalVol > 1.0) finalVol = 1.0; // HTMLの限界(1.0)を超えないようにガード
+        if (finalVol < 0.0) finalVol = 0.0;
+        sounds[key].volume = finalVol;
+    });
+}
+// ロード時に1回実行して音量をセットする
+applySeVolume();
 
 // 👇 追加：tension（タメの音）の再生速度を1.5倍速にして緊迫感を出す！
-if (sounds.tension) sounds.tension.playbackRate = 1.5; // (2.0で2倍速になります)
+if (sounds.tension) sounds.tension.playbackRate = 1.5;
+// 👆👆 追加ここまで 👆👆
 
 // 👇👇 追加：BGMの設定 👇👇
 const bgm = {
@@ -62,105 +96,119 @@ const bgm = {
   battle3: new Audio('audio/battle_bgm3.mp3'),
   battle4: new Audio('audio/battle_bgm4.mp3'),
   battle5: new Audio('audio/battle_bgm5.mp3'),
-  boss: new Audio('audio/boss_bgm.mp3')
+  boss: new Audio('audio/boss_bgm.mp3'),
+  win: new Audio('audio/win_bgm.mp3'),
+  lose: new Audio('audio/lose_bgm.mp3')
 };
-Object.values(bgm).forEach(audio => { audio.volume = 0.3; audio.loop = true; }); // BGMはループ再生＆少し控えめな音量に
+
+// 👇 修正：ここではループ設定だけを行う
+Object.values(bgm).forEach(audio => { audio.loop = true; });
+
+// 👇👇 追加：BGM「全体」にかかる内部的なマスター倍率 👇👇
+const bgmMasterRatio = 0.3; // 👈 例：0.5にすると、スライダーとは別にBGM全体が半分の音量に抑えられます！
+
+// スライダーの値とマスター倍率を掛け合わせて、全てのBGMに適用する専用関数
+function applyBgmVolume() {
+    let finalVol = bgmVolume * bgmMasterRatio;
+    if (finalVol > 1.0) finalVol = 1.0; 
+    if (finalVol < 0.0) finalVol = 0.0;
+    
+    Object.values(bgm).forEach(audio => { 
+        audio.volume = finalVol; 
+    });
+}
+// ロード時に1回実行して音量をセットする
+applyBgmVolume();
 
 let currentBGM = null;
-let fadeOutInterval = null; // 👈 追加：フェードアウト用のタイマー変数
+let fadeOutInterval = null; 
 
-// 👇 追加：現在のバトルBGMの種類を記憶する変数
 window.currentBattleBgmType = 'battle1';
 
-// 👇 追加：サウンドのON/OFF状態を保存する変数（ブラウザに記憶させます） 👇
-let isBgmOn = localStorage.getItem('isBgmOn') !== 'false'; // デフォルトON
-let isSeOn = localStorage.getItem('isSeOn') !== 'false';   // デフォルトON
+let isBgmOn = localStorage.getItem('isBgmOn') !== 'false'; 
+let isSeOn = localStorage.getItem('isSeOn') !== 'false';   
 
+// 👇 欠けていたBGM再生・停止関数を復活＆スライダー対応 👇
 function playBGM(type) {
-  if (fadeOutInterval) clearInterval(fadeOutInterval); // 👈 フェードアウト中に別の曲が呼ばれたらキャンセル
-  if (currentBGM) { currentBGM.pause(); currentBGM.volume = 0.3; } // 👈 音量を戻して停止
+  let finalVol = bgmVolume * bgmMasterRatio; if(finalVol > 1.0) finalVol = 1.0; // 👈 追加：マスター倍率を計算
+  if (fadeOutInterval) clearInterval(fadeOutInterval); 
+  if (currentBGM) { currentBGM.pause(); currentBGM.volume = finalVol; } // 👈 修正
   
-  if (!isBgmOn) return; // 👈 追加：BGMがOFFならここで止める！
+  if (!isBgmOn) return; 
 
   if (bgm[type]) {
     currentBGM = bgm[type];
     currentBGM.currentTime = 0;
-    currentBGM.volume = 0.3; // 👈 再生開始時に確実に元の音量(0.3)にする
+    currentBGM.volume = finalVol; // 👈 修正
     currentBGM.play().catch(e => console.log("BGM自動再生ブロック:", e));
   }
 }
 
 function stopBGM() { 
   if (!currentBGM) return;
-  if (fadeOutInterval) clearInterval(fadeOutInterval); // タイマーの重複を防ぐ
+  if (fadeOutInterval) clearInterval(fadeOutInterval); 
   
+  let finalVol = bgmVolume * bgmMasterRatio; if(finalVol > 1.0) finalVol = 1.0; // 👈 追加：マスター倍率を計算
   let fadeAudio = currentBGM;
+  let fadeStep = finalVol / 20; // 👈 修正
   
-  // 100ミリ秒ごとに音量を少しずつ下げる（合計2秒かけてフェードアウト！）
   fadeOutInterval = setInterval(() => {
-    let nextVolume = fadeAudio.volume - 0.015; 
+    let nextVolume = fadeAudio.volume - fadeStep; 
     if (nextVolume > 0) {
       fadeAudio.volume = nextVolume;
     } else {
-      clearInterval(fadeOutInterval); // 音量が0になったらタイマーを止める
+      clearInterval(fadeOutInterval); 
       fadeAudio.pause();
-      fadeAudio.volume = 0.3; // 次に鳴らす時のために標準音量(0.3)に戻しておく
+      fadeAudio.volume = finalVol; // 👈 修正
     }
   }, 100);
 }
 
-// 👇👇 ここに追加：リザルト音（win/lose）をフェードアウトさせる関数 👇👇
+// 👇 修正：SE用のフェードアウト処理を廃止し、BGMのフェードアウト処理（stopBGM）に丸投げする！
 window.fadeOutResultSound = function() {
-  ['win', 'lose'].forEach(type => {
-    let audio = sounds[type];
-    if (audio && !audio.paused) {
-      let vol = audio.volume;
-      let fadeInterval = setInterval(() => {
-        vol -= 0.05;
-        if (vol <= 0) {
-          clearInterval(fadeInterval);
-          audio.pause();
-          audio.currentTime = 0;
-          audio.volume = 0.5; // 次回のために元の音量に戻す
-        } else {
-          audio.volume = vol;
-        }
-      }, 100);
-    }
-  });
+  stopBGM(); 
 };
-// 👆👆 追加ここまで 👆👆
 
-// 画面をクリックしたらホームBGMを再生（ブラウザの自動再生制限を回避するため）
+// 画面をクリックしたらホームBGMを再生
 document.body.addEventListener('click', function initBGM() {
-  if (!isGameStarted) playBGM('home');
-  
-  // 👇 追加：最初の1クリックの時に「すべてのBGM」を一瞬だけ再生して止めることで、ブラウザのブロックを完全に解除（アンロック）する裏技！
+  // 👇 修正：ホームBGM「以外」の曲だけを裏でアンロックする（ホームBGMの再生を邪魔しないため！）
   Object.values(bgm).forEach(audio => {
-      let playPromise = audio.play();
-      if (playPromise !== undefined) {
-          playPromise.then(() => {
-              audio.pause();
-              audio.currentTime = 0;
-          }).catch(err => { console.log("BGMアンロック待機:", err); });
+      if (audio !== bgm['home']) { // 👈 これが重要！
+          let playPromise = audio.play();
+          if (playPromise !== undefined) {
+              playPromise.then(() => {
+                  audio.pause();
+                  audio.currentTime = 0;
+              }).catch(err => { console.log("BGMアンロック待機:", err); });
+          }
       }
   });
 
+  // ホームBGMはそのまま普通に即再生スタート！
+  if (!isGameStarted) playBGM('home');
+
   document.body.removeEventListener('click', initBGM);
 }, { once: true });
-// 👆👆 BGM設定ここまで 👆👆
-
 
 function playSound(type, isFromNetwork = false) {
-  // 👇 修正：SEがONの時だけ自分の画面で音を鳴らす！（通信は飛ばす）
   if (isSeOn && sounds[type]) {
     sounds[type].currentTime = 0; 
     sounds[type].play().catch(e => console.log("ブラウザの自動再生ブロック:", e));
+    
+    // 👇👇 追加：tension（タメの音）だけ、限界(1.0)を超えて爆音にする「重ね掛け（クローン）」の裏技！ 👇👇
+    if (type === 'tension') {
+        // さらに2つ複製して同時に鳴らす（元の音と合わせて「合計3重」になり、強烈な音圧になります！）
+        for (let i = 0; i < 2; i++) { 
+            let extraAudio = sounds[type].cloneNode();
+            extraAudio.volume = sounds[type].volume;
+            extraAudio.playbackRate = sounds[type].playbackRate; // 1.5倍速の設定も引き継ぐ
+            extraAudio.play().catch(e => {});
+        }
+    }
+    // 👆👆 追加ここまで 👆👆
   }
-  // 相手に送信しない個人的な音（クリック音やドロー音、勝敗音など）
-  const localOnly = ['click', 'draw', 'win', 'lose'];
+  const localOnly = ['click', 'draw'];
   if (!isFromNetwork && !localOnly.includes(type) && !isSoloMode && myRoomId) {
-    // サーバーの「カード効果（show_card_effect）」の通信を間借りして、音の信号を相手に送る！
     socket.emit('show_card_effect', { roomId: myRoomId, card: { isSoundEvent: true, soundType: type } });
   }
 }
@@ -364,12 +412,14 @@ const deckEditScreen = document.getElementById("deck-edit-screen");
 // 👇👇 ここから追加：BGM・SE トグルボタンの設定 👇👇
 const bgmToggleBtn = document.getElementById("bgm-toggle-btn");
 const seToggleBtn = document.getElementById("se-toggle-btn");
+const bgmVolumeSlider = document.getElementById("bgm-volume-slider");
+const seVolumeSlider = document.getElementById("se-volume-slider");
 
 function updateSoundToggleUI() {
     if(bgmToggleBtn) {
         bgmToggleBtn.innerText = isBgmOn ? "🎵 BGM: ON" : "🎵 BGM: OFF";
         bgmToggleBtn.style.opacity = isBgmOn ? "1" : "0.5";
-        bgmToggleBtn.style.filter = isBgmOn ? "none" : "grayscale(80%)"; // OFFの時はグレーにする
+        bgmToggleBtn.style.filter = isBgmOn ? "none" : "grayscale(80%)";
     }
     if(seToggleBtn) {
         seToggleBtn.innerText = isSeOn ? "🔊 SE: ON" : "🔊 SE: OFF";
@@ -378,17 +428,38 @@ function updateSoundToggleUI() {
     }
 }
 
+if (bgmVolumeSlider) {
+    bgmVolumeSlider.value = bgmVolume; 
+    bgmVolumeSlider.addEventListener("input", (e) => {
+        bgmVolume = parseFloat(e.target.value);
+        localStorage.setItem("bgmVolume", bgmVolume); 
+        applyBgmVolume(); // 👈 修正：スライダーを動かした時、自動でマスター倍率を掛けて全BGMを更新する！
+    });
+}
+
+if (seVolumeSlider) {
+    seVolumeSlider.value = seVolume; 
+    seVolumeSlider.addEventListener("input", (e) => {
+        seVolume = parseFloat(e.target.value);
+        localStorage.setItem("seVolume", seVolume); 
+        applySeVolume(); 
+    });
+    
+    seVolumeSlider.addEventListener("change", () => {
+        if (isSeOn) playSound('click'); 
+    });
+}
+
 if (bgmToggleBtn) {
     bgmToggleBtn.addEventListener("click", () => {
         isBgmOn = !isBgmOn;
-        localStorage.setItem("isBgmOn", isBgmOn); // 設定を保存
+        localStorage.setItem("isBgmOn", isBgmOn); 
         updateSoundToggleUI();
         if (isBgmOn) {
-            // 👇 修正：ONにした時、現在設定されているランダムバトルBGM（またはボスBGM）を鳴らす！
             if (isGameStarted && !isGameOver) playBGM(window.currentBattleBgmType);
             else playBGM('home');
         } else {
-            if (currentBGM) currentBGM.pause(); // OFFにした瞬間に止める
+            if (currentBGM) currentBGM.pause(); 
         }
         if (isSeOn) playSound('click');
     });
@@ -397,13 +468,13 @@ if (bgmToggleBtn) {
 if (seToggleBtn) {
     seToggleBtn.addEventListener("click", () => {
         isSeOn = !isSeOn;
-        localStorage.setItem("isSeOn", isSeOn); // 設定を保存
+        localStorage.setItem("isSeOn", isSeOn); 
         updateSoundToggleUI();
-        if (isSeOn) playSound('click'); // ONにした瞬間だけカチッと鳴らす
+        if (isSeOn) playSound('click'); 
     });
 }
-updateSoundToggleUI(); // 最初（ロード時）に見た目を合わせる
-// 👆👆 追加ここまで 👆👆
+
+updateSoundToggleUI(); 
 
 const joinRoomBtn = document.getElementById("join-room-btn");
 const roomIdInput = document.getElementById("room-id-input");
@@ -526,6 +597,30 @@ randomMatchBtn.addEventListener("click", () => {
 socket.on('room_assigned', (roomId) => {
     myRoomId = roomId; // 割り当てられた部屋番号をセット
 });
+
+// 👇👇 ここから追加：待機画面のキャンセル処理 👇👇
+const cancelWaitingBtn = document.getElementById("cancel-waiting-btn");
+if (cancelWaitingBtn) {
+    cancelWaitingBtn.addEventListener("click", () => {
+        playSound('click');
+        
+        // 1. 画面をホームに戻す
+        document.getElementById("waiting-overlay").style.display = "none";
+        document.getElementById("home-screen").style.display = "flex";
+        
+        // 2. サーバー側の待機列から確実に外れるため、一度通信を強制切断してすぐ再接続する裏技！
+        socket.disconnect();
+        setTimeout(() => {
+            socket.connect();
+        }, 100);
+        
+        // 3. ゲーム状態をリセット
+        isGameStarted = false;
+        myRoomId = "";
+        myPlayerId = null;
+    });
+}
+// 👆👆 追加ここまで 👆👆
 
 // ★ ボス選択の処理を追加
 soloModeBtn.addEventListener("click", () => {
@@ -1289,13 +1384,14 @@ window.useLeaderSkill = async function() {
           showFloatingTextOnElement(`p${oppId}-leader-zone`, 12, 'damage');
           const targetEl = document.getElementById(`p${oppId}-leader-zone`);
           if(targetEl){ 
-            targetEl.classList.add("damage-anim"); setTimeout(() => targetEl.classList.remove("damage-anim"), 300); }
-            let hpText = document.getElementById(`p${oppId}-hp-text`); // 👈 即時更新
-            if(hpText) hpText.innerText = `${oppP.hp} / ${oppP.maxHp}`;
+              targetEl.classList.add("damage-anim"); setTimeout(() => targetEl.classList.remove("damage-anim"), 300); 
+              let hpText = document.getElementById(`p${oppId}-hp-text`);
+              if(hpText) hpText.innerText = `${oppP.hp} / ${oppP.maxHp}`;
+          }
+          await new Promise(r => setTimeout(r, 1200)); // 👈 これを消去！
       }
-      await new Promise(r => setTimeout(r, 1200));
-
-    } else if (p.leader.name === "\"Absolutely Main Gamer\" ONE") {
+     }
+      else if (p.leader.name === "\"Absolutely Main Gamer\" ONE") {
       if (p.mp < 1) return;
       p.mp -= 1;
       p.leader.turnAttackBoost = (p.leader.turnAttackBoost || 0) + 1;
@@ -1884,6 +1980,28 @@ function showFloatingTextOnElement(elementId, value, type) {
   textEl.style.top = `${rect.top + rect.height / 2 - textHeight / 2}px`;
   setTimeout(() => { textEl.remove(); }, 1200); 
 
+  // 👇 追加：ダメージや回復が起きた瞬間、HPの数字UIを「アニメーションを待たずに瞬時に」更新する！
+  if (type === 'damage' || type === 'heal') {
+      let match = elementId.match(/p(\d+)-(leader|stage-left|stage-center|stage-right)/);
+      if (match) {
+          let pid = parseInt(match[1]);
+          let rawZone = match[2];
+          let zone = rawZone.startsWith('stage-') ? rawZone.replace('stage-', '') : rawZone;
+          let p = players[pid];
+          if (p) {
+              let hpToDisplay = zone === 'leader' ? p.hp : (p.stage[zone] ? p.stage[zone].hp : null);
+              if (hpToDisplay !== null) {
+                  let hpSpan = el.querySelector('.stat-hp');
+                  if (hpSpan) hpSpan.innerText = hpToDisplay; // カード上のバッジを即更新
+                  if (zone === 'leader') {
+                      let hpText = document.getElementById(`p${pid}-hp-text`);
+                      if (hpText) hpText.innerText = `${p.hp} / ${p.maxHp}`; // 下部のステータスバーを即更新
+                  }
+              }
+          }
+      }
+  }
+
   // 👇 追加：エフェクトの種類に合わせて音を鳴らす！
   if (type === 'damage') {
       if (value >= 10) {
@@ -2081,20 +2199,18 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
         }
 
         if (targetLeader.reflector) {
-          targetLeader.reflector = false; playSound('barrier');
+          targetLeader.reflector = false; playSound('barrier', true);
           attackerPlayer.hp -= pierceDamage;
           triggerConnection(attackerPlayer.leader, 'damage', pierceDamage);
           showFloatingTextOnElement(`p${attackerPid}-leader-zone`, pierceDamage, 'damage');
           const elLeader = document.getElementById(`p${attackerPid}-leader-zone`);
           if(elLeader) { 
               elLeader.classList.add("damage-anim"); setTimeout(() => elLeader.classList.remove("damage-anim"), 300); 
-              const hpText = document.getElementById(`p${attackerPid}-hp-text`); // 👈 即時更新
+              const hpText = document.getElementById(`p${attackerPid}-hp-text`);
               if (hpText) hpText.innerText = `${attackerPlayer.hp} / ${attackerPlayer.maxHp}`;
           }
-          let delayTime = pierceDamage >= 10 ? 1200 : 300;
-          await new Promise(r => setTimeout(r, delayTime)); // 👈 追加②：反射大ダメージの余韻
         } else if (targetLeader.hasBarrier) {
-          targetLeader.hasBarrier = false; damageToDeal = 0; playSound('barrier');
+          targetLeader.hasBarrier = false; damageToDeal = 0; playSound('barrier', true);
         } else {
           targetPlayer.hp -= pierceDamage;
           drainAmount += pierceDamage; 
@@ -2105,11 +2221,9 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
               const hpText = document.getElementById(`p${targetPid}-hp-text`);
               if (hpText) hpText.innerText = `${targetPlayer.hp} / ${targetPlayer.maxHp}`;
           }
-          let delayTime = pierceDamage >= 10 ? 1200 : 300;
-          await new Promise(r => setTimeout(r, delayTime)); // 👈 追加③：貫通大ダメージの余韻
         }
       }
-    } 
+    }
   }
 
   if (actualDamageDealt > 0 && attackerCard.name === "ゾンビ") {
@@ -2796,12 +2910,9 @@ async function playCard(cardId, targetZone, pId) {
             const targetEl = document.getElementById(`p${oppId}-leader-zone`);
             if(targetEl){ 
                 targetEl.classList.add("damage-anim"); setTimeout(() => targetEl.classList.remove("damage-anim"), 300); 
-                let hpText = document.getElementById(`p${oppId}-hp-text`); // 👈 即時更新
+                let hpText = document.getElementById(`p${oppId}-hp-text`); 
                 if(hpText) hpText.innerText = `${players[oppId].hp} / ${players[oppId].maxHp}`;
             }
-            
-            let delayTime = dmg >= 10 ? 2200 : 300;
-            await new Promise(r => setTimeout(r, delayTime)); // 👈 追加：魔法による大ダメージの余韻！
         }
     }
     else if (card.name === "スプリングティー") {
@@ -3601,14 +3712,14 @@ function showResultScreen(isWin, winnerName) {
   const buttons = document.getElementById("result-buttons");
 
   if (isWin) {
-    playSound('win');
+    playBGM('win'); 
     title.innerText = "YOU WIN!";
     title.style.color = "#f1c40f";
     title.style.textShadow = "0 0 40px rgba(241, 196, 15, 0.8)";
     message.innerText = `勝者: ${winnerName} 🎉`;
   } else {
-    playSound('lose');
-    title.innerText = "YOU LOSE...";
+    playBGM('lose'); 
+    title.innerText = "GAME SET"
     title.style.color = "#3498db";
     title.style.textShadow = "0 0 40px rgba(52, 152, 219, 0.8)";
     message.innerText = `勝者: ${winnerName}`;
