@@ -4368,13 +4368,17 @@ function showVsScreen() {
     p1CardArea.innerHTML = generateCardHtml(players[1].leader, "", "box-shadow: 0 0 40px #3498db; transform: scale(1.8); margin: 60px;");
     p2CardArea.innerHTML = generateCardHtml(players[2].leader, "", "box-shadow: 0 0 40px #e74c3c; transform: scale(1.8); margin: 60px;");
 
-    // 自分の側を「YOU」、相手を「OPPONENT」にする
+    // 👇 修正：実際のシステム上のターンを読み取って、正しい文字を変数に入れる！
+    let p1TurnText = currentTurn === 1 ? "(先攻)" : "(後攻)";
+    let p2TurnText = currentTurn === 2 ? "(先攻)" : "(後攻)";
+
+    // 自分の側を「YOU」、相手を「OPPONENT」にする（先攻・後攻も連動！）
     if (myPlayerId === 1) {
-        p1Name.innerText = "YOU (先攻)"; p1Name.style.color = "#3498db"; p1Name.style.textShadow = "0 0 15px #3498db, 0 0 5px #fff";
-        p2Name.innerText = isSoloMode ? players[2].leader.name : "OPPONENT (後攻)"; p2Name.style.color = "#e74c3c"; p2Name.style.textShadow = "0 0 15px #e74c3c, 0 0 5px #fff";
+        p1Name.innerText = `YOU ${p1TurnText}`; p1Name.style.color = "#3498db"; p1Name.style.textShadow = "0 0 15px #3498db, 0 0 5px #fff";
+        p2Name.innerText = isSoloMode ? `${players[2].leader.name} ${p2TurnText}` : `OPPONENT ${p2TurnText}`; p2Name.style.color = "#e74c3c"; p2Name.style.textShadow = "0 0 15px #e74c3c, 0 0 5px #fff";
     } else {
-        p1Name.innerText = "OPPONENT (先攻)"; p1Name.style.color = "#e74c3c"; p1Name.style.textShadow = "0 0 15px #e74c3c, 0 0 5px #fff";
-        p2Name.innerText = "YOU (後攻)"; p2Name.style.color = "#3498db"; p2Name.style.textShadow = "0 0 15px #3498db, 0 0 5px #fff";
+        p1Name.innerText = `OPPONENT ${p1TurnText}`; p1Name.style.color = "#e74c3c"; p1Name.style.textShadow = "0 0 15px #e74c3c, 0 0 5px #fff";
+        p2Name.innerText = `YOU ${p2TurnText}`; p2Name.style.color = "#3498db"; p2Name.style.textShadow = "0 0 15px #3498db, 0 0 5px #fff";
     }
     
     // 初期状態にリセット
