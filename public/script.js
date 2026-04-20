@@ -3312,7 +3312,7 @@ async function playCard(cardId, targetZone, pId) {
 } 
 // 👆👆 playCard 関数はここで終わり 👆👆
 
-function endTurnProcess(pId) {
+async function endTurnProcess(pId) { // 👈 修正：awaitを使えるようにasyncを追加！
   if (isGameOver) return;
   const nextPId = pId === 1 ? 2 : 1; 
   const nextP = players[nextPId];
@@ -3379,97 +3379,104 @@ function endTurnProcess(pId) {
           showFloatingTextOnElement(`p${pId}-leader-zone`, consumedMp, 'heal'); 
       }
   }
-      ['left', 'center', 'right'].forEach(z => {
-      let c = p.stage[z];
-      if (c && c.name === "月ウサギ アイリス") {
-          c.hp += 1;
-          p.hp += 1;
-          triggerConnection(c, 'heal', 1);
-          triggerConnection(p.leader, 'heal', 1);
-          if (p.hp > p.maxHp) p.hp = p.maxHp;
-          showFloatingTextOnElement(`p${pId}-stage-${z}`, 1, 'heal');
-          showFloatingTextOnElement(`p${pId}-leader-zone`, 1, 'heal');
-      }
-      if (c && c.name === "影の国の闇 スカージ") {
-          ['left', 'center', 'right'].forEach(oz => {
-              if (p.stage[oz] && p.stage[oz].type === "monster") {
-                  p.stage[oz].hp -= 1; triggerConnection(p.stage[oz], 'damage', 1);
-                  showFloatingTextOnElement(`p${pId}-stage-${oz}`, 1, 'damage');
-                  const el = document.getElementById(`p${pId}-stage-${oz}`); // 👈 追加
-                  if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); } // 👈 追加
-                  if (p.stage[oz].hp <= 0) destroyCard(pId, oz, false);
-              }
-              if (players[nextPId].stage[oz] && players[nextPId].stage[oz].type === "monster") {
-                  players[nextPId].stage[oz].hp -= 1; triggerConnection(players[nextPId].stage[oz], 'damage', 1);
-                  showFloatingTextOnElement(`p${nextPId}-stage-${oz}`, 1, 'damage');
-                  const el = document.getElementById(`p${nextPId}-stage-${oz}`); // 👈 追加
-                  if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); } // 👈 追加
-                  if (players[nextPId].stage[oz].hp <= 0) destroyCard(nextPId, oz, false);
-              }
-          });
-      }
-      if (c && c.name === "影陰る瞳 インサイト") {
-          if (c.reflector) { c.reflector = false; } // 👈 追加：自身へのダメージなので反射は消えるだけ
-          else if (c.hasBarrier) { c.hasBarrier = false; } // 👈 追加：バリアで防ぐ
-          else {
-              c.hp -= 2; triggerConnection(c, 'damage', 2);
-              showFloatingTextOnElement(`p${pId}-stage-${z}`, 2, 'damage');
-              const el = document.getElementById(`p${pId}-stage-${z}`); 
-              if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); } 
-              if (c.hp <= 0) destroyCard(pId, z, false);
+      // 👇 修正：forEach から for...of に変更して、途中で「待機（タメ）」ができるようにする！
+      for (let z of ['left', 'center', 'right']) {
+          let c = p.stage[z];
+          if (c && c.name === "月ウサギ アイリス") {
+              c.hp += 1;
+              p.hp += 1;
+              triggerConnection(c, 'heal', 1);
+              triggerConnection(p.leader, 'heal', 1);
+              if (p.hp > p.maxHp) p.hp = p.maxHp;
+              showFloatingTextOnElement(`p${pId}-stage-${z}`, 1, 'heal');
+              showFloatingTextOnElement(`p${pId}-leader-zone`, 1, 'heal');
           }
-      }
-      if (c && c.name === "反光 シェード") {
-          if (c.reflector) { c.reflector = false; } // 👈 追加：自身へのダメージなので反射は消えるだけ
-          else if (c.hasBarrier) { c.hasBarrier = false; } // 👈 追加：バリアで防ぐ
-          else {
-              c.hp -= 1; triggerConnection(c, 'damage', 1);
-              showFloatingTextOnElement(`p${pId}-stage-${z}`, 1, 'damage');
-              const el = document.getElementById(`p${pId}-stage-${z}`); 
-              if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); } 
-              if (c.hp <= 0) destroyCard(pId, z, false);
+          if (c && c.name === "影の国の闇 スカージ") {
+              ['left', 'center', 'right'].forEach(oz => {
+                  if (p.stage[oz] && p.stage[oz].type === "monster") {
+                      p.stage[oz].hp -= 1; triggerConnection(p.stage[oz], 'damage', 1);
+                      showFloatingTextOnElement(`p${pId}-stage-${oz}`, 1, 'damage');
+                      const el = document.getElementById(`p${pId}-stage-${oz}`); 
+                      if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); } 
+                      if (p.stage[oz].hp <= 0) destroyCard(pId, oz, false);
+                  }
+                  if (players[nextPId].stage[oz] && players[nextPId].stage[oz].type === "monster") {
+                      players[nextPId].stage[oz].hp -= 1; triggerConnection(players[nextPId].stage[oz], 'damage', 1);
+                      showFloatingTextOnElement(`p${nextPId}-stage-${oz}`, 1, 'damage');
+                      const el = document.getElementById(`p${nextPId}-stage-${oz}`); 
+                      if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); } 
+                      if (players[nextPId].stage[oz].hp <= 0) destroyCard(nextPId, oz, false);
+                  }
+              });
           }
-          c.reflector = true; // 👈 追加：ダメージ処理の後にリフレクターを張り直す！
-      }
-      if (c && c.name === "白鯨神") {
-          ['left', 'center', 'right'].forEach(oz => {
-              if (oz !== z && p.stage[oz] && p.stage[oz].type === "monster") {
-                  destroyCard(pId, oz, true);
+          if (c && c.name === "影陰る瞳 インサイト") {
+              if (c.reflector) { c.reflector = false; } 
+              else if (c.hasBarrier) { c.hasBarrier = false; } 
+              else {
+                  c.hp -= 2; triggerConnection(c, 'damage', 2);
+                  showFloatingTextOnElement(`p${pId}-stage-${z}`, 2, 'damage');
+                  const el = document.getElementById(`p${pId}-stage-${z}`); 
+                  if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); } 
+                  if (c.hp <= 0) destroyCard(pId, z, false);
               }
-              if (players[nextPId].stage[oz] && players[nextPId].stage[oz].type === "monster") {
-                  destroyCard(nextPId, oz, true);
+          }
+          if (c && c.name === "反光 シェード") {
+              if (c.reflector) { c.reflector = false; } 
+              else if (c.hasBarrier) { c.hasBarrier = false; } 
+              else {
+                  c.hp -= 1; triggerConnection(c, 'damage', 1);
+                  showFloatingTextOnElement(`p${pId}-stage-${z}`, 1, 'damage');
+                  const el = document.getElementById(`p${pId}-stage-${z}`); 
+                  if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); } 
+                  if (c.hp <= 0) destroyCard(pId, z, false);
               }
-          });
-      }
+              c.reflector = true; 
+          }
+          if (c && c.name === "白鯨神") {
+              ['left', 'center', 'right'].forEach(oz => {
+                  if (oz !== z && p.stage[oz] && p.stage[oz].type === "monster") {
+                      destroyCard(pId, oz, true);
+                  }
+                  if (players[nextPId].stage[oz] && players[nextPId].stage[oz].type === "monster") {
+                      destroyCard(nextPId, oz, true);
+                  }
+              });
+          }
 
-      if (c && c.name === "“絶対依存の情” マッハ") {
-          let oppZone = getOppositeZone(z);
-          let oppCard = players[nextPId].stage[oppZone];
-          if (oppCard && oppCard.type === "monster") {
-              let dmg = 11;
-              if (oppCard.name === "白鱗の竜人") { dmg -= 2; if (dmg < 0) dmg = 0; }
-              if (oppCard.name === "黒鱗の竜人" && oppZone === 'center') { dmg = 1; }
-              
-              if (dmg > 0) {
-                  if (oppCard.reflector) { // 👈 追加：リフレクター処理
-                      oppCard.reflector = false;
-                      p.hp -= dmg;
-                      triggerConnection(p.leader, 'damage', dmg);
-                      showFloatingTextOnElement(`p${pId}-leader-zone`, dmg, 'damage');
-                      const el = document.getElementById(`p${pId}-leader-zone`);
-                      if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
-                  } else if (oppCard.hasBarrier) {
-                      oppCard.hasBarrier = false;
-                  } else {
-                      oppCard.hp -= dmg;
-                      triggerConnection(oppCard, 'damage', dmg);
-                      showFloatingTextOnElement(`p${nextPId}-stage-${oppZone}`, dmg, 'damage');
-                      if (oppCard.hp <= 0) destroyCard(nextPId, oppZone, false);
+          if (c && c.name === "“絶対依存の情” マッハ") {
+              let oppZone = getOppositeZone(z);
+              let oppCard = players[nextPId].stage[oppZone];
+              if (oppCard && oppCard.type === "monster") {
+                  let dmg = 11;
+                  if (oppCard.name === "白鱗の竜人") { dmg -= 2; if (dmg < 0) dmg = 0; }
+                  if (oppCard.name === "黒鱗の竜人" && oppZone === 'center') { dmg = 1; }
+                  
+                  if (dmg > 0) {
+                      // 👇 追加：10ダメージ以上の大ダメージなら直前に「タメ」を作る！
+                      if (dmg >= 10 && (!oppCard.hasBarrier || oppCard.reflector)) {
+                          playSound('tension');
+                          await new Promise(r => setTimeout(r, 1200));
+                      }
+                      
+                      if (oppCard.reflector) { 
+                          oppCard.reflector = false;
+                          p.hp -= dmg;
+                          triggerConnection(p.leader, 'damage', dmg);
+                          showFloatingTextOnElement(`p${pId}-leader-zone`, dmg, 'damage');
+                          const el = document.getElementById(`p${pId}-leader-zone`);
+                          if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
+                      } else if (oppCard.hasBarrier) {
+                          oppCard.hasBarrier = false;
+                      } else {
+                          oppCard.hp -= dmg;
+                          triggerConnection(oppCard, 'damage', dmg);
+                          showFloatingTextOnElement(`p${nextPId}-stage-${oppZone}`, dmg, 'damage');
+                          if (oppCard.hp <= 0) destroyCard(nextPId, oppZone, false);
+                      }
                   }
               }
           }
-      }
-  });
+      } 
 
   if (p.leader) {
       p.leader.turnAttackBoost = 0;
@@ -3681,9 +3688,8 @@ async function playAITurn() {
       checkGameOver();
       if (isGameOver) return;
   }
-  // 👆👆 ここまで追加 👆👆
 
-  endTurnProcess(2);
+  await endTurnProcess(2); // 👈 修正：マッハのタメが終わるまで待機する！
   } finally {
       if (!wasLocked) window.isActionLocked = false; // 🔓 処理完了！ロックを解除する
   }
@@ -4352,6 +4358,8 @@ window.useInvertSkill = function(zone) {
   let card = zone === 'item' ? p.weapon : p.stage[zone]; 
   if (!card || !card.invert || card.invertUsed) return;
 
+  let isDestroyedByInvert = false; // 👈 反転で死んだかどうかの判定用フラグ
+
   // 攻撃力とHPの数値を入れ替える！
   if (card.type === "item") {
       let oldHp = card.hp;
@@ -4374,17 +4382,33 @@ window.useInvertSkill = function(zone) {
           if(elL) { elL.classList.add("damage-anim"); setTimeout(() => elL.classList.remove("damage-anim"), 300); }
       }
   } else {
-      let temp = card.attack; card.attack = card.hp; card.hp = temp;
+      // 👇 修正：現在のデバフやバフも含めた「現在の実質的な攻撃力」をHPにして、デバフをリセットする！
+      let currentAtk = card.attack + (card.turnAttackBoost || 0);
+      if (currentAtk < 0) currentAtk = 0; // マイナスの場合は0として扱う
+      
+      card.attack = card.hp;
+      card.hp = currentAtk;
+      card.turnAttackBoost = 0; // デバフ・バフを完全に吸収してリセット！
+      
+      // 👇 追加：反転した結果、HPが0になったら破壊される！
+      if (card.hp <= 0) {
+          isDestroyedByInvert = true;
+      }
   }
   
   card.invertUsed = true; 
-  card.isInverted = !card.isInverted; // 👈 追加：スキルを使うたびに「見た目スイッチ」をパチッと切り替える！
+  card.isInverted = !card.isInverted; 
   window.triggerInvertEffects(myPlayerId, card); 
 
-  playSound('buff');
-  let targetId = zone === 'item' ? `p${myPlayerId}-item-zone` : `p${myPlayerId}-stage-${zone}`;
-  const el = document.getElementById(targetId);
-  if(el) { el.classList.add("heal-anim"); setTimeout(() => el.classList.remove("heal-anim"), 300); }
+  // 👇 修正：破壊されたか生き残ったかでエフェクトを分岐させる
+  if (isDestroyedByInvert) {
+      destroyCard(myPlayerId, zone, false);
+  } else {
+      playSound('buff');
+      let targetId = zone === 'item' ? `p${myPlayerId}-item-zone` : `p${myPlayerId}-stage-${zone}`;
+      const el = document.getElementById(targetId);
+      if(el) { el.classList.add("heal-anim"); setTimeout(() => el.classList.remove("heal-anim"), 300); }
+  }
 
   if (!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card }); 
   renderAll(); sendGameState();
