@@ -351,7 +351,8 @@ function getCardInfoText(card) {
   if (card.shouten) skillTags.push("【消殄】");   
   if (card.hanten) skillTags.push("【反殄】");    
   if (card.invert) skillTags.push("【反転】");
-  if (card.reflector) skillTags.push("【リフレクター】"); // 👈 追加
+  if (card.reflector) skillTags.push("【リフレクター】"); 
+  if (card.spellShift) skillTags.push("【スペルシフト】"); // 👈 追加：新能力！
   if (card.doubleAttack) skillTags.push("【2回攻撃】");
   if (card.soulGuard) skillTags.push("【ソウルガード】");
   if (card.infection) skillTags.push("【感染症】");
@@ -2812,32 +2813,47 @@ async function playCard(cardId, targetZone, pId) {
         return; 
     }
     
-    if(targetZone === 'leader') { return; }
-    
-    const existingCard = p.stage[targetZone];
-    
-    if (card.name === "\"Get Ready Going To\" LFA" && accelTriggered) {
-        if (!existingCard || existingCard.name !== "\"Born from competition\" GR") return; 
-        p.mp -= card.cost; card.attackCount = 0; card.hasBarrier = false; card.infection = false; card.turnAttackBoost = 0; card.burnActive = false;
-        card.soul = existingCard.soul ? [...existingCard.soul, existingCard] : [existingCard];
-        p.stage[targetZone] = card; p.hand.splice(cardIndex, 1); isSuccess = true;
-    }
-    else if (existingCard !== null) {
-      if (card.evolution && card.type === existingCard.type) {
-        p.mp -= card.cost; card.attackCount = 0; card.hasBarrier = false; card.infection = false; card.turnAttackBoost = 0; card.burnActive = false;
-        card.soul = existingCard.soul ? [...existingCard.soul, existingCard] : [existingCard];
-        if (card.name === "歴戦のファイター" && artsTriggered) { card.attack += 3; card.hp += 3; } // 👈 修正！
-        if (card.name === "\"Re Born in 2600\" BNR34" && artsTriggered) { card.attack += 2; card.hp += 2; }
-        p.stage[targetZone] = card; p.hand.splice(cardIndex, 1); isSuccess = true;
-      } else { return; }
+    if (targetZone === 'leader') { 
+        if (card.spellShift) {
+            // 👇 追加：スペルシフトの発動処理！
+            p.mp -= card.cost; // コストを消費
+            p.hand.splice(cardIndex, 1); // 手札から消す
+            sendToTrashOrLost(pId, [card]); // ステージではなくドロップに置く
+            
+            // ★ 今後、ここにスペルシフトの魔法効果を書きます
+            // if (card.name === "新カード名") { ... }
+
+            isSuccess = true;
+        } else {
+            return; // スペルシフトを持たないキャラはリーダー枠に置けない（弾く）
+        }
     } else {
-      p.mp -= card.cost; card.attackCount = 0; card.hasBarrier = false; card.soul = []; card.infection = false; card.turnAttackBoost = 0; card.burnActive = false;
-      if (card.name === "歴戦のファイター" && artsTriggered) { card.attack += 3; card.hp += 3; } // 👈 修正！
-      if (card.name === "\"Re Born in 2600\" BNR34" && artsTriggered) { card.attack += 2; card.hp += 2; }
-      p.stage[targetZone] = card; p.hand.splice(cardIndex, 1); isSuccess = true;
+        const existingCard = p.stage[targetZone];
+        
+        if (card.name === "\"Get Ready Going To\" LFA" && accelTriggered) {
+            if (!existingCard || existingCard.name !== "\"Born from competition\" GR") return; 
+            p.mp -= card.cost; card.attackCount = 0; card.hasBarrier = false; card.infection = false; card.turnAttackBoost = 0; card.burnActive = false;
+            card.soul = existingCard.soul ? [...existingCard.soul, existingCard] : [existingCard];
+            p.stage[targetZone] = card; p.hand.splice(cardIndex, 1); isSuccess = true;
+        }
+        else if (existingCard !== null) {
+          if (card.evolution && card.type === existingCard.type) {
+            p.mp -= card.cost; card.attackCount = 0; card.hasBarrier = false; card.infection = false; card.turnAttackBoost = 0; card.burnActive = false;
+            card.soul = existingCard.soul ? [...existingCard.soul, existingCard] : [existingCard];
+            if (card.name === "歴戦のファイター" && artsTriggered) { card.attack += 3; card.hp += 3; } 
+            if (card.name === "\"Re Born in 2600\" BNR34" && artsTriggered) { card.attack += 2; card.hp += 2; }
+            p.stage[targetZone] = card; p.hand.splice(cardIndex, 1); isSuccess = true;
+          } else { return; }
+        } else {
+          p.mp -= card.cost; card.attackCount = 0; card.hasBarrier = false; card.soul = []; card.infection = false; card.turnAttackBoost = 0; card.burnActive = false;
+          if (card.name === "歴戦のファイター" && artsTriggered) { card.attack += 3; card.hp += 3; } 
+          if (card.name === "\"Re Born in 2600\" BNR34" && artsTriggered) { card.attack += 2; card.hp += 2; }
+          p.stage[targetZone] = card; p.hand.splice(cardIndex, 1); isSuccess = true;
+        }
     }
 
-    if (isSuccess) {
+    // 👈 修正：スペルシフトの場合は登場時効果をスキップする！
+    if (isSuccess && targetZone !== 'leader') { 
         // 👇 共通化した登場時効果をここで発動！
         if (executeEnterEffects(card, targetZone)) return; 
     }
@@ -4294,6 +4310,9 @@ function showDestroyEffect(playerId, zone, isLost) {
 
   // カードの見た目をそのままコピー（クローン）する
   let clone = cardEl.cloneNode(true);
+  
+  // 👇 追加：攻撃モーションを持ったまま破壊された場合、バグを防ぐためクローンから攻撃クラスを剥がす！
+  clone.classList.remove("attacker-thrust");
   
   // 👇 修正：画面全体が縮小（スケール）されている場合のズレを計算して補正する！
   let container = document.getElementById('game-container');
