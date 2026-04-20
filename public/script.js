@@ -36,12 +36,14 @@ const sounds = {
   huge_damage: new Audio('audio/huge_damage.mp3'),
   heal: new Audio('audio/heal.mp3'),
   buff: new Audio('audio/buff.mp3'),
-  barrier: new Audio('audio/barrier.mp3'), // 👈 追加：バリア/リフレクターの音！
-  click: new Audio('audio/click.mp3'),     // 👈 追加：ボタンを押した時の音！
+  debuff: new Audio('audio/debuff.mp3'),   
+  barrier: new Audio('audio/barrier.mp3'), 
+  click: new Audio('audio/click.mp3'),     
   destroy: new Audio('audio/destroy.mp3'), 
   lost: new Audio('audio/lost.mp3'),       
   burn: new Audio('audio/burn.mp3'),
-  tension: new Audio('audio/tension.mp3') // 👈 追加：大ダメージの「間（タメ）」に鳴らす音！
+  tension: new Audio('audio/tension.mp3'),
+  return: new Audio('audio/return.mp3')    // 👈 追加：手札に戻る音！
 };
 
 // 👇 追加：ブラウザに保存されている音量（なければデフォルト値）を取得！
@@ -57,12 +59,14 @@ const seRatios = {
   huge_damage: 1.5,  // 大ダメージ
   heal: 1.0,         // 回復
   buff: 1.0,         // バフ
-  barrier: 1.0,      // バリア
-  click: 0.7,        // 例：クリック音は少し控えめにする
-  destroy: 1.5,      // 破壊
-  lost: 1.0,         // ロスト
-  burn: 1.0,         // 燃焼
-  tension: 1.5       // タメの音は限界突破のまま！
+  debuff: 1.0,       
+  barrier: 1.0,      
+  click: 0.7,        
+  destroy: 1.5,      
+  lost: 1.0,         
+  burn: 1.0,         
+  tension: 1.0,      
+  return: 1.0        // 👈 追加：手札に戻る音
 };
 
 // 👇👇 追加：SE「全体」にかかる内部的なマスター倍率（BGMとのバランス調整用）
@@ -85,10 +89,8 @@ function applySeVolume() {
 applySeVolume();
 
 // 👇 追加：tension（タメの音）の再生速度を1.5倍速にして緊迫感を出す！
-if (sounds.tension) sounds.tension.playbackRate = 1.5;
-// 👆👆 追加ここまで 👆👆
+if (sounds.tension) sounds.tension.playbackRate = 1.0;
 
-// 👇👇 追加：BGMの設定 👇👇
 const bgm = {
   home: new Audio('audio/home_bgm.mp3'),
   battle1: new Audio('audio/battle_bgm1.mp3'),
@@ -194,18 +196,6 @@ function playSound(type, isFromNetwork = false) {
   if (isSeOn && sounds[type]) {
     sounds[type].currentTime = 0; 
     sounds[type].play().catch(e => console.log("ブラウザの自動再生ブロック:", e));
-    
-    // 👇👇 追加：tension（タメの音）だけ、限界(1.0)を超えて爆音にする「重ね掛け（クローン）」の裏技！ 👇👇
-    if (type === 'tension') {
-        // さらに2つ複製して同時に鳴らす（元の音と合わせて「合計3重」になり、強烈な音圧になります！）
-        for (let i = 0; i < 2; i++) { 
-            let extraAudio = sounds[type].cloneNode();
-            extraAudio.volume = sounds[type].volume;
-            extraAudio.playbackRate = sounds[type].playbackRate; // 1.5倍速の設定も引き継ぐ
-            extraAudio.play().catch(e => {});
-        }
-    }
-    // 👆👆 追加ここまで 👆👆
   }
   const localOnly = ['click', 'draw'];
   if (!isFromNetwork && !localOnly.includes(type) && !isSoloMode && myRoomId) {
@@ -244,7 +234,8 @@ if (!savedDecks) {
             "ゾンビ": "人工生物兵器 ゾンビ",
             "魔導騎兵": "人工魔導兵器 No.71406202",
             "吸血鬼 リリス": "ヴァンパイア リリス",
-            "くノ一": "見習いくノ一"
+            "くノ一": "見習いくノ一",
+            "魔法科学生": "魔法科の学生"
             // ※もし他にも名前を変えたカードがあれば、ここに 「"古い名前": "新しい名前",」 と足すだけで全自動で直ります！
         };
         if (nameChanges[savedCard.name]) {
@@ -344,7 +335,7 @@ function resetCardState(card) {
 function getCardInfoText(card) {
   const attrMap = { 
     fire: "🔥炎", water: "💧水", wood: "🌿木", light: "✨光", dark: "🌙闇", neutral: "⚪無", god: "👼神", sea_god: "🌊海神", human: "👤人", spirit: "👻霊", magic_attr: "🔮魔", fairy_attr: "🧚精霊", fire_magic: "🔥熱/魔", electric_magic: "⚡電気/魔",
-    bice: "🏎️BICE", bice_epic: "👑BICE/EPIC", reliance: "🤝依存",
+    bice: "🏎️BICE", bice_epic: "👑BICE/EPIC", reliance: "🤝リライアンス",
     bice_fire: "🏎️🔥BICE/熱", // 👈 追加：トークン用の新しい属性
     light_soul: "✨👻光/魂", // 👈 追加：スカーハのトークン用属性
     magic_human: "👤🔮人/魔", beast_human: "🐺👤獣/人", machine: "⚙️機械", dragon_human: "🐉👤竜/人" 
@@ -931,18 +922,16 @@ function generateCardHtml(card, extraAttrs = "", extraClass = "", badgeCount = 1
     barrierHtml += `<div style="position: absolute; top: -15px; left: 40%; font-size: 30px; z-index: 20; filter: drop-shadow(0 0 5px #00ffcc);" title="接続状態！">🔗</div>`;
     inlineStyle += " box-shadow: 0 0 15px 5px #00ffcc; border: 2px solid #00ffcc;";
   }
-  // 👇👇 追加：守護の表示（銀色のオーラと城アイコン！） 👇👇
-  if (card.ward) {
-    barrierHtml += `<div style="position: absolute; bottom: -15px; right: -15px; font-size: 30px; z-index: 20; filter: drop-shadow(0 0 5px #bdc3c7);" title="守護！">🏰</div>`;
-    inlineStyle += " box-shadow: 0 0 15px 5px #bdc3c7; border: 2px solid #bdc3c7;";
+  // 👇👇 修正：守護の表示を「ステージ上（バトル画面）」だけに限定する！ 👇👇
+  // 呼び出し元のデータに "data-zone" が含まれている（＝場に出ているカードである）かを判定します
+  if (card.ward && extraAttrs.includes("data-zone")) {
+    barrierHtml += `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 60px; z-index: 15; filter: drop-shadow(0 0 10px #bdc3c7) drop-shadow(0 0 20px #ffffff); opacity: 0.85; pointer-events: none;" title="守護！">🛡️</div>`;
   }
-  // 👆👆 ここまで追加 👆👆
   // 👇👇 ここから追加：リフレクターの表示 👇👇
   if (card.reflector) {
     barrierHtml += `<div style="position: absolute; top: -15px; left: 20%; font-size: 30px; z-index: 20; filter: drop-shadow(0 0 5px #f1c40f);" title="リフレクター展開中！">🪞</div>`;
     inlineStyle += " box-shadow: 0 0 15px 5px #f1c40f; border: 2px solid #f1c40f;";
   }
-  // 👆👆 ここまで 👆👆
 
   if (card.soul && card.soul.length > 0) {
     statsHtml += `<div style="position: absolute; top: -10px; right: -10px; left: auto; background: #9b59b6; color: white; font-size: 12px; font-weight: bold; border-radius: 50%; width: 24px; height: 24px; display: flex; justify-content: center; align-items: center; border: 2px solid white; z-index: 10;" title="ソウル${card.soul.length}枚">${card.soul.length}</div>`;
@@ -1410,25 +1399,11 @@ window.useLeaderSkill = async function() {
       
       // 👇 修正：ダメージ発生前の「タメ」のタイミングでtensionを鳴らす！
       playSound('tension');
-      await new Promise(r => setTimeout(r, 1500)); // 👈 2200から1500に変更し、音と完璧に同期！
+      await new Promise(r => setTimeout(r, 100)); // 👈 2200から1500に変更し、音と完璧に同期！
       
       let oppId = myPlayerId === 1 ? 2 : 1;
-      let oppP = players[oppId];
-      if (oppP.leader.hasBarrier) {
-          oppP.leader.hasBarrier = false;
-      } else {
-          oppP.hp -= 12;
-          triggerConnection(oppP.leader, 'damage', 12);
-          showFloatingTextOnElement(`p${oppId}-leader-zone`, 12, 'damage');
-          const targetEl = document.getElementById(`p${oppId}-leader-zone`);
-          if(targetEl){ 
-              targetEl.classList.add("damage-anim"); setTimeout(() => targetEl.classList.remove("damage-anim"), 300); 
-              let hpText = document.getElementById(`p${oppId}-hp-text`);
-              if(hpText) hpText.innerText = `${oppP.hp} / ${oppP.maxHp}`;
-          }
-          await new Promise(r => setTimeout(r, 1200)); // 👈 これを消去！
-      }
-     }
+      applyEffectDamage(myPlayerId, oppId, 'leader', 12); 
+  }
       else if (p.leader.name === "\"Absolutely Main Gamer\" ONE") {
       if (p.mp < 1) return;
       p.mp -= 1;
@@ -1485,6 +1460,8 @@ window.useKunoichiSkill = function(zone) {
     card.attackCount = 0; card.turnAttackBoost = 0; card.hasBarrier = false;
     p.hand.push(resetCardState(card));
     p.stage[zone] = null;
+    
+    playSound('return'); // 👈 追加：手札にシュバッ！と戻る音を鳴らす
     
     document.querySelectorAll('.card-action-overlay').forEach(o => o.remove());
     if (!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card }); 
@@ -2004,15 +1981,23 @@ function attachStageListeners() {
 
 // 👇👇ここから追加👇👇
 function showFloatingTextOnElement(elementId, value, type) {
-  if (!value || value <= 0) return; 
+  if (value === undefined || value === 0) return; // 👈 修正：マイナスの値（デバフ）も弾かずに通す！
   const el = document.getElementById(elementId);
   if (!el) return;
   const container = document.getElementById("floating-text-container");
   if (!container) return;
   const rect = el.getBoundingClientRect();
   const textEl = document.createElement("div");
+  
+  // 👇 修正：ダメージ、バフ、デバフで文字の表記を綺麗に分ける！
   textEl.className = `floating-text ${type}`;
-  textEl.innerText = (type === 'heal' || type === 'attack_boost' ? '+' : '-') + value;
+  if (type === 'damage') {
+      textEl.innerText = '-' + value;
+  } else if (value > 0) {
+      textEl.innerText = '+' + value;
+  } else {
+      textEl.innerText = value; // デバフの場合は元から「-2」のようにマイナスがついているためそのまま
+  }
   container.appendChild(textEl);
   const textWidth = textEl.offsetWidth;
   const textHeight = textEl.offsetHeight;
@@ -2052,7 +2037,8 @@ function showFloatingTextOnElement(elementId, value, type) {
   } else if (type === 'heal') {
       playSound('heal');
   } else if (type === 'attack_boost') {
-      playSound('buff');
+      if (value > 0) playSound('buff');
+      else playSound('debuff'); // 👈 修正：数値がマイナスならデバフ音を鳴らす！
   }
 
   // 👇 追加：10ダメージ以上の大ダメージなら画面全体を激しく揺らす！
@@ -2104,6 +2090,21 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
   if (attackerZone === 'leader') attackerPlayer.leaderAttackCount++; 
   else attackerCard.attackCount = (attackerCard.attackCount || 0) + 1;
   renderAll(); // 👈 すぐに画面を暗く（レスト状態に）して操作感をアップ！
+
+  // 👇👇 ここから追加：攻撃カードが一瞬だけ手前に迫る（突進する）アニメーション！ 👇👇
+  let attackerElId = attackerZone === 'leader' ? `p${attackerPid}-leader-zone` : `p${attackerPid}-stage-${attackerZone}`;
+  let attackerEl = document.getElementById(attackerElId);
+  if (attackerEl) {
+      let cardEl = attackerEl.querySelector('.card');
+      if (cardEl) {
+          cardEl.classList.add("attacker-thrust");
+          // 👈 修正：後で画面ごと更新（リセット）されるため、クラスを外す処理は削除！
+      }
+  }
+  
+  // 👇 追加：アニメーションが確実に画面に表示されるよう、ダメージ計算の前に「0.3秒」待つ！
+  await new Promise(r => setTimeout(r, 300));
+  // 👆👆 ここまで追加 👆👆
 
   let bonusAttack = 0; Object.values(attackerPlayer.stage).forEach(c => { if(c && c.name === "戦女神の加護") bonusAttack += c.effectValue; });
   let finalAtk = 0;
@@ -2665,14 +2666,7 @@ async function playCard(cardId, targetZone, pId) {
               if (oppCard.name === "白鱗の竜人") { dmg -= 2; if(dmg<0) dmg=0; }
               if (oppCard.name === "黒鱗の竜人" && oppZone === 'center') { dmg = 1; }
               if (oppCard.name === "人工魔導兵器 No.71406202") { dmg -= 1; if(dmg<0) dmg=0; }
-              if (dmg > 0) {
-                  if (oppCard.hasBarrier) oppCard.hasBarrier = false;
-                  else { oppCard.hp -= dmg; if(oppCard.hp <= 0) destroyCard(oppId, oppZone, false); }
-                  triggerConnection(oppCard, 'damage', dmg);
-                  showFloatingTextOnElement(`p${oppId}-stage-${oppZone}`, dmg, 'damage');
-                  const el = document.getElementById(`p${oppId}-stage-${oppZone}`);
-                  if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
-              }
+              if (dmg > 0) applyEffectDamage(pId, oppId, oppZone, dmg);
           }
       }
       else if (playedCard.name === "地縛霊 プイズ") {
@@ -2683,14 +2677,7 @@ async function playCard(cardId, targetZone, pId) {
                   if (tCard.name === "白鱗の竜人") { dmg -= 2; if(dmg<0) dmg=0; }
                   if (tCard.name === "黒鱗の竜人" && z === 'center') { dmg = 1; }
                   if (tCard.name === "人工魔導兵器 No.71406202") { dmg -= 1; if(dmg<0) dmg=0; }
-                  if (dmg > 0) {
-                      if (tCard.hasBarrier) tCard.hasBarrier = false;
-                      else { tCard.hp -= dmg; if(tCard.hp <= 0) destroyCard(oppId, z, false); }
-                      triggerConnection(tCard, 'damage', dmg);
-                      showFloatingTextOnElement(`p${oppId}-stage-${z}`, dmg, 'damage');
-                      const el = document.getElementById(`p${oppId}-stage-${z}`);
-                      if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
-                  }
+                  if (dmg > 0) applyEffectDamage(pId, oppId, z, dmg); 
               }
           });
       }
@@ -2906,7 +2893,7 @@ async function playCard(cardId, targetZone, pId) {
         // 👇 修正：大ダメージを伴う魔法なら「tension」と長いタメを入れるが、それ以外は間を開けない！
         if (card.name === "Absolute punisher！" || card.name === "Erotion the future" || card.name === "侵界の雨") {
             playSound('tension');
-            await new Promise(r => setTimeout(r, 1500)); // 👈 大ダメージ用の緊張感あるタメ！
+            await new Promise(r => setTimeout(r, 1000)); // 👈 大ダメージ用の緊張感あるタメ！
         } 
         // 🌟 ここにあった else の待機時間を削除し、ドローや回復などは瞬時に効果が出るようにしました！
     }
@@ -2931,8 +2918,21 @@ async function playCard(cardId, targetZone, pId) {
       ['left', 'center', 'right'].forEach(z => {
         let tCard = players[oppId].stage[z];
         if (tCard && tCard.type === "monster") {
-            tCard.turnAttackBoost = (tCard.turnAttackBoost || 0) - 2;
-            triggerConnection(tCard, 'attack_boost', -2); 
+            // 👇 修正：現在の攻撃力を計算し、0を下回るような過剰なデバフは切り捨てる！
+            let currentAtk = tCard.attack + (tCard.turnAttackBoost || 0);
+            let debuffValue = 2; // 本来下げたい数値
+            
+            if (currentAtk - debuffValue < 0) {
+                debuffValue = currentAtk; // 0未満にならないよう、下げる数値を調整する
+            }
+            
+            // 攻撃力がまだ残っている（デバフできる）場合のみ処理を行う
+            if (debuffValue > 0) {
+                tCard.turnAttackBoost = (tCard.turnAttackBoost || 0) - debuffValue;
+                triggerConnection(tCard, 'attack_boost', -debuffValue); 
+                // 👇 追加：ここで文字と音を呼び出す！
+                showFloatingTextOnElement(`p${oppId}-stage-${z}`, -debuffValue, 'attack_boost');
+            }
         }
       });
     }
@@ -2972,6 +2972,7 @@ async function playCard(cardId, targetZone, pId) {
     }
     else if (card.name === "黒炎弾") {
         for(let i=0; i<2; i++) {
+            // 👇 修正：1発撃つごとに、リアルタイムで盤面を評価（生き残っているか確認）する！
             let targets = ['left', 'center', 'right'].filter(z => players[oppId].stage[z] !== null && players[oppId].stage[z].type === "monster");
             if(targets.length > 0) {
                 let randZone = targets[Math.floor(Math.random() * targets.length)];
@@ -2981,8 +2982,16 @@ async function playCard(cardId, targetZone, pId) {
                 if (tCard.name === "白鱗の竜人") { dmg -= 2; if(dmg<0) dmg=0; }
                 if (tCard.name === "人工魔導兵器 No.71406202") { dmg -= 1; if(dmg<0) dmg=0; }
                 
-                // 👇 修正：新しく作った関数に丸投げする！
-                if (dmg > 0) applyEffectDamage(pId, oppId, randZone, dmg);
+                if (dmg > 0) {
+                    applyEffectDamage(pId, oppId, randZone, dmg);
+                    renderAll(); // 1発ごとに画面を更新する
+                    
+                    // 👇 追加：1発目と2発目の間に「0.5秒のタメ」を作る！
+                    // これにより「ドカン！（演出） → ドカン！（演出）」と連続攻撃になる
+                    if (i === 0) {
+                        await new Promise(r => setTimeout(r, 500)); 
+                    }
+                }
             }
         }
     }
@@ -3339,15 +3348,7 @@ function endTurnProcess(pId) {
           ['left', 'center', 'right'].forEach(z => {
               let c = players[nextPId].stage[z];
               if (c && c.type === "monster") {
-                  if (c.hasBarrier) c.hasBarrier = false;
-                  else {
-                      c.hp -= 1;
-                      triggerConnection(c, 'damage', 1);
-                      showFloatingTextOnElement(`p${nextPId}-stage-${z}`, 1, 'damage');
-                      if (c.hp <= 0) destroyCard(nextPId, z, false);
-                  }
-                  const el = document.getElementById(`p${nextPId}-stage-${z}`);
-                  if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
+                  applyEffectDamage(pId, nextPId, z, 1); 
               }
           });
       }
@@ -3552,20 +3553,41 @@ async function playAITurn() {
 
   // ★ 新ボス：サタンの処理を追加
   if (p2.leader.name === "ダークドラゴン") {
-      if (p1.stage.center === null) {
-        infoPanel.innerHTML = `🐉 ダークドラゴンの強烈な一撃！！`;
-        if (p1.leader.hasBarrier) { 
-            p1.leader.hasBarrier = false; 
-        } else {
-          p1.hp -= 2;
-          const el = document.getElementById(`p1-leader-zone`);
-          if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
-        }
-        renderAll();
-        await new Promise(r => setTimeout(r, 1000));
-        checkGameOver();
-        if (isGameOver) return;
+      // 👇 修正：0, 1, 2 のどれかの数字をランダムで作り、行動を分岐させる！
+      let randAction = Math.floor(Math.random() * 3); 
+      
+      if (randAction === 0) {
+          // 行動パターン①：強烈な一撃（センターが空いていたらリーダーに攻撃）
+          infoPanel.innerHTML = `🐉 ダークドラゴンの強烈な一撃！！`;
+          if (p1.stage.center === null) {
+              applyEffectDamage(2, 1, 'leader', 2);
+          } else {
+              infoPanel.innerHTML = `🐉 ダークドラゴンはセンターのキャラを睨みつけている...`;
+          }
+      } else if (randAction === 1) {
+          // 行動パターン②：尻尾薙ぎ払い（相手のキャラ全てに1ダメージ）
+          infoPanel.innerHTML = `🐉 ダークドラゴンの尻尾薙ぎ払い！！`;
+          ['left', 'center', 'right'].forEach(z => {
+              let tCard = p1.stage[z];
+              if (tCard && tCard.type === "monster") {
+                  applyEffectDamage(2, 1, z, 1);
+              }
+          });
+      } else if (randAction === 2) {
+          // 行動パターン③：竜の咆哮（自身のHPを5回復）
+          infoPanel.innerHTML = `🐉 ダークドラゴンの咆哮！！傷が癒えていく！`;
+          p2.hp += 5;
+          if (p2.hp > p2.maxHp) p2.hp = p2.maxHp;
+          showFloatingTextOnElement(`p2-leader-zone`, 5, 'heal');
+          const el = document.getElementById(`p2-leader-zone`);
+          if(el) { el.classList.add("heal-anim"); setTimeout(() => el.classList.remove("heal-anim"), 300); }
       }
+      
+      renderAll();
+      await new Promise(r => setTimeout(r, 1000));
+      checkGameOver();
+      if (isGameOver) return;
+      
   } else if (p2.leader.name === "大悪魔 サタン") {
       infoPanel.innerHTML = `👿 サタンの破滅の炎！！`;
       let targets = ['left', 'center', 'right'].filter(z => p1.stage[z] !== null && p1.stage[z].type === "monster");

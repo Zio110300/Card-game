@@ -564,3 +564,23 @@ hr { margin: 5px 0 !important; border-width: 1px !important; }
   80% { transform: translate(-50%, -50%) rotate(0deg) scale(1.2); opacity: 1; filter: brightness(2); }
   100% { transform: translate(-50%, -50%) rotate(0deg) scale(2); opacity: 0; filter: brightness(4); }
 }
+
+/* =========================================
+   ⚔️ 攻撃時の突進（一瞬右に傾く）アニメーション
+========================================= */
+.attacker-thrust {
+  animation: thrustAnim 0.3s ease-out !important;
+  z-index: 1000 !important;
+  /* 👇 修正：傾き（回転）の中心点をカードの中央に設定します */
+  transform-origin: center;
+}
+/* 攻撃の瞬間だけRESTの文字と灰色フィルターを消して鮮やかに発光！ */
+.attacker-thrust::after {
+  display: none !important;
+}
+@keyframes thrustAnim {
+  0% { transform: rotate(0deg); }
+  /* 👇 修正：50%で右に15度傾き（回転し）、赤く発光させます。scaleは削除します */
+  50% { transform: rotate(15deg); filter: grayscale(0%) brightness(1.5) !important; box-shadow: 0 0 30px #e74c3c !important; border-color: #e74c3c !important; }
+  100% { transform: rotate(0deg); }
+}
