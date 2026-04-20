@@ -1177,7 +1177,7 @@ function getCardTypes() {
     { category: "pack_4", type: "magic", name: "反天", originalCost: 1, cost: 1, image: "images/pack_4/hanntenn.jpg", attribute: "light", flavor: "スカーハ様に負けはない。たとえ天地がひっくり返ってもね。", desc: "■ステージからキャラ1枚を選択し、【反転】させる。" },
     { category: "pack_4", type: "set_magic", name: "反逆の光旗", originalCost: 2, cost: 2, image: "images/pack_4/noroshi.jpg", attribute: "light", flavor: "今こそ反逆の時！光の御旗のもとに集え！", desc: "【設置】<br>■【アクト】自分のドロップゾーンからキャラ1枚を選択し、このカードを破壊する。選択したキャラを自分のセンターにコールし、コールしたキャラのライフを+2する。" },
     { category: "pack_4", type: "item", name: "シャドウパニッシャー！", originalCost: 3, cost: 3, effectValue: 0, hp: 0, image: "images/pack_4/shadow.jpg", attribute: "light", invert: true, flavor: "陰から生まれた深い闇が、独りよがりな光を断ち切る！", desc: "【反転】<br>■自分のステージに属性「光」のカードがあるなら、このカードを使える。<br>■自分のステージにいる属性「光」のキャラが破壊されたとき、このカードのライフを+1する。" },
-    { category: "pack_4", type: "set_magic", name: "リフレクト・ブラスト", originalCost: 2, cost: 2, image: "images/pack_4/counter.jpg", attribute: "light", flavor: "油断しちゃ、ダーメ♪", desc: "【設置】<br>■自分のリーダーにリフレクターを付与する。<br>■【アクト】ステージにいるキャラ1枚を破壊し、このカードを破壊する。" },
+    { category: "pack_4", type: "set_magic", name: "リフレクト・ブラスト", originalCost: 2, cost: 2, image: "images/pack_4/counter.jpg", attribute: "light", flavor: "油断しちゃ、ダーメ♪", desc: "【設置】<br>■自分のリーダーにリフレクターを付与する。<br>■【アクト】ステージにいるキャラ1枚にダメージ4！このカードを破壊する。" },
     // 👇 追加：デッキに入らないトークンカード
     { category: "token", type: "token", name: "絶対不可止の鼓動", originalCost: 1, cost: 1, image: "", attribute: "bice_fire", flavor: "", desc: "■「BICE」の能力でソウルに入るカード。" },
     { category: "token", type: "token", name: "唯一神の光", originalCost: 1, cost: 1, image: "", attribute: "light_soul", flavor: "", desc: "■「\"影の国の光\" スカーハ」の能力でソウルに入るカード。" }
@@ -1884,8 +1884,8 @@ function attachStageListeners() {
         overlayBtnHtml += `<button class="card-center-btn" style="background:#e74c3c; color:white;" onclick="event.stopPropagation(); useNoroshiSkill('${zone}');">蘇生</button>`;
       }
       if (card.type === "set_magic" && card.name === "リフレクト・ブラスト" && pid === myPlayerId && currentTurn === myPlayerId && !isGameOver && !isSelectingHand) {
-        text += `<br><button onclick="useReflectBlastSkill('${zone}')" style="margin-top:8px; padding:8px 16px; background:#e74c3c; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">💥 アクト（1体破壊して自壊）</button>`;
-        overlayBtnHtml += `<button class="card-center-btn" style="background:#e74c3c; color:white;" onclick="event.stopPropagation(); useReflectBlastSkill('${zone}');">破壊</button>`;
+        text += `<br><button onclick="useReflectBlastSkill('${zone}')" style="margin-top:8px; padding:8px 16px; background:#e74c3c; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">💥 アクト（1体に4ダメージ＆自壊）</button>`;
+        overlayBtnHtml += `<button class="card-center-btn" style="background:#e74c3c; color:white;" onclick="event.stopPropagation(); useReflectBlastSkill('${zone}');">ダメージ</button>`;
       }
       if (zone === 'item' && card.invert && !card.invertUsed && pid === myPlayerId && currentTurn === myPlayerId && !isGameOver && !isSelectingHand) {
         text += `<br><button onclick="useInvertSkill('${zone}')" style="margin-top:8px; padding:8px 16px; background:#3498db; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">🔄 反転（攻防入れ替え）</button>`;
@@ -4218,12 +4218,13 @@ window.useReflectBlastSkill = function(zone) {
         let tCard = tPlayer.stage[targetZone];
         // キャラ（キャラ）のみを対象とする
         if (targetZone === 'leader' || targetZone === 'item' || !tCard || tCard.type !== "monster") {
-            alert("破壊するキャラを選択してください");
+            alert("ダメージを与えるキャラを選択してください");
             return;
         }
 
-        // ① 選択したキャラを破壊する
-        destroyCard(targetPid, targetZone, false);
+        // 👇 修正：① 選択したキャラに4ダメージを与える（リフレクターも完全対応！）
+        applyEffectDamage(myPlayerId, targetPid, targetZone, 4);
+        
         // ② このカード自身も破壊される
         destroyCard(myPlayerId, zone, false);
 
@@ -4235,7 +4236,7 @@ window.useReflectBlastSkill = function(zone) {
         renderAll(); 
         sendGameState();
     };
-    infoPanel.innerHTML = `破壊するステージのキャラ1枚を選択してください`;
+    infoPanel.innerHTML = `4ダメージを与えるステージのキャラ1枚を選択してください`;
     infoPanel.style.backgroundColor = "#e74c3c"; 
     renderAll();
 }
