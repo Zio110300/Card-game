@@ -3996,6 +3996,10 @@ window.closeZoneView = function() {
   // 選択中にバツボタンで閉じた場合はキャンセル扱いにする
   if (window.isSelectingTrash && typeof window.cancelActionCallback === 'function') {
       window.cancelActionCallback();
+      // 👇 追加：巻き戻し処理が「2回以上」発動してカードが無限増殖するのを防ぐストッパー！
+      window.cancelActionCallback = null; 
+      window.isSelectingTrash = false;
+      renderAll(); 
   }
 }
 
