@@ -1151,7 +1151,7 @@ function getCardTypes() {
     { category: "pack_2", type: "magic", name: "Absolute punisher！", originalCost: 11, cost: 11, image: "images/pack_2/punisher.jpg", attribute: "bice", flavor: "すべてを失った少女たちの、絶対の一撃", desc: "<br>■自分のターン中、自分のステージにいるキャラが破壊されたとき、このカードのコストを-1する。<br>■リーダーが「ONE」でお互いセンターが空なら使える。<br>■相手リーダーにダメージ11！" },
     { category: "pack_2", type: "magic", name: "Drive for future", originalCost: 1, cost: 1, image: "images/pack_2/future.jpg", attribute: "bice_epic", flavor: "駆けろ！燃やせ！未来へ繋げ！", desc: "<br>■自分のステージにいるキャラ1枚を選択し、破壊する。その後、自分のドロップゾーンから同じ属性を持つ名前の違うキャラをランダムに1枚、自分のライトにコールする。" },
 
-    { category: "pack_3", type: "leader", name: "≪Conecting other world≫ ヴァイス&シュヴァルツ", originalCost: 0, cost: 0, attack: 0, hp: 20, image: "images/pack_3/shirokuro.jpg", attribute: "reliance", connectSkill: true, flavor: "光と闇、二つの力が交わる時、新たな世界の扉が開く。", desc: "<br>■【コネクト】自分のステージからキャラ1枚を選択し、このカードと「接続」する。<br>■自分のステージのキャラが「接続」状態になったとき、そのキャラのライフを+2する。" },
+    { category: "pack_3", type: "leader", name: "≪Conecting other world≫ ヴァイス&シュヴァルツ", originalCost: 0, cost: 0, attack: 0, hp: 24, image: "images/pack_3/shirokuro.jpg", attribute: "reliance", connectSkill: true, flavor: "光と闇、二つの力が交わる時、新たな世界の扉が開く。", desc: "<br>■【コネクト】自分のステージにいるキャラ1枚をこのカードと「接続」する。<br>■このカードと「接続」しているカードは攻撃されなくなる。<br>■自分の場のモンスターが「接続」状態になったとき、そのモンスターのHPを+2する。" },
     { category: "pack_3", type: "monster", name: "≪Overconfidence≫ スターレット", originalCost: 3, cost: 3, attack: 2, hp: 1, image: "images/pack_3/sutarlet.jpg", attribute: "reliance", connectSkill: true, flavor: "みんな夢中にさせてア・ゲ・ル♪", desc: "<br>■このカードは相手のカードの効果で選択されない。<br>■【コール】自分のデッキからコスト2以下の属性「リライアンス」を持つキャラ1枚をコールし、自分のステージのキャラ全てのライフを+1する。<br>■【アクト】ステージのキャラ1枚を選択し、自身と「接続」する。" },
     { category: "pack_3", type: "monster", name: "≪Trust myself≫ ラパン", originalCost: 2, cost: 2, attack: 1, hp: 1, image: "images/pack_3/rapane.jpg", attribute: "reliance", flavor: "信じられるのは私だけ。", desc: "<br>■【コール】このカードと同名のカード1枚をレフトにコールし、このカードと「接続」する。" },
     { category: "pack_3", type: "monster", name: "≪相死相愛≫ α&β", originalCost: 4, cost: 4, attack: 2, hp: 2, image: "images/pack_3/aruvel.jpg", attribute: "reliance", drain: true, connectSkill: true, flavor: "ず～っと一緒。死んでも一緒。", desc: "<br>■【コール】自分のデッキから属性「リライアンス」を持つコスト3以下のキャラ2種類を1枚ずつコールする。<br>■【アクト】ステージのキャラ1枚を選択し、自身と「接続」する。<br>【ドレイン】" },
@@ -1160,9 +1160,9 @@ function getCardTypes() {
     { category: "pack_3", type: "monster", name: "“絶対依存の情” マッハ", originalCost: 8, cost: 8, attack: 1, hp: 4, image: "images/pack_3/mahha.jpg", attribute: "reliance", transform: true, flavor: "あなたのことを守ってあげる。だから私のこと、見捨てないよね……？", desc: "<br>■自分のリーダーが「接続」状態なら、手札のこのカードのコストを-2する。<br>■【コール】相手のキャラ1枚を選択し、相手のリーダーと「接続」する。<br>■【ターン終了時】自分のターン終了時、目の前のキャラにダメージ11！<br>【変身】" },
     { category: "pack_3", type: "magic", name: "あなたをおしえて", originalCost: 1, cost: 1, image: "images/pack_3/teach.jpg", attribute: "reliance", flavor: "もっと、あなたのことが知りたいの。", desc: "<br>■ステージからキャラを2枚選択し、選択したカード同士を「接続」する。" },
     { category: "pack_3", type: "magic", name: "その身に過する保護り", originalCost: 1, cost: 1, image: "images/pack_3/hokori.jpg", attribute: "reliance", flavor: "神が汝らを守ってくれるのです！", desc: "<br>■自分のレフトにいるキャラのライフを+3し、自分のリーダーにバリアを付与する。" },
-    { category: "pack_3", type: "magic", name: "狂依存", originalCost: 3, cost: 3, image: "images/pack_3/kyouizonn.jpg", attribute: "reliance", flavor: "狂おしいほどに、あなたを求めている。", desc: "<br>■自分のドロップゾーンからキャラ1枚を選択し、センターにコールする。" },
+    { category: "pack_3", type: "magic", name: "狂依存", originalCost: 1, cost: 1, image: "images/pack_3/kyouizonn.jpg", attribute: "reliance", flavor: "狂おしいほどに、求めている。", desc: "■自分のドロップゾーンにいるキャラ1枚の能力を無効化し、攻撃力を0、ライフを1にして任意のエリアにコールする。" },
     { category: "pack_3", type: "magic", name: "信用", originalCost: 5, cost: 5, image: "images/pack_3/shinnyou.jpg", attribute: "reliance", flavor: "あなたの未来を信じます。", desc: "<br>■相手のステージからランダムなキャラ1枚破壊し、カード3枚を引く。その後、自分のレフトにいるキャラのライフを破壊したキャラのライフ分、ライフを+する。" },
-    { category: "pack_3", type: "magic", name: "Trust my future", originalCost: 4, cost: 4, image: "images/pack_3/future.jpg", attribute: "reliance", flavor: "私の未来を信じたまえ！。", desc: "<br>■自分のステージのキャラ全ての攻撃力を+2する。" },
+    { category: "pack_3", type: "magic", name: "Trust my future", originalCost: 4, cost: 4, image: "images/pack_3/future.jpg", attribute: "reliance", flavor: "私の未来を信じたまえ！。", desc: "<br>■このターン中、自分のステージのキャラ全ての攻撃力を+2する。" },
     { category: "pack_3", type: "item", name: "拠りどこ露", originalCost: 3, cost: 3, effectValue: 0, image: "images/pack_3/ro.jpg", attribute: "reliance", flavor: "ここは、私たちの楽園。安寧の場所。", desc: "<br>■自分の場のキャラが破壊されたとき、ランダムな自分の場のキャラ1枚のHPを+3する。" },
 
     { category: "pack_4", type: "leader", name: "影の国の光 スカーハ", originalCost: 0, cost: 0, attack: 0, hp: 20, image: "images/pack_4/skaaha.jpg", attribute: "light", flavor: "私が民の光となろう！", desc: "■自分のステージにいる属性「光」のキャラ全ては【反転】を持つ。<br>■自分のキャラが【反転】した時、このカードのソウルを+1する。<br>■【アクト1】自分の手札1枚を選択し、このカードのソウルに入れる。<br>■【アクト2】このカードのソウルを5消費する。自分のステージにいるリーダーとキャラ全てのライフを+2する。" },
@@ -1670,9 +1670,10 @@ function renderAll() {
       }
 
       if (card.name === "狂依存" && canPlay) {
+          // 👇 修正：センター限定ではなく、「どこか空いているエリア」があれば打てるようにする！
           let hasMonsterInTrash = p.trash.some(c => c.type === 'monster');
-          let isCenterEmpty = p.stage.center === null;
-          if (!hasMonsterInTrash || !isCenterEmpty) canPlay = false; // ゴミ箱にキャラがいない、またはセンターが埋まってるなら不可
+          let hasEmptyZone = ['left', 'center', 'right'].some(z => p.stage[z] === null); 
+          if (!hasMonsterInTrash || !hasEmptyZone) canPlay = false; 
       }
       if (card.name === "あなたをおしえて" && canPlay) {
           let totalMonsters = 0;
@@ -1744,7 +1745,16 @@ function renderAll() {
     if (itemBox) {
       let itemCard = p.weapon;
       if (!itemCard) {
-        itemBox.innerHTML = `<div class="zone-label" style="top:-25px;"><div style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; border: 3px dashed rgba(255,255,255,0.3); border-radius: 8px; color: rgba(255,255,255,0.4); font-size: 24px; font-weight: bold; margin:0;">ITEM</div>`;
+        // 👇 修正：アイテムの空き枠も選択モードに対応させる！
+        let emptyStyle = "width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; border: 3px dashed rgba(255,255,255,0.3); border-radius: 8px; color: rgba(255,255,255,0.4); font-size: 24px; font-weight: bold; margin:0; transition: 0.2s;";
+        if (isSelectingStage) {
+            if (pendingSelection && pendingSelection.type === 'stage' && pendingSelection.pid === pId && pendingSelection.zone === 'item') {
+                emptyStyle += " box-shadow: 0 0 20px 10px #e74c3c; cursor: pointer; transform: scale(1.05); background-color: rgba(231, 76, 60, 0.2); border-color: transparent;";
+            } else {
+                emptyStyle += " box-shadow: 0 0 15px 5px #f1c40f; cursor: pointer; background-color: rgba(241, 196, 15, 0.1); border-color: transparent;";
+            }
+        }
+        itemBox.innerHTML = `<div class="zone-label" style="top:-25px;"></div><div style="${emptyStyle}">ITEM</div>`;
       } else {
         itemBox.innerHTML = `<div class="zone-label" style="top:-25px;">` + generateCardHtml(itemCard, `data-pid="${pId}" data-zone="item" draggable="false"`, "");
       }
@@ -1753,7 +1763,16 @@ function renderAll() {
     ['left', 'center', 'right'].forEach(zone => {
       const zoneEl = document.getElementById(`p${pId}-stage-${zone}`); const card = p.stage[zone];
       if(!card){ 
-          zoneEl.innerHTML = `<div style="width: 100%; height: 100%; min-height: 120px; display: flex; justify-content: center; align-items: center; border: 3px dashed rgba(255,255,255,0.3); border-radius: 8px; color: rgba(255,255,255,0.4); font-size: 28px; font-weight: bold; margin:0;">${zone.toUpperCase()}</div>`;
+          // 👇 修正：選択モードの時は空きエリアも黄色く光らせて、選ばれたら赤くする！
+          let emptyStyle = "width: 100%; height: 100%; min-height: 120px; display: flex; justify-content: center; align-items: center; border: 3px dashed rgba(255,255,255,0.3); border-radius: 8px; color: rgba(255,255,255,0.4); font-size: 28px; font-weight: bold; margin:0; transition: 0.2s;";
+          if (isSelectingStage) {
+              if (pendingSelection && pendingSelection.type === 'stage' && pendingSelection.pid === pId && pendingSelection.zone === zone) {
+                  emptyStyle += " box-shadow: 0 0 20px 10px #e74c3c; cursor: pointer; transform: scale(1.05); background-color: rgba(231, 76, 60, 0.2); border-color: transparent;";
+              } else {
+                  emptyStyle += " box-shadow: 0 0 15px 5px #f1c40f; cursor: pointer; background-color: rgba(241, 196, 15, 0.1); border-color: transparent;";
+              }
+          }
+          zoneEl.innerHTML = `<div style="${emptyStyle}">${zone.toUpperCase()}</div>`;
       } else {
         const maxAttacks = card.doubleAttack ? 2 : 1;
         let actionDoneClass = (card.type === "monster" && (card.attackCount || 0) >= maxAttacks) ? "action-done" : "";
@@ -1949,11 +1968,15 @@ function attachStageListeners() {
     let zoneEl = document.getElementById(zoneId);
     if (zoneEl) {
       let cardEl = zoneEl.querySelector('.card');
+      let overlay = document.createElement("div");
+      overlay.className = "card-action-overlay";
+      overlay.innerHTML = `<button class="card-center-btn" style="background:#e74c3c; color:white;" onclick="event.stopPropagation(); confirmSelection();">🎯 確定</button>`;
+      
       if (cardEl) {
-        let overlay = document.createElement("div");
-        overlay.className = "card-action-overlay";
-        overlay.innerHTML = `<button class="card-center-btn" style="background:#e74c3c; color:white;" onclick="event.stopPropagation(); confirmSelection();">🎯 確定</button>`;
         cardEl.appendChild(overlay);
+      } else {
+        // 👇 追加：空きエリア（カードがない場所）が選ばれた場合も、エリアの中央に確定ボタンを表示する！
+        zoneEl.appendChild(overlay);
       }
     }
   }
@@ -1976,6 +1999,22 @@ function attachStageListeners() {
           executeAttack(data.pid, data.zone, pId, zone);
         }
       } catch(err) { console.error("Drop Error:", err); }
+    });
+
+    // 👇 追加：空きエリアをクリックして選択できるようにする！
+    zoneEl.addEventListener("click", (e) => {
+        if (window.isActionLocked) return;
+        if (isSelectingStage) {
+            let card = zone === 'leader' ? players[pId].leader : (zone === 'item' ? players[pId].weapon : players[pId].stage[zone]);
+            // 空っぽの場所をクリックした場合の処理
+            if (!card) {
+                pendingSelection = { type: 'stage', pid: pId, zone: zone };
+                let zoneNameJP = zone === 'left' ? 'レフト' : (zone === 'center' ? 'センター' : (zone === 'right' ? 'ライト' : zone.toUpperCase()));
+                infoPanel.innerHTML = `🎯 「空きエリア（${zoneNameJP}）」を選択中... <button onclick="confirmSelection()" style="padding:5px 20px; background:#e74c3c; color:white; border:none; border-radius:5px; font-weight:bold; font-size:16px; cursor:pointer; margin-left:10px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">確定</button>`;
+                e.stopPropagation(); // 👈 ここが重要！背景クリックによるキャンセルを防ぐ
+                renderAll();
+            }
+        }
     });
   });
 });
@@ -2078,8 +2117,21 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
   if (targetZone === 'leader') {
     const hasWard = Object.values(targetPlayer.stage).some(c => c && c.ward);
     let centerCard = targetPlayer.stage.center;
-    let centerBlocks = centerCard && centerCard.type === "monster" && centerCard.name !== "\"Born from competition\" GR";
+    
+    // 👇 修正：「攻撃されない」能力を持つキャラは壁として機能しない（すり抜けてリーダーを攻撃できる）ように統一！
+    let isUnattackable = false;
+    if (centerCard) {
+        if (centerCard.name === "\"Born from competition\" GR") isUnattackable = true;
+        if (centerCard.isConnected && targetPlayer.leader && targetPlayer.leader.id === centerCard.isConnected && targetPlayer.leader.name === "≪Conecting other world≫ ヴァイス&シュヴァルツ") isUnattackable = true;
+    }
+    
+    let centerBlocks = centerCard && centerCard.type === "monster" && !isUnattackable;
     if (hasWard || centerBlocks) { return; }
+  }
+
+  // 👇 追加：ヴァイス&シュヴァルツと接続しているカードは「攻撃対象にならない」最強の盾になる！
+  if (targetCard && targetCard.isConnected && targetPlayer.leader && targetPlayer.leader.id === targetCard.isConnected && targetPlayer.leader.name === "≪Conecting other world≫ ヴァイス&シュヴァルツ") {
+      return; 
   }
 
   if (attackerZone === 'leader' && attackerPlayer.stage.center && attackerPlayer.stage.center.type === "monster") { return; }
@@ -2473,7 +2525,7 @@ async function playCard(cardId, targetZone, pId) {
           let oppCard = players[oppId].stage[oppZone];
           if (oppZone && oppCard) {
               connectCards(pId, tZone, oppId, oppZone);
-              showFloatingTextOnElement(`p${pId}-stage-${tZone}`, "LINK!", "heal");
+              // ※LINK!文字は共通化されたので削除しました
           }
       }
 
@@ -2535,7 +2587,7 @@ async function playCard(cardId, targetZone, pId) {
               p.stage['left'] = clone;
               window.showSummonEffect(pId, 'left'); // 👈 魔法陣エフェクト！
               connectCards(pId, tZone, pId, 'left');
-              showFloatingTextOnElement(`p${pId}-stage-left`, "LINK!", "heal");
+              // ※LINK!文字は共通化されたので削除しました
           }
       }
       else if (playedCard.name === "≪Overconfidence≫ スターレット") {
@@ -3158,33 +3210,66 @@ async function playCard(cardId, targetZone, pId) {
     }
     else if (card.name === "狂依存") {
         let monsters = p.trash.filter(c => c.type === 'monster');
-        if (monsters.length > 0 && p.stage.center === null) {
+        let emptyZones = ['left', 'center', 'right'].filter(z => p.stage[z] === null);
+        if (monsters.length > 0 && emptyZones.length > 0) {
             if (isSoloMode && pId === 2) {
+                // ボス側：適当に選んで能力を消して出す
                 let randIndex = Math.floor(Math.random() * monsters.length);
                 let recoveredCard = monsters[randIndex];
                 consumeThisMagic();
                 p.trash.splice(p.trash.indexOf(recoveredCard), 1);
                 recoveredCard.attackCount = 0; recoveredCard.hasBarrier = false; recoveredCard.soul = []; recoveredCard.infection = false; recoveredCard.turnAttackBoost = 0; recoveredCard.burnActive = false;
-                p.stage.center = recoveredCard;
+                
+                // 👇 能力無効化とステータス変更
+                recoveredCard.attack = 0;
+                recoveredCard.hp = 1;
+                recoveredCard.ward = false; recoveredCard.pierce = false; recoveredCard.superPierce = false; recoveredCard.doubleAttack = false; recoveredCard.soulGuard = false; recoveredCard.drain = false; recoveredCard.connectSkill = false; recoveredCard.arts = undefined; recoveredCard.accel = undefined; recoveredCard.shouten = false; recoveredCard.hanten = false; recoveredCard.invert = false; recoveredCard.reflector = false; recoveredCard.spellShift = false; recoveredCard.connectOpposite = false;
+                recoveredCard.desc = "能力は無効化されている。";
+                
+                p.stage[emptyZones[0]] = recoveredCard;
             } else {
+                // プレイヤー側：キャラを選ぶ ⇒ 出す場所を選ぶ の「二段階選択」！
                 window.isSelectingTrash = true;
                 window.cancelActionCallback = () => { window.isSelectingTrash = false; closeZoneView(); renderAll(); };
                 window.selectionTrashCallback = function(index) {
                     let targetCard = p.trash[index]; if (!targetCard || targetCard.type !== "monster") return;
-                    consumeThisMagic(); // ここでコスト消費
-                    p.trash.splice(index, 1);
-                    targetCard = resetCardState(targetCard); 
-                    p.stage.center = targetCard;
-                    window.showReviveEffect(pId, 'center');
                     
                     window.isSelectingTrash = false; window.selectionTrashCallback = null; pendingSelection = null;
                     closeZoneView();
-                    playSound('play'); showCardEffect(card); if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card });
-                    renderAll(); sendGameState();
+                    
+                    isSelectingStage = true;
+                    window.cancelActionCallback = () => { renderAll(); };
+                    selectionStageCallback = function(tPid, tZone) {
+                        if (tPid !== pId || tZone === 'leader') return;
+                        if (p.stage[tZone] !== null) { alert("空いているエリアを選択してください"); return; }
+                        
+                        consumeThisMagic(); // エリアを選んだ瞬間に確定！コスト消費
+                        
+                        let cIndex = p.trash.indexOf(targetCard);
+                        if(cIndex !== -1) p.trash.splice(cIndex, 1);
+                        
+                        targetCard = resetCardState(targetCard); 
+                        
+                        // 👇 能力無効化とステータス変更
+                        targetCard.attack = 0;
+                        targetCard.hp = 1;
+                        targetCard.ward = false; targetCard.pierce = false; targetCard.superPierce = false; targetCard.doubleAttack = false; targetCard.soulGuard = false; targetCard.drain = false; targetCard.connectSkill = false; targetCard.arts = undefined; targetCard.accel = undefined; targetCard.shouten = false; targetCard.hanten = false; targetCard.invert = false; targetCard.reflector = false; targetCard.spellShift = false; targetCard.connectOpposite = false;
+                        targetCard.desc = "能力は無効化されている。";
+                        
+                        p.stage[tZone] = targetCard;
+                        window.showReviveEffect(pId, tZone);
+                        
+                        isSelectingStage = false; selectionStageCallback = null; pendingSelection = null;
+                        infoPanel.style.backgroundColor = "#ecf0f1";
+                        playSound('play'); showCardEffect(card); if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card });
+                        renderAll(); sendGameState();
+                    };
+                    infoPanel.innerHTML = `コールするエリアを選択してください`;
+                    infoPanel.style.backgroundColor = "#00bcd4"; renderAll();
                 };
                 openZoneView(pId, 'trash');
                 let detailArea = document.getElementById('zone-view-detail');
-                if(detailArea) { detailArea.style.display = "block"; detailArea.innerHTML = `<div style="text-align:center; font-size:24px; color:#f1c40f; margin-bottom:10px;">センターにコールするキャラを選択してください</div>`; }
+                if(detailArea) { detailArea.style.display = "block"; detailArea.innerHTML = `<div style="text-align:center; font-size:24px; color:#f1c40f; margin-bottom:10px;">コールするキャラを選択してください</div>`; }
                 return; // ここで止めて選択を待機
             }
         } else {
@@ -3561,7 +3646,15 @@ async function playAITurn() {
     let targetZone = 'leader';
     
     let centerCard = p1.stage['center'];
-    if (centerCard && centerCard.type === "monster" && centerCard.name !== "\"Born from competition\" GR") {
+    
+    // 👇 修正：ボスも「攻撃されないキャラ」は壁として認識せず、無視してリーダーを殴るようにする！
+    let isUnattackable = false;
+    if (centerCard) {
+        if (centerCard.name === "\"Born from competition\" GR") isUnattackable = true;
+        if (centerCard.isConnected && p1.leader && p1.leader.id === centerCard.isConnected && p1.leader.name === "≪Conecting other world≫ ヴァイス&シュヴァルツ") isUnattackable = true;
+    }
+    
+    if (centerCard && centerCard.type === "monster" && !isUnattackable) {
       targetZone = 'center';
     } else {
       let wZone = ['center', 'left', 'right'].find(wz => p1.stage[wz] && p1.stage[wz].ward);
@@ -4069,6 +4162,13 @@ window.connectCards = function(pid1, zone1, pid2, zone2) {
     if (c1 && c2 && !c1.isConnected && !c2.isConnected) {
        c1.isConnected = c2.id; // 相手のカードIDを記憶してペアを作る！
        c2.isConnected = c1.id;
+
+       // 👇 修正：回復の文字と被らないように、「LINK!」の表示を0.6秒遅らせる！
+       setTimeout(() => {
+           showFloatingTextOnElement(`p${pid1}-${zone1 === 'leader' ? 'leader-zone' : 'stage-' + zone1}`, "LINK!", "heal");
+           showFloatingTextOnElement(`p${pid2}-${zone2 === 'leader' ? 'leader-zone' : 'stage-' + zone2}`, "LINK!", "heal");
+       }, 600);
+
        let targets = [ {pid: pid1, zone: zone1, card: c1}, {pid: pid2, zone: zone2, card: c2} ];
        targets.forEach(t => {
            let leader = players[t.pid].leader;
