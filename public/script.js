@@ -2115,10 +2115,16 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
   const targetLinkedId = targetCard ? targetCard.isConnected : null;
 
   if (targetZone === 'leader') {
-    const hasWard = Object.values(targetPlayer.stage).some(c => c && c.ward);
+    // 👇 修正：【守護】を持つキャラが「攻撃されない」状態の場合、壁として機能しないようにする！
+    const hasWard = Object.values(targetPlayer.stage).some(c => {
+        if (!c || !c.ward) return false;
+        let unattackable = false;
+        if (c.name === "\"Born from competition\" GR") unattackable = true;
+        if (c.isConnected && targetPlayer.leader && targetPlayer.leader.id === c.isConnected && targetPlayer.leader.name === "≪Conecting other world≫ ヴァイス&シュヴァルツ") unattackable = true;
+        return !unattackable;
+    });
+
     let centerCard = targetPlayer.stage.center;
-    
-    // 👇 修正：「攻撃されない」能力を持つキャラは壁として機能しない（すり抜けてリーダーを攻撃できる）ように統一！
     let isUnattackable = false;
     if (centerCard) {
         if (centerCard.name === "\"Born from competition\" GR") isUnattackable = true;
@@ -3657,7 +3663,15 @@ async function playAITurn() {
     if (centerCard && centerCard.type === "monster" && !isUnattackable) {
       targetZone = 'center';
     } else {
-      let wZone = ['center', 'left', 'right'].find(wz => p1.stage[wz] && p1.stage[wz].ward);
+      // 👇 修正：ボスも「攻撃されない」状態の守護キャラは壁として認識せず、無視するようにする！
+      let wZone = ['center', 'left', 'right'].find(wz => {
+          let c = p1.stage[wz];
+          if (!c || !c.ward) return false;
+          let unattackable = false;
+          if (c.name === "\"Born from competition\" GR") unattackable = true;
+          if (c.isConnected && p1.leader && p1.leader.id === c.isConnected && p1.leader.name === "≪Conecting other world≫ ヴァイス&シュヴァルツ") unattackable = true;
+          return !unattackable;
+      });
       if (wZone) targetZone = wZone;
     }
     
