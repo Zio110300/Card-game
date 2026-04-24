@@ -2892,6 +2892,11 @@ async function playCard(cardId, targetZone, pId) {
             if (!existingCard || existingCard.name !== "\"Born from competition\" GR") return; 
             p.mp -= card.cost; card.attackCount = 0; card.hasBarrier = false; card.infection = false; card.turnAttackBoost = 0; card.burnActive = false;
             card.soul = existingCard.soul ? [...existingCard.soul, existingCard] : [existingCard];
+            
+            // 👇 追加：進化元のカードIDと接続状態（LINK）を引き継ぐ！
+            card.id = existingCard.id;
+            card.isConnected = existingCard.isConnected;
+            
             p.stage[targetZone] = card; p.hand.splice(cardIndex, 1); isSuccess = true;
         }
         else if (existingCard !== null) {
@@ -2900,6 +2905,11 @@ async function playCard(cardId, targetZone, pId) {
             card.soul = existingCard.soul ? [...existingCard.soul, existingCard] : [existingCard];
             if (card.name === "歴戦のファイター" && artsTriggered) { card.attack += 3; card.hp += 3; } 
             if (card.name === "\"Re Born in 2600\" BNR34" && artsTriggered) { card.attack += 2; card.hp += 2; }
+            
+            // 👇 追加：進化元のカードIDと接続状態（LINK）を引き継ぐ！
+            card.id = existingCard.id;
+            card.isConnected = existingCard.isConnected;
+            
             p.stage[targetZone] = card; p.hand.splice(cardIndex, 1); isSuccess = true;
           } else { return; }
         } else {
