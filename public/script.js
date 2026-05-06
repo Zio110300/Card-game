@@ -1399,7 +1399,7 @@ function destroyCard(playerId, zone, isLost = false, isDirectDrop = false) { // 
   }
 
   if (targetCard.soulGuard && targetCard.soul && targetCard.soul.length > 0) {
-        // 👇 追加：一度「破壊」された演出（爆発と破壊音）を出す！
+        // 👇 一度「破壊」された演出（爆発と破壊音）を出す！
         playSound('destroy');
         showDestroyEffect(playerId, zone, false);
 
@@ -1407,12 +1407,13 @@ function destroyCard(playerId, zone, isLost = false, isDirectDrop = false) { // 
         sendToTrashOrLost(playerId, [sacrificedSoul]); 
         targetCard.hp = 1; 
 
-        // 👇 追加：その後、ソウルを消費して「復活」する演出（破片集結と回復音）を出す！
+        // 👇 修正：【貫通】がリーダーに飛んでいくのを見届けてから復活するように、遅延を800msに変更！
         setTimeout(() => {
             window.showReviveEffect(playerId, zone);
-        }, 400);
+        }, 800);
 
-        return { destroyed: false }; 
+        // 👇 修正：システムには「一度破壊された（destroyed: true）」と伝えて【貫通】を起動させる！
+        return { destroyed: true, soulGuarded: true }; 
   }
   }
   let soulsToDrop = targetCard.soul ? [...targetCard.soul] : [];
@@ -2020,6 +2021,10 @@ function attachStageListeners() {
         text += `<br><button onclick="useLeaderSkill()" style="margin-top:8px; padding:8px 16px; background:#f1c40f; color:#2c3e50; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">⏳ スキル発動（ロスト回収）</button>`;
         overlayBtnHtml += `<button class="card-center-btn" style="background:#f1c40f; color:#2c3e50;" onclick="event.stopPropagation(); useLeaderSkill();">アクト</button>`; // 👈 追加
       }
+      if (zone === 'leader' && card.name === "狂気の大魔術師" && pid === myPlayerId && currentTurn === myPlayerId && p.mp >= 6 && !isGameOver && !isSelectingHand) {
+        text += `<br><button onclick="useLeaderSkill()" style="margin-top:8px; padding:8px 16px; background:#9b59b6; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">🔮 スキル発動（PP6消費: 相手リーダーに12ダメージ）</button>`;
+        overlayBtnHtml += `<button class="card-center-btn" style="background:#9b59b6; color:white;" onclick="event.stopPropagation(); useLeaderSkill();">アクト</button>`;
+      }
       if (zone === 'leader' && card.name === "\"Absolutely Main Gamer\" ONE" && pid === myPlayerId && currentTurn === myPlayerId && p.mp >= 1 && !isGameOver && !isSelectingHand) {
         text += `<br><button onclick="useLeaderSkill()" style="margin-top:8px; padding:8px 16px; background:#1abc9c; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">👑 スキル発動（PP1消費: 攻撃力+1）</button>`;
         overlayBtnHtml += `<button class="card-center-btn" style="background:#1abc9c; color:white;" onclick="event.stopPropagation(); useLeaderSkill();">アクト</button>`; // 👈 追加
@@ -2225,15 +2230,15 @@ function showFloatingTextOnElement(elementId, value, type) {
   // 👇 追加：エフェクトの種類に合わせて音を鳴らす！
   if (type === 'damage') {
       if (value >= 10) {
-          playSound('huge_damage', true); // 👈 修正：大ダメージ音は通信しない！
+          playSound('huge_damage', true); // 👈 修正：大ダメージ音をここで鳴らす！
       } else if (value > 0) {
-          playSound('damage');      // 👈 修正：0ダメージの時は音を鳴らさないようにする！
+          playSound('damage');      // 👈 修正：1〜9ダメージの時は通常のダメージ音
       }
   } else if (type === 'heal') {
       playSound('heal');
   } else if (type === 'attack_boost') {
       if (value > 0) playSound('buff');
-      else playSound('debuff'); // 👈 修正：数値がマイナスならデバフ音を鳴らす！
+      else playSound('debuff'); 
   }
 
   // 👇 追加：10ダメージ以上の大ダメージなら画面全体を激しく揺らす！
@@ -2247,7 +2252,6 @@ function showFloatingTextOnElement(elementId, value, type) {
               gameWrap.classList.remove("screen-shake-anim");
           }, 500); // 0.5秒間揺らして止める
       }
-      // 🌟 ここにあった playSound('tension') を削除しました（ダメージ発生前に移動するため） 🌟
   }
 }
 
