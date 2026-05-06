@@ -1460,16 +1460,13 @@ window.useLeaderSkill = async function() {
         p.hand.push(resetCardState(recoveredCard));
       }
   } else if (p.leader.name === "狂気の大魔術師") {
-      if (p.mp < 6) return; // 👈 修正：攻撃権（レスト状態）の確認を削除！
-      // 👈 修正：攻撃権を消費する処理（p.leaderAttackCount++）も削除！
+      if (p.mp < 6) return; 
       p.mp -= 6;
       playSound('play');
       showCardEffect(p.leader);
       if (!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: p.leader }); 
-      
-      // 👇 修正：ダメージ発生前の「タメ」のタイミングでtensionを鳴らす！
       playSound('tension');
-      await new Promise(r => setTimeout(r, 100)); // 👈 2200から1500に変更し、音と完璧に同期！
+      await new Promise(r => setTimeout(r, 1500)); // 👈 2200から1500に変更し、音と完璧に同期！
       
       let oppId = myPlayerId === 1 ? 2 : 1;
       applyEffectDamage(myPlayerId, oppId, 'leader', 12); 
