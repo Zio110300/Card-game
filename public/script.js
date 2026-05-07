@@ -1233,9 +1233,9 @@ function getCardTypes() {
     { category: "pack_5", type: "monster", name: "熱狂の従者", originalCost: 2, cost: 2, attack: 1, hp: 3, image: "images/pack_5/juusha.jpg", attribute: "freat", soulGuard: true, burn: true, flavor: "アイドルを推すのは自由広めるのも自由、しかし自由には責任が伴うのが世の常である。であれば、ファンにも責任が伴うのが道理ではないか。<br>「推ししか勝たん...」", desc: "【ソウルガード】<br>■【燃焼】このカードは【守護】を持つ。<br>■【ターン終了時】自分のリーダーの攻撃力を+1する。" },
     { category: "pack_5", type: "monster", name: "熱狂の宣教者", originalCost: 4, cost: 4, attack: 1, hp: 6, image: "images/pack_5/senkyou.jpg", attribute: "freat", soulGuard: true, burn: true, flavor: "アイドルとは偶像。象徴であり、進行するものではない。<br>「推しのライブなう。」", desc: "【ソウルガード】<br>■【コール】自分のデッキからコスト3以下の属性「FREAT」を含むキャラ1枚をコールする。<br>■【燃焼】自分のステージに存在するカード1枚のソウルを+1する。" },
     { category: "pack_5", type: "magic", name: "舞台の頂 オルデニス", originalCost: 1, cost: 1, image: "images/pack_5/oldeniss.jpg", attribute: "freat", shiftStatue: true, flavor: "全てのアーティストが夢みる最高の舞台。歌う者の心を湧き立て、聴く者全てに熱をもたらす。かつては火薬と金属片が舞い、闘いの熱を蓄えた戦場だったという。", desc: "■自分のキャラ1枚は【挑発】を持つ。<br>■【シフトスタチュー】「このカードは能力で選択されない。」を持つ。<br>■【ターン開始時】相手のターン開始時、このカードのソウルが13以上なら、自分はゲームに勝利する。" },
-    { category: "pack_5", type: "magic", name: "繰り返す歌 少女レイ", originalCost: 3, cost: 3, image: "images/pack_5/rei.jpg", attribute: "freat", flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■このカードと自分の手札1枚を自分のステージにあるカード1枚のソウルに入れる。" },
-    { category: "pack_5", type: "magic", name: "愛を歌う シャルル", originalCost: 2, cost: 2, image: "images/pack_5/shall.jpg", attribute: "freat", flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■自分のリーダーかステージにいるランダムな自分のキャラ1枚の攻撃力とライフを+1する。<br>■相手のステージにいるランダムなキャラ1枚の攻撃力を次の相手のターン終了時まで-1する。" },
-    { category: "pack_5", type: "magic", name: "はんたいことばの愛の歌 天ノ弱", originalCost: 3, cost: 3, image: "images/pack_5/amanojaku.jpg", attribute: "freat", flavor: "", desc: "■自分のリーダーの攻撃力を+1する。<br>■自分のリーダーは次の自分のターン開始時まで【反撃】を持つ。" },
+    { category: "pack_5", type: "magic", name: "愛を歌う シャルル", originalCost: 2, cost: 2, image: "images/pack_5/shall.jpg", attribute: "freat", flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■相手のステージに存在するキャラ全ての攻撃力を次の相手のターン終了時まで-1する。" },
+    { category: "pack_5", type: "magic", name: "そういう歌 命に嫌われている", originalCost: 1, cost: 1, image: "images/pack_5/inoti.jpg", attribute: "freat", flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■自分のリーダーかステージにいるランダムな自分のキャラ1枚の攻撃力とライフを+1する。" },
+    { category: "pack_5", type: "magic", name: "はんたいことばの愛の歌 天ノ弱", originalCost: 2, cost: 3, image: "images/pack_5/amanojaku.jpg", attribute: "freat", flavor: "", desc: "■自分のリーダーの攻撃力を+1する。<br>■自分のリーダーは次の自分のターン開始時まで【反撃】を持つ。" },
     { category: "pack_5", type: "magic", name: "終わらない愛の歌 ヒバナ", originalCost: 5, cost: 5, image: "images/pack_5/hibana.jpg", attribute: "freat", flavor: "", desc: "■このカードを自分のステージに存在するランダムなキャラか魔法1枚のソウルに入れる。<br>■相手のステージにいるランダムなキャラ1枚を破壊し、カード3枚を引く。" },
     { category: "pack_5", type: "magic", name: "世界で一番魅せる歌 ワールドイズマイン", originalCost: 6, cost: 6, image: "images/pack_5/world.jpg", attribute: "freat", flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■ステージに存在するキャラ全ての攻撃力を0まで減らし、自分のリーダーのライフを減らした分+する。" },
     // 👇 追加：デッキに入らないトークンカード
@@ -1811,7 +1811,7 @@ function renderAll() {
           if (!hasLight) canPlay = false;
       }
 
-      if ((card.name === "繰り返す歌 少女レイ" || card.name === "愛を歌う シャルル" || card.name === "世界で一番魅せる歌 ワールドイズマイン") && canPlay) {
+      if ((card.name === "繰り返す歌 少女レイ" || card.name === "愛を歌う シャルル" || card.name === "そういう歌 命に嫌われている" || card.name === "世界で一番魅せる歌 ワールドイズマイン") && canPlay) {
           // 自分か相手、どちらかのステージに「キャラ」が1体でもいれば使える
           let anyMonsterExists = false;
           ['left', 'center', 'right'].forEach(z => {
@@ -3431,18 +3431,30 @@ async function playCard(cardId, targetZone, pId) {
     }
     else if (card.name === "愛を歌う シャルル") {
         consumeThisMagic();
-        let myTargets = ['left', 'center', 'right'].filter(z => p.stage[z] !== null && p.stage[z].type === "monster");
-        let myRand = Math.floor(Math.random() * (myTargets.length + 1));
-        if (myRand === myTargets.length) {
-            p.leader.attack += 1; p.hp += 1; if (p.hp > p.maxHp) p.hp = p.maxHp; showFloatingTextOnElement(`p${pId}-leader-zone`, 1, 'attack_boost');
-        } else {
-            let tCard = p.stage[myTargets[myRand]]; tCard.attack += 1; tCard.hp += 1; showFloatingTextOnElement(`p${pId}-stage-${myTargets[myRand]}`, 1, 'attack_boost');
-        }
-        
         let oppTargets = ['left', 'center', 'right'].filter(z => players[oppId].stage[z] !== null && players[oppId].stage[z].type === "monster");
         if (oppTargets.length > 0) {
-            let oppZ = oppTargets[Math.floor(Math.random() * oppTargets.length)]; let oCard = players[oppId].stage[oppZ];
-            oCard.turnAttackBoost = (oCard.turnAttackBoost || 0) - 1; showFloatingTextOnElement(`p${oppId}-stage-${oppZ}`, -1, 'attack_boost');
+            oppTargets.forEach(z => {
+                let oCard = players[oppId].stage[z];
+                oCard.turnAttackBoost = (oCard.turnAttackBoost || 0) - 1; 
+                showFloatingTextOnElement(`p${oppId}-stage-${z}`, -1, 'attack_boost');
+            });
+        }
+    }
+    else if (card.name === "そういう歌 命に嫌われている") {
+        consumeThisMagic();
+        let myTargets = ['left', 'center', 'right'].filter(z => p.stage[z] !== null && p.stage[z].type === "monster");
+        let myRand = Math.floor(Math.random() * (myTargets.length + 1));
+        
+        // myRand がキャラの数と同じなら、リーダーにバフをかける
+        if (myRand === myTargets.length) {
+            p.leader.attack += 1; p.hp += 1; 
+            if (p.hp > p.maxHp) p.hp = p.maxHp; 
+            showFloatingTextOnElement(`p${pId}-leader-zone`, 1, 'attack_boost');
+        } else {
+            // それ以外なら選ばれたキャラにバフをかける
+            let tCard = p.stage[myTargets[myRand]]; 
+            tCard.attack += 1; tCard.hp += 1; 
+            showFloatingTextOnElement(`p${pId}-stage-${myTargets[myRand]}`, 1, 'attack_boost');
         }
     }
     else if (card.name === "はんたいことばの愛の歌 天ノ弱") {
