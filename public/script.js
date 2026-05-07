@@ -2175,34 +2175,51 @@ function attachStageListeners() {
   });
 });
 
-// 👇👇ここから追加👇👇
 function showFloatingTextOnElement(elementId, value, type) {
-  // 👇 修正：ダメージの場合は「0」でも弾かずに通すように条件を変更！
   if (value === undefined || (value === 0 && type !== 'damage')) return; 
+
+  // 👇 修正：確実に数値として判定し、音を鳴らす処理を一番上（要素の取得より前）に移動！
+  let numValue = parseInt(value, 10);
+  
+  if (type === 'damage') {
+      if (numValue >= 10) {
+          playSound('huge_damage', true); // 👈 大ダメージ音！
+      } else if (numValue > 0) {
+          playSound('damage', true);      // 👈 通常のダメージ音
+      }
+  } else if (type === 'heal') {
+      playSound('heal', true);
+  } else if (type === 'attack_boost') {
+      if (numValue > 0) playSound('buff', true);
+      else playSound('debuff', true); 
+  }
+
   const el = document.getElementById(elementId);
-  if (!el) return;
+  if (!el) return; 
+  
   const container = document.getElementById("floating-text-container");
   if (!container) return;
+  
   const rect = el.getBoundingClientRect();
   const textEl = document.createElement("div");
   
-  // 👇 修正：ダメージ、バフ、デバフで文字の表記を綺麗に分ける！
   textEl.className = `floating-text ${type}`;
   if (type === 'damage') {
       textEl.innerText = '-' + value;
-  } else if (value > 0) {
+  } else if (numValue > 0) {
       textEl.innerText = '+' + value;
   } else {
-      textEl.innerText = value; // デバフの場合は元から「-2」のようにマイナスがついているためそのまま
+      textEl.innerText = value;
   }
   container.appendChild(textEl);
+  
   const textWidth = textEl.offsetWidth;
   const textHeight = textEl.offsetHeight;
   textEl.style.left = `${rect.left + rect.width / 2 - textWidth / 2}px`;
   textEl.style.top = `${rect.top + rect.height / 2 - textHeight / 2}px`;
   setTimeout(() => { textEl.remove(); }, 1200); 
 
-  // 👇 追加：ダメージや回復が起きた瞬間、HPの数字UIを「アニメーションを待たずに瞬時に」更新する！
+  // HPなどの表示を即時更新
   if (type === 'damage' || type === 'heal') {
       let match = elementId.match(/p(\d+)-(leader|stage-left|stage-center|stage-right)/);
       if (match) {
@@ -2214,40 +2231,26 @@ function showFloatingTextOnElement(elementId, value, type) {
               let hpToDisplay = zone === 'leader' ? p.hp : (p.stage[zone] ? p.stage[zone].hp : null);
               if (hpToDisplay !== null) {
                   let hpSpan = el.querySelector('.stat-hp');
-                  if (hpSpan) hpSpan.innerText = hpToDisplay; // カード上のバッジを即更新
+                  if (hpSpan) hpSpan.innerText = hpToDisplay; 
                   if (zone === 'leader') {
                       let hpText = document.getElementById(`p${pid}-hp-text`);
-                      if (hpText) hpText.innerText = `${p.hp} / ${p.maxHp}`; // 下部のステータスバーを即更新
+                      if (hpText) hpText.innerText = `${p.hp} / ${p.maxHp}`;
                   }
               }
           }
       }
   }
 
-  // 👇 追加：エフェクトの種類に合わせて音を鳴らす！
-  if (type === 'damage') {
-      if (value >= 10) {
-          playSound('huge_damage', true); // 👈 修正：大ダメージ音をここで鳴らす！
-      } else if (value > 0) {
-          playSound('damage');      // 👈 修正：1〜9ダメージの時は通常のダメージ音
-      }
-  } else if (type === 'heal') {
-      playSound('heal');
-  } else if (type === 'attack_boost') {
-      if (value > 0) playSound('buff');
-      else playSound('debuff'); 
-  }
-
-  // 👇 追加：10ダメージ以上の大ダメージなら画面全体を激しく揺らす！
-  if (type === 'damage' && value >= 10) {
+  // 大ダメージなら画面全体を激しく揺らす
+  if (type === 'damage' && numValue >= 10) {
       const gameWrap = document.getElementById("game-wrap");
       if (gameWrap) {
           gameWrap.classList.remove("screen-shake-anim"); 
-          void gameWrap.offsetWidth; // 連続ヒットした時も正しく揺れるようにリセット
+          void gameWrap.offsetWidth; 
           gameWrap.classList.add("screen-shake-anim");
           setTimeout(() => {
               gameWrap.classList.remove("screen-shake-anim");
-          }, 500); // 0.5秒間揺らして止める
+          }, 500); 
       }
   }
 }
@@ -2724,38 +2727,114 @@ window.pullFromDeck = function(pId, conditionFn, count = 1, uniqueName = false) 
     return pulledCards;
 };
 
-// 👇👇 追加：カードが場に出た瞬間に、ONEなどの常在能力を誘発させる専用関数！ 👇👇
-window.triggerOnCallPassives = async function(pId, zone) {
-    let p = players[pId];
-    let card = p.stage[zone];
-    if (!card) return;
-    
-    // ONEのリーダー効果（コールされたらソウルを入れる常在能力）
-    if (p.leader && p.leader.name === "\"Absolutely Main Gamer\" ONE") { 
-        await window.showPassiveEffect(pId, 'leader'); // 波紋エフェクト＆待機！
-        card.soul.push(resetCardState({name: "絶対不可止の鼓動"})); 
-        showFloatingTextOnElement(`p${pId}-stage-${zone}`, "SOUL", 'heal');
-        renderAll(); // 👈 追加：ソウルが増えたことを即座に画面へ反映させる
-    }
-};
+async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
+  let wasLocked = window.isActionLocked;
+  window.isActionLocked = true; 
+  try {
+      const attackerPlayer = players[attackerPid]; const targetPlayer = players[targetPid];
+      const attackerLeader = attackerPlayer.leader; const targetLeader = targetPlayer.leader;
 
-window.summonToEmptyZone = async function(pId, card) {
-    let p = players[pId];
-    let emptyZones = ['left', 'center', 'right'].filter(z => p.stage[z] === null).sort(() => Math.random() - 0.5);
-    if (emptyZones.length === 0) return false; 
-    
-    let z = emptyZones[0];
-    card.attackCount = 0; card.hasBarrier = false; card.soul = []; card.infection = false; card.turnAttackBoost = 0; card.burnActive = false;
-    
-    p.stage[z] = card;
-    renderAll(); // 👈 追加：まずはキャラが「場に出た姿」を画面へ表示する！
-    window.showSummonEffect(pId, z);
-    
-    // 👈 キャラが場に現れたのを確認してから、ONEのパッシブを誘発！
-    await window.triggerOnCallPassives(pId, z); 
-    
-    return true;
-};
+      let hasTaunt = false;
+      ['leader', 'item', 'left', 'center', 'right'].forEach(z => {
+          let c = z === 'leader' ? targetPlayer.leader : (z === 'item' ? targetPlayer.weapon : targetPlayer.stage[z]);
+          if (c && c.taunt) hasTaunt = true;
+      });
+      
+      let actualTargetCard = targetZone === 'leader' ? targetPlayer.leader : (targetZone === 'item' ? targetPlayer.weapon : targetPlayer.stage[targetZone]);
+      
+      if (hasTaunt && (!actualTargetCard || !actualTargetCard.taunt)) {
+          if (attackerPid === myPlayerId) {
+              playSound('barrier');
+              alert("【挑発】を持つカードが場にいるため、そのカードしか攻撃対象に選べません！");
+          }
+          return;
+      }
+
+      playSound('attack'); 
+      let drainAmount = 0;
+
+      const attackerCard = attackerZone === 'leader' ? attackerLeader : attackerPlayer.stage[attackerZone];
+      if (!attackerCard) return;
+      const targetCard = targetZone === 'leader' ? null : targetPlayer.stage[targetZone];
+
+      const attackerLinkedId = attackerCard.isConnected;
+      const targetLinkedId = targetCard ? targetCard.isConnected : null;
+
+      let baseDamage = attackerCard.attack + (attackerCard.turnAttackBoost || 0);
+      if (targetCard && targetCard.name === "\"Born from competition\" YRIS") { baseDamage = 0; }
+      if (targetCard && targetCard.isConnected && targetPlayer.leader && targetPlayer.leader.id === targetCard.isConnected && targetPlayer.leader.name === "≪Conecting other world≫ ヴァイス&シュヴァルツ") { baseDamage = 0; }
+
+      let actualDamage = baseDamage;
+      if (targetCard && targetCard.name === "白鱗の竜人") { actualDamage -= 2; if(actualDamage<0) actualDamage=0; }
+      if (targetCard && targetCard.name === "黒鱗の竜人" && targetZone === 'center') { actualDamage = 1; }
+      if (targetCard && targetCard.name === "人工魔導兵器 No.71406202") { actualDamage -= 1; if(actualDamage<0) actualDamage=0; }
+      
+      if (actualDamage > 0 && targetZone !== 'leader' && targetCard.immortalZero && targetCard.hp === 0) actualDamage = 0;
+
+      if (targetCard && targetCard.reflector) {
+          targetCard.reflector = false; playSound('barrier', true);
+          players[attackerPid].hp -= actualDamage;
+          triggerConnection(attackerLeader, 'damage', actualDamage);
+          showFloatingTextOnElement(`p${attackerPid}-leader-zone`, actualDamage, 'damage');
+          const targetEl = document.getElementById(`p${attackerPid}-leader-zone`);
+          if(targetEl){ targetEl.classList.add("damage-anim"); setTimeout(() => targetEl.classList.remove("damage-anim"), 300); let hpText = document.getElementById(`p${attackerPid}-hp-text`); if(hpText) hpText.innerText = `${players[attackerPid].hp} / ${players[attackerPid].maxHp}`; }
+      } else if (targetCard && targetCard.hasBarrier) {
+          targetCard.hasBarrier = false; playSound('barrier', true);
+      } else {
+          if (targetZone === 'leader') { targetPlayer.hp -= actualDamage; } 
+          else { targetCard.hp -= actualDamage; }
+          
+          triggerConnection(targetCard, 'damage', actualDamage);
+          let effectElId = targetZone === 'leader' ? `p${targetPid}-leader-zone` : `p${targetPid}-stage-${targetZone}`;
+          
+          // 👇 ここでダメージ数値を表示させつつ、自動で音も鳴らす！
+          showFloatingTextOnElement(effectElId, actualDamage, 'damage');
+
+          if (targetZone === 'leader') {
+              // ※古い playSound('damage') は削除済み
+              const targetEl = document.getElementById(`p${targetPid}-leader-zone`);
+              if(targetEl){ targetEl.classList.add("damage-anim"); setTimeout(() => targetEl.classList.remove("damage-anim"), 300); let hpText = document.getElementById(`p${targetPid}-hp-text`); if(hpText) hpText.innerText = `${targetPlayer.hp} / ${targetPlayer.maxHp}`; }
+          } else {
+              // ※古い playSound('damage') は削除済み
+              const targetEl = document.getElementById(`p${targetPid}-stage-${targetZone}`);
+              if(targetEl) { targetEl.classList.add("damage-anim"); setTimeout(() => targetEl.classList.remove("damage-anim"), 300); }
+              if (targetCard.hp <= 0) {
+                  if (targetCard.immortalZero) { targetCard.hp = 0; }
+                  else {
+                      if (attackerCard.drain && !targetCard.isDestroyed) { drainAmount += actualDamage; }
+                      destroyCard(targetPid, targetZone, attackerCard.superPierce);
+                      targetCard.isDestroyed = true;
+                  }
+              } else if (attackerCard.drain) { drainAmount += actualDamage; }
+          }
+      }
+
+      if (attackerCard.drain && drainAmount > 0) {
+          attackerPlayer.hp += drainAmount; if(attackerPlayer.hp > attackerPlayer.maxHp) attackerPlayer.hp = attackerPlayer.maxHp;
+          triggerConnection(attackerLeader, 'heal', drainAmount);
+          showFloatingTextOnElement(`p${attackerPid}-leader-zone`, drainAmount, 'heal');
+          const el = document.getElementById(`p${attackerPid}-leader-zone`);
+          if(el) { el.classList.add("heal-anim"); setTimeout(() => el.classList.remove("heal-anim"), 300); }
+      }
+
+      const atkEl = document.getElementById(attackerZone === 'leader' ? `p${attackerPid}-leader-zone` : `p${attackerPid}-stage-${attackerZone}`);
+      if(atkEl) {
+          atkEl.classList.add("attacker-thrust");
+          setTimeout(() => { atkEl.classList.remove("attacker-thrust"); }, 300);
+      }
+
+      attackerCard.attackCount += 1;
+      checkGameOver();
+      
+      if (!isSoloMode && attackerPid === myPlayerId) {
+          socket.emit('attack', { roomId: myRoomId, attackerPid, attackerZone, targetPid, targetZone });
+      }
+
+      renderAll(); sendGameState();
+  } finally {
+      if (!wasLocked) window.isActionLocked = false;
+  }
+}
 
 async function playCard(cardId, targetZone, pId) {
   const p = players[pId]; const cardIndex = p.hand.findIndex(c => c.id === cardId); if(cardIndex === -1) return; const card = p.hand[cardIndex];
