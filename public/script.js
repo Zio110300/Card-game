@@ -4074,9 +4074,11 @@ function checkGameOver() {
     let isWin = false;
     let winnerName = "";
     
+    // 👇 修正：BAD END時も「条件を満たした本人のみ」を勝ちにする！
     if (window.isBadEnd) {
-      isWin = true; 
-      winnerName = isSoloMode ? "あなた" : "プレイヤー1";
+      isWin = (myPlayerId === window.specialWinner); 
+      if (window.specialWinner === 1) winnerName = isSoloMode ? "あなた" : "プレイヤー1";
+      else winnerName = isSoloMode ? players[2].leader.name : "プレイヤー2";
       infoPanel.innerHTML = `-決着-`; 
       infoPanel.style.backgroundColor = "rgba(0,0,0,0.5)";
     }
@@ -4177,12 +4179,17 @@ function showResultScreen(isWin, winnerName, isBadEndFlag = false) {
     title.style.textShadow = "0 0 40px rgba(241, 196, 15, 0.8)";
     message.innerText = `勝者: ${winnerName} 🎉`;
   } else {
-    playBGM('lose'); 
+    // 👇 修正：負けた相手の画面処理。BAD ENDならBGM無し＋赤黒い背景を共有する！
+    if (isBadEndFlag) {
+        overlay.style.backgroundColor = "rgba(60, 0, 0, 0.9)"; 
+    } else {
+        playBGM('lose'); 
+        overlay.style.backgroundColor = "rgba(0,0,0,0.85)";
+    }
     title.innerText = "GAME SET";
     title.style.color = "#3498db";
     title.style.textShadow = "0 0 40px rgba(52, 152, 219, 0.8)";
     message.innerText = `勝者: ${winnerName}`;
-    overlay.style.backgroundColor = "rgba(0,0,0,0.85)";
   }
   
   overlay.style.display = "flex";
