@@ -1227,7 +1227,7 @@ function getCardTypes() {
     { category: "pack_4", type: "item", name: "シャドウパニッシャー！", originalCost: 3, cost: 3, effectValue: 0, hp: 0, image: "images/pack_4/shadow.jpg", attribute: "light", invert: true, flavor: "陰から生まれた深い闇が、独りよがりな光を断ち切る！", desc: "【反転】<br>■自分のステージに属性「光」のカードがあるなら、このカードを使える。<br>■自分のステージにいる属性「光」のキャラが破壊されたとき、このカードのライフを+1する。" },
     { category: "pack_4", type: "set_magic", name: "リフレクト・ブラスト", originalCost: 2, cost: 2, image: "images/pack_4/counter.jpg", attribute: "light", flavor: "油断しちゃ、ダーメ♪", desc: "【設置】<br>■自分のリーダーにリフレクターを付与する。<br>■【アクト】ステージにいるキャラ1枚にダメージ4！このカードを破壊する。" },
 
-    { category: "pack_5", type: "leader", name: "迸る閃望 ルミナス=イデオル", originalCost: 0, cost: 0, attack: 0, hp: 20, image: "images/pack_5/ideol.jpg", attribute: "freat", flavor: "果てしなく広大な世界で一番のアイドルを目指すうら若き少女。大きく文化が発展した現代、アイドルを目指す者も数多く存在し、とてつもない倍率の競争が発生しているアイドルの世界で、己のカリスマ性を武器に人々を魅了する。", desc: "■【アクト】このカードのソウルを1消費する。このターン中、このカードの攻撃力を+1する。<br>■自分のターン中に1度、自分が名前に「歌」を含む魔法を使った時、自分のステージにあるカード全てのソウルを+1する。" },
+    { category: "pack_5", type: "leader", name: "迸る閃望 ルミナス=イデオル", originalCost: 0, cost: 0, attack: 0, hp: 20, image: "images/pack_5/ideol.jpg", attribute: "freat", flavor: "果てしなく広大な世界で一番のアイドルを目指すうら若き少女。大きく文化が発展した現代、アイドルを目指す者も数多く存在し、とてつもない倍率の競争が発生しているアイドルの世界で、己のカリスマ性を武器に人々を魅了する。", desc: "■【アクト】このカードのソウルを1消費する。このターン中、このカードの攻撃力を+1する。<br>■【ターン開始時】自分のターン開始時、このカードのソウルを3消費してカード1枚を引く。<br>■自分のターン中に1度、自分が名前に「歌」を含む魔法を使った時、自分のステージにあるカード全てのソウルを+1する。" },
     { category: "pack_5", type: "monster", name: "新参の熱狂者", originalCost: 1, cost: 1, attack: 0, hp: 2, image: "images/pack_5/shinnzann.jpg", attribute: "freat", soulGuard: true, burn: true, flavor: "人々は彼女の熱に引き寄せられ、支援する。<br>「最近人気のこの子、まじ推せる！」", desc: "【ソウルガード】<br>■【燃焼】このカードの攻撃力を+1する。<br>■【ターン終了時】自分のリーダーにバリアを付与する。" },
     { category: "pack_5", type: "monster", name: "古参の熱狂者", originalCost: 3, cost: 3, attack: 1, hp: 5, image: "images/pack_5/kosann.jpg", attribute: "freat", soulGuard: true, burn: true, flavor: "ファンの支援に応えるために、彼女の活動はより規模を拡大させていく。<br>「ウチの推しは今日も尊みがふか～い」", desc: "【ソウルガード】<br>■【燃焼】相手のステージに存在するキャラ全てにダメージ2。<br>■【ターン終了時】自分のステージにあるランダムな魔法1枚のソウルを+1する。" },
     { category: "pack_5", type: "monster", name: "熱狂の従者", originalCost: 2, cost: 2, attack: 1, hp: 3, image: "images/pack_5/juusha.jpg", attribute: "freat", soulGuard: true, burn: true, flavor: "アイドルを推すのは自由広めるのも自由、しかし自由には責任が伴うのが世の常である。であれば、ファンにも責任が伴うのが道理ではないか。<br>「推ししか勝たん...」", desc: "【ソウルガード】<br>■【燃焼】このカードは【守護】を持つ。<br>■【ターン終了時】自分のリーダーの攻撃力を+1する。" },
@@ -3848,6 +3848,34 @@ async function endTurnProcess(pId) {
               window.specialWinner = pId; 
           }
       }
+
+      // ② ボス（ディザスター）のターン開始時効果
+      if (nextP.leader && nextP.leader.name === "降り注ぐ絶望 ディザスター") {
+          // ...(中略)...
+      }
+
+      // 👇👇 ここから追加：ルミナス=イデオルのターン開始時ドロー効果 👇👇
+      if (nextP.leader && nextP.leader.name === "迸る閃望 ルミナス=イデオル") {
+          // ソウルが3枚以上あるかチェック
+          if (nextP.leader.soul && nextP.leader.soul.length >= 3) {
+              await window.showPassiveEffect(nextPId, 'leader'); // 👈 波紋エフェクト
+              infoPanel.innerHTML = `🎤 ルミナス=イデオルのターン開始時効果！カードを1枚引く！`; 
+              renderAll();
+              await new Promise(r => setTimeout(r, 600)); // 演出のために少し待つ
+              
+              // ソウルを3つ取り出して消費（ドロップorロストへ）
+              let consumedSouls = nextP.leader.soul.splice(0, 3);
+              sendToTrashOrLost(nextPId, consumedSouls);
+              
+              // カードを1枚引く！
+              drawCard(nextPId);
+              showFloatingTextOnElement(`p${nextPId}-leader-zone`, "DRAW", 'heal');
+          }
+      }
+      // 👆👆 追加ここまで 👆👆
+
+      renderAll(); sendGameState(); 
+      checkGameOver(); // Phase4の終わりにゲーム終了＆BAD END判定を呼び出す
 
       // ② ボス（ディザスター）のターン開始時効果
       if (nextP.leader && nextP.leader.name === "降り注ぐ絶望 ディザスター") {
