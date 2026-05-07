@@ -2178,20 +2178,19 @@ function attachStageListeners() {
 function showFloatingTextOnElement(elementId, value, type) {
   if (value === undefined || (value === 0 && type !== 'damage')) return; 
 
-  // 👇 修正：確実に数値として判定し、音を鳴らす処理を一番上（要素の取得より前）に移動！
   let numValue = parseInt(value, 10);
   
   if (type === 'damage') {
       if (numValue >= 10) {
-          playSound('huge_damage', true); // 👈 大ダメージ音！
+          playSound('huge_damage'); // 👈 修正：制限解除！
       } else if (numValue > 0) {
-          playSound('damage', true);      // 👈 通常のダメージ音
+          playSound('damage');      // 👈 修正：制限解除！
       }
   } else if (type === 'heal') {
-      playSound('heal', true);
+      playSound('heal');
   } else if (type === 'attack_boost') {
-      if (numValue > 0) playSound('buff', true);
-      else playSound('debuff', true); 
+      if (numValue > 0) playSound('buff');
+      else playSound('debuff'); 
   }
 
   const el = document.getElementById(elementId);
@@ -2219,7 +2218,6 @@ function showFloatingTextOnElement(elementId, value, type) {
   textEl.style.top = `${rect.top + rect.height / 2 - textHeight / 2}px`;
   setTimeout(() => { textEl.remove(); }, 1200); 
 
-  // HPなどの表示を即時更新
   if (type === 'damage' || type === 'heal') {
       let match = elementId.match(/p(\d+)-(leader|stage-left|stage-center|stage-right)/);
       if (match) {
@@ -2241,7 +2239,6 @@ function showFloatingTextOnElement(elementId, value, type) {
       }
   }
 
-  // 大ダメージなら画面全体を激しく揺らす
   if (type === 'damage' && numValue >= 10) {
       const gameWrap = document.getElementById("game-wrap");
       if (gameWrap) {
@@ -2260,7 +2257,6 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
   let wasLocked = window.isActionLocked;
   window.isActionLocked = true; 
   try {
-      // 👇 エラーの原因だった「変数の読み込み順」を一番上で正しく処理！
       const attackerPlayer = players[attackerPid]; const targetPlayer = players[targetPid];
       const attackerLeader = attackerPlayer.leader; const targetLeader = targetPlayer.leader;
 
@@ -2466,7 +2462,7 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
             }
 
             if (targetLeader.reflector) {
-              targetLeader.reflector = false; playSound('barrier', true);
+              targetLeader.reflector = false; playSound('barrier');
               attackerPlayer.hp -= pierceDamage;
               triggerConnection(attackerPlayer.leader, 'damage', pierceDamage);
               showFloatingTextOnElement(`p${attackerPid}-leader-zone`, pierceDamage, 'damage');
@@ -2477,7 +2473,7 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
                   if (hpText) hpText.innerText = `${attackerPlayer.hp} / ${attackerPlayer.maxHp}`;
               }
             } else if (targetLeader.hasBarrier) {
-              targetLeader.hasBarrier = false; damageToDeal = 0; playSound('barrier', true);
+              targetLeader.hasBarrier = false; damageToDeal = 0; playSound('barrier');
             } else {
               targetPlayer.hp -= pierceDamage;
               drainAmount += pierceDamage; 
@@ -4631,13 +4627,13 @@ window.applyEffectDamage = function(attackerPid, targetPid, targetZone, damage) 
     }
 
     if (tCard.reflector) {
-        tCard.reflector = false; playSound('barrier', true);
+        tCard.reflector = false; playSound('barrier');
         players[attackerPid].hp -= damage; triggerConnection(players[attackerPid].leader, 'damage', damage);
         showFloatingTextOnElement(`p${attackerPid}-leader-zone`, damage, 'damage');
         const el = document.getElementById(`p${attackerPid}-leader-zone`);
         if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
     } else if (tCard.hasBarrier) {
-        tCard.hasBarrier = false; playSound('barrier', true);
+        tCard.hasBarrier = false; playSound('barrier');
     } else {
         if (targetZone === 'leader') { tPlayer.hp -= damage; } 
         else { tCard.hp -= damage; }
