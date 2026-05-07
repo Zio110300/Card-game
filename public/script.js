@@ -2258,371 +2258,346 @@ function showFloatingTextOnElement(elementId, value, type) {
 // 👇 変更：async を付けて「待機（await）」ができるようにする！
 async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
   let wasLocked = window.isActionLocked;
-  window.isActionLocked = true; // 🔒 処理開始！操作をロックする
+  window.isActionLocked = true; 
   try {
-  // 👇 修正：この2行を【一番上】に移動させます！これをしないとエラーになります！
-  const attackerPlayer = players[attackerPid]; const targetPlayer = players[targetPid];
-  const attackerLeader = attackerPlayer.leader; const targetLeader = targetPlayer.leader;
+      // 👇 エラーの原因だった「変数の読み込み順」を一番上で正しく処理！
+      const attackerPlayer = players[attackerPid]; const targetPlayer = players[targetPid];
+      const attackerLeader = attackerPlayer.leader; const targetLeader = targetPlayer.leader;
 
-  // 👇👇 ここから追加：攻撃時の挑発チェック 👇👇
-  let hasTaunt = false;
-  ['leader', 'item', 'left', 'center', 'right'].forEach(z => {
-      let c = z === 'leader' ? targetPlayer.leader : (z === 'item' ? targetPlayer.weapon : targetPlayer.stage[z]);
-      if (c && c.taunt) hasTaunt = true;
-  });
-  
-  let actualTargetCard = targetZone === 'leader' ? targetPlayer.leader : (targetZone === 'item' ? targetPlayer.weapon : targetPlayer.stage[targetZone]);
-  
-  if (hasTaunt && (!actualTargetCard || !actualTargetCard.taunt)) {
-      // 自分が攻撃した時だけアラートを出し、AIが間違えた時は無音で処理をキャンセルする
-      if (attackerPid === myPlayerId) {
-          playSound('barrier');
-          alert("【挑発】を持つカードが場にいるため、そのカードしか攻撃対象に選べません！");
-      }
-      return;
-  }
-  // 👆👆 追加ここまで 👆👆
-
-  playSound('attack'); // 👈 追加：攻撃した瞬間に音を鳴らす！（自動で相手にも送信されます）
-  let drainAmount = 0;
-
-  const attackerCard = attackerZone === 'leader' ? attackerLeader : attackerPlayer.stage[attackerZone];
-  if (!attackerCard) return;
-  const targetCard = targetZone === 'leader' ? null : targetPlayer.stage[targetZone];
-
-  const attackerLinkedId = attackerCard.isConnected;
-  const targetLinkedId = targetCard ? targetCard.isConnected : null;
-
-  if (targetZone === 'leader') {
-    // 👇 修正：【守護】を持つキャラが「攻撃されない」状態の場合、壁として機能しないようにする！
-    const hasWard = Object.values(targetPlayer.stage).some(c => {
-        if (!c || !c.ward) return false;
-        let unattackable = false;
-        if (c.name === "\"Born from competition\" YRIS") unattackable = true;
-        if (c.isConnected && targetPlayer.leader && targetPlayer.leader.id === c.isConnected && targetPlayer.leader.name === "≪Conecting other world≫ ヴァイス&シュヴァルツ") unattackable = true;
-        return !unattackable;
-    });
-
-    let centerCard = targetPlayer.stage.center;
-    let isUnattackable = false;
-    if (centerCard) {
-        if (centerCard.name === "\"Born from competition\" YRIS") isUnattackable = true;
-        if (centerCard.isConnected && targetPlayer.leader && targetPlayer.leader.id === centerCard.isConnected && targetPlayer.leader.name === "≪Conecting other world≫ ヴァイス&シュヴァルツ") isUnattackable = true;
-    }
-    
-    let centerBlocks = centerCard && centerCard.type === "monster" && !isUnattackable;
-    if (hasWard || centerBlocks) { return; }
-  }
-
-  // 👇 追加：ヴァイス&シュヴァルツと接続しているカードは「攻撃対象にならない」最強の盾になる！
-  if (targetCard && targetCard.isConnected && targetPlayer.leader && targetPlayer.leader.id === targetCard.isConnected && targetPlayer.leader.name === "≪Conecting other world≫ ヴァイス&シュヴァルツ") {
-      return; 
-  }
-
-  if (attackerZone === 'leader' && attackerPlayer.stage.center && attackerPlayer.stage.center.type === "monster") { return; }
-  else if (targetZone !== 'leader' && (!targetCard || targetCard.type !== "monster")) { return; }
-
-  if (targetCard && targetCard.name === "\"Born from competition\" YRIS") { return; }
-
-  // 👇 追加：攻撃先が確定したこの瞬間に、行動済み（レスト）状態にして画面を更新する！
-  if (attackerZone === 'leader') attackerPlayer.leaderAttackCount++; 
-  else attackerCard.attackCount = (attackerCard.attackCount || 0) + 1;
-  renderAll(); // 👈 すぐに画面を暗く（レスト状態に）して操作感をアップ！
-
-  // 👇👇 ここから追加：攻撃カードが一瞬だけ手前に迫る（突進する）アニメーション！ 👇👇
-  let attackerElId = attackerZone === 'leader' ? `p${attackerPid}-leader-zone` : `p${attackerPid}-stage-${attackerZone}`;
-  let attackerEl = document.getElementById(attackerElId);
-  if (attackerEl) {
-      let cardEl = attackerEl.querySelector('.card');
-      if (cardEl) {
-          cardEl.classList.add("attacker-thrust");
-          // 👈 修正：後で画面ごと更新（リセット）されるため、クラスを外す処理は削除！
-      }
-  }
-  
-  // 👇 追加：アニメーションが確実に画面に表示されるよう、ダメージ計算の前に「0.3秒」待つ！
-  await new Promise(r => setTimeout(r, 300));
-  // 👆👆 ここまで追加 👆👆
-
-  let bonusAttack = 0; Object.values(attackerPlayer.stage).forEach(c => { if(c && c.name === "戦女神の加護") bonusAttack += c.effectValue; });
-  let finalAtk = 0;
-  
-  if (attackerZone === 'leader') {
-    // 👈 修正：リーダーの攻撃力には戦女神の加護(bonusAttack)を乗せない！
-    finalAtk = attackerLeader.attack + (attackerLeader.turnAttackBoost || 0) + (attackerPlayer.weapon ? attackerPlayer.weapon.effectValue : 0);
-  } else { 
-    finalAtk = attackerCard.attack + (attackerCard.turnAttackBoost || 0) + bonusAttack; 
-    if (attackerCard.name === "海神 アオクジラ" && attackerPlayer.lostZone.length > 0 && attackerCard.soul) {
-        finalAtk += attackerCard.soul.length;
-    }
-  }
-
-  if (finalAtk < 0) finalAtk = 0;
-
-  let damageToDeal = finalAtk; 
-  if (targetZone === 'center' && targetCard && targetCard.skillType === "guard") damageToDeal = targetCard.skillValue; 
-
-  if (targetZone !== 'leader' && targetCard && targetCard.immortalZero && targetCard.hp === 0) {
-      damageToDeal = 0;
-  }
-  
-  if (targetZone !== 'leader' && targetCard && targetCard.name === "白鱗の竜人") {
-      damageToDeal -= 2; if (damageToDeal < 0) damageToDeal = 0;
-  }
-  if (targetZone !== 'leader' && targetCard && targetCard.name === "人工魔導兵器 No.71406202") {
-      damageToDeal -= 1; if (damageToDeal < 0) damageToDeal = 0;
-  }
-  if (targetZone === 'center' && targetCard && (targetCard.skillType === "guard" || targetCard.name === "黒鱗の竜人")) {
-      damageToDeal = 1;
-  }
-  
-  if (attackerCard.burnActive && attackerCard.name === "\"Re Born in 2600\" BNR34" && targetZone === 'leader') {
-      damageToDeal += 2;
-  }
-  if (attackerCard.burnActive && attackerCard.name === "\"To Just Zero\" A8000" && targetZone !== 'leader') {
-      damageToDeal += 2;
-  }
-
-  // 👇 修正：通常攻撃や「反射」で10以上の大ダメージが発生する直前にタメを作る！
-  let willReflect = (targetZone === 'leader') ? targetLeader.reflector : (targetCard && targetCard.reflector);
-  let willBarrier = (targetZone === 'leader') ? targetLeader.hasBarrier : (targetCard && targetCard.hasBarrier);
-  
-  if (damageToDeal >= 10 && (!willBarrier || willReflect)) {
-      playSound('tension');
-      await new Promise(r => setTimeout(r, 1200));
-  }
-  // 👆 追加ここまで
-
-  let oppCounterAtk = 0; 
-  let actualDamageDealt = 0;
-  
-  if (targetZone === 'leader') { 
-    if (targetLeader.reflector) {
-      targetLeader.reflector = false; playSound('barrier');
-      attackerPlayer.hp -= damageToDeal; 
-      triggerConnection(attackerPlayer.leader, 'damage', damageToDeal); 
-      showFloatingTextOnElement(`p${attackerPid}-leader-zone`, damageToDeal, 'damage'); 
-      const el = document.getElementById(`p${attackerPid}-leader-zone`);
-      if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
-      damageToDeal = 0; 
-    } else if (targetLeader.hasBarrier) {
-          targetLeader.hasBarrier = false; damageToDeal = 0; playSound('barrier');
-    } else {
-      targetPlayer.hp -= damageToDeal; 
-      actualDamageDealt = damageToDeal;
-      drainAmount += actualDamageDealt;
-      triggerConnection(targetLeader, 'damage', actualDamageDealt, targetLinkedId); 
-      showFloatingTextOnElement(`p${targetPid}-leader-zone`, actualDamageDealt, 'damage'); 
+      let hasTaunt = false;
+      ['leader', 'item', 'left', 'center', 'right'].forEach(z => {
+          let c = z === 'leader' ? targetPlayer.leader : (z === 'item' ? targetPlayer.weapon : targetPlayer.stage[z]);
+          if (c && c.taunt) hasTaunt = true;
+      });
       
-      // 👇 アニメーションとHP即時反映
-      const el = document.getElementById(`p${targetPid}-leader-zone`);
-      if(el) { 
-          el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); 
-          let hpSpan = el.querySelector('.stat-hp');
-          if (hpSpan) hpSpan.innerText = targetPlayer.hp;
-          const hpText = document.getElementById(`p${targetPid}-hp-text`);
-          if (hpText) hpText.innerText = `${targetPlayer.hp} / ${targetPlayer.maxHp}`;
-      }
-    }
-    oppCounterAtk = targetLeader.counter ? targetLeader.attack + (targetLeader.turnAttackBoost || 0) + (targetPlayer.weapon ? targetPlayer.weapon.effectValue : 0) : 0; 
-  } else { 
-    if (targetCard.reflector) {
-      targetCard.reflector = false; playSound('barrier'); 
-      attackerPlayer.hp -= damageToDeal; 
-      triggerConnection(attackerPlayer.leader, 'damage', damageToDeal); 
-      showFloatingTextOnElement(`p${attackerPid}-leader-zone`, damageToDeal, 'damage'); 
-      const el = document.getElementById(`p${attackerPid}-leader-zone`);
-      if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
-      damageToDeal = 0; 
-    } else if (targetCard.hasBarrier) {
-      targetCard.hasBarrier = false; damageToDeal = 0; playSound('barrier'); 
-    } else {
-      targetCard.hp -= damageToDeal; 
-      actualDamageDealt = damageToDeal;
-      drainAmount += actualDamageDealt;
-      triggerConnection(targetCard, 'damage', actualDamageDealt, targetLinkedId); 
-      showFloatingTextOnElement(`p${targetPid}-stage-${targetZone}`, actualDamageDealt, 'damage'); 
+      let actualTargetCard = targetZone === 'leader' ? targetPlayer.leader : (targetZone === 'item' ? targetPlayer.weapon : targetPlayer.stage[targetZone]);
       
-      // 👇 アニメーションとHP即時反映
-      const el = document.getElementById(`p${targetPid}-stage-${targetZone}`);
+      if (hasTaunt && (!actualTargetCard || !actualTargetCard.taunt)) {
+          if (attackerPid === myPlayerId) {
+              playSound('barrier');
+              alert("【挑発】を持つカードが場にいるため、そのカードしか攻撃対象に選べません！");
+          }
+          return;
+      }
+
+      playSound('attack'); 
+      let drainAmount = 0;
+
+      const attackerCard = attackerZone === 'leader' ? attackerLeader : attackerPlayer.stage[attackerZone];
+      if (!attackerCard) return;
+      const targetCard = targetZone === 'leader' ? null : targetPlayer.stage[targetZone];
+
+      const attackerLinkedId = attackerCard.isConnected;
+      const targetLinkedId = targetCard ? targetCard.isConnected : null;
+
+      if (targetZone === 'leader') {
+        const hasWard = Object.values(targetPlayer.stage).some(c => {
+            if (!c || !c.ward) return false;
+            let unattackable = false;
+            if (c.name === "\"Born from competition\" YRIS") unattackable = true;
+            if (c.isConnected && targetPlayer.leader && targetPlayer.leader.id === c.isConnected && targetPlayer.leader.name === "≪Conecting other world≫ ヴァイス&シュヴァルツ") unattackable = true;
+            return !unattackable;
+        });
+
+        let centerCard = targetPlayer.stage.center;
+        let isUnattackable = false;
+        if (centerCard) {
+            if (centerCard.name === "\"Born from competition\" YRIS") isUnattackable = true;
+            if (centerCard.isConnected && targetPlayer.leader && targetPlayer.leader.id === centerCard.isConnected && targetPlayer.leader.name === "≪Conecting other world≫ ヴァイス&シュヴァルツ") isUnattackable = true;
+        }
+        
+        let centerBlocks = centerCard && centerCard.type === "monster" && !isUnattackable;
+        if (hasWard || centerBlocks) { return; }
+      }
+
+      if (targetCard && targetCard.isConnected && targetPlayer.leader && targetPlayer.leader.id === targetCard.isConnected && targetPlayer.leader.name === "≪Conecting other world≫ ヴァイス&シュヴァルツ") {
+          return; 
+      }
+
+      if (attackerZone === 'leader' && attackerPlayer.stage.center && attackerPlayer.stage.center.type === "monster") { return; }
+      else if (targetZone !== 'leader' && (!targetCard || targetCard.type !== "monster")) { return; }
+
+      if (targetCard && targetCard.name === "\"Born from competition\" YRIS") { return; }
+
+      if (attackerZone === 'leader') attackerPlayer.leaderAttackCount++; 
+      else attackerCard.attackCount = (attackerCard.attackCount || 0) + 1;
+      renderAll(); 
+
+      let attackerElId = attackerZone === 'leader' ? `p${attackerPid}-leader-zone` : `p${attackerPid}-stage-${attackerZone}`;
+      let attackerEl = document.getElementById(attackerElId);
+      if (attackerEl) {
+          let cardEl = attackerEl.querySelector('.card');
+          if (cardEl) cardEl.classList.add("attacker-thrust");
+      }
+      
+      await new Promise(r => setTimeout(r, 300));
+
+      let bonusAttack = 0; Object.values(attackerPlayer.stage).forEach(c => { if(c && c.name === "戦女神の加護") bonusAttack += c.effectValue; });
+      let finalAtk = 0;
+      
+      if (attackerZone === 'leader') {
+        finalAtk = attackerLeader.attack + (attackerLeader.turnAttackBoost || 0) + (attackerPlayer.weapon ? attackerPlayer.weapon.effectValue : 0);
+      } else { 
+        finalAtk = attackerCard.attack + (attackerCard.turnAttackBoost || 0) + bonusAttack; 
+        if (attackerCard.name === "海神 アオクジラ" && attackerPlayer.lostZone.length > 0 && attackerCard.soul) {
+            finalAtk += attackerCard.soul.length;
+        }
+      }
+
+      if (finalAtk < 0) finalAtk = 0;
+
+      let damageToDeal = finalAtk; 
+      if (targetZone === 'center' && targetCard && targetCard.skillType === "guard") damageToDeal = targetCard.skillValue; 
+
+      if (targetZone !== 'leader' && targetCard && targetCard.immortalZero && targetCard.hp === 0) {
+          damageToDeal = 0;
+      }
+      
+      if (targetZone !== 'leader' && targetCard && targetCard.name === "白鱗の竜人") {
+          damageToDeal -= 2; if (damageToDeal < 0) damageToDeal = 0;
+      }
+      if (targetZone !== 'leader' && targetCard && targetCard.name === "人工魔導兵器 No.71406202") {
+          damageToDeal -= 1; if (damageToDeal < 0) damageToDeal = 0;
+      }
+      if (targetZone === 'center' && targetCard && (targetCard.skillType === "guard" || targetCard.name === "黒鱗の竜人")) {
+          damageToDeal = 1;
+      }
+      
+      if (attackerCard.burnActive && attackerCard.name === "\"Re Born in 2600\" BNR34" && targetZone === 'leader') {
+          damageToDeal += 2;
+      }
+      if (attackerCard.burnActive && attackerCard.name === "\"To Just Zero\" A8000" && targetZone !== 'leader') {
+          damageToDeal += 2;
+      }
+
+      let willReflect = (targetZone === 'leader') ? targetLeader.reflector : (targetCard && targetCard.reflector);
+      let willBarrier = (targetZone === 'leader') ? targetLeader.hasBarrier : (targetCard && targetCard.hasBarrier);
+      
+      if (damageToDeal >= 10 && (!willBarrier || willReflect)) {
+          playSound('tension');
+          await new Promise(r => setTimeout(r, 1200));
+      }
+
+      let oppCounterAtk = 0; 
+      let actualDamageDealt = 0;
+      
+      if (targetZone === 'leader') { 
+        if (targetLeader.reflector) {
+          targetLeader.reflector = false; playSound('barrier');
+          attackerPlayer.hp -= damageToDeal; 
+          triggerConnection(attackerPlayer.leader, 'damage', damageToDeal); 
+          showFloatingTextOnElement(`p${attackerPid}-leader-zone`, damageToDeal, 'damage'); 
+          const el = document.getElementById(`p${attackerPid}-leader-zone`);
+          if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
+          damageToDeal = 0; 
+        } else if (targetLeader.hasBarrier) {
+              targetLeader.hasBarrier = false; damageToDeal = 0; playSound('barrier');
+        } else {
+          targetPlayer.hp -= damageToDeal; 
+          actualDamageDealt = damageToDeal;
+          drainAmount += actualDamageDealt;
+          triggerConnection(targetLeader, 'damage', actualDamageDealt, targetLinkedId); 
+          showFloatingTextOnElement(`p${targetPid}-leader-zone`, actualDamageDealt, 'damage'); 
+          
+          const el = document.getElementById(`p${targetPid}-leader-zone`);
           if(el) { 
               el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); 
               let hpSpan = el.querySelector('.stat-hp');
-              if (hpSpan) hpSpan.innerText = targetCard.hp;
-          }
-        }
-        
-        let targetBonusAttack = 0; 
-        Object.values(targetPlayer.stage).forEach(c => { if(c && c.name === "戦女神の加護") targetBonusAttack += c.effectValue; });
-    
-    oppCounterAtk = targetCard.attack + (targetCard.turnAttackBoost || 0) + targetBonusAttack; 
-    if (targetCard.name === "海神 アオクジラ" && targetPlayer.lostZone.length > 0 && targetCard.soul) {
-        oppCounterAtk += targetCard.soul.length;
-    }
-
-    if(targetCard.hp <= 0) {
-        if (targetCard.immortalZero) {
-            targetCard.hp = 0; // 👈 トークンはHPを0にしてそのまま場に残り続ける！
-        } else {
-            let delayTime = actualDamageDealt >= 10 ? 1200 : 300; 
-            await new Promise(r => setTimeout(r, delayTime)); 
-            
-            let destroyResult = destroyCard(targetPid, targetZone, false); 
-
-            let isSuperPierce = attackerCard.superPierce || (attackerCard.burnActive && attackerCard.name === "\"Get Ready Going To\" LFA");
-
-            if (destroyResult.destroyed && (attackerCard.pierce || isSuperPierce) && targetZone === 'center' && damageToDeal > 0){
-        
-        await new Promise(r => setTimeout(r, 600)); // 👈 追加①：貫通が当たる前に、センターの破壊演出を見せるための「間」
-
-        let pierceDamage = isSuperPierce ? finalAtk * 2 : finalAtk;
-        
-        // 👇 追加：貫通（超貫通）ダメージが10以上の時、リーダーに当たる直前にタメを作る！
-        if (pierceDamage >= 10 && (!targetLeader.hasBarrier || targetLeader.reflector)) {
-            playSound('tension');
-            await new Promise(r => setTimeout(r, 1200));
-        }
-
-        if (targetLeader.reflector) {
-          targetLeader.reflector = false; playSound('barrier', true);
-          attackerPlayer.hp -= pierceDamage;
-          triggerConnection(attackerPlayer.leader, 'damage', pierceDamage);
-          showFloatingTextOnElement(`p${attackerPid}-leader-zone`, pierceDamage, 'damage');
-          const elLeader = document.getElementById(`p${attackerPid}-leader-zone`);
-          if(elLeader) { 
-              elLeader.classList.add("damage-anim"); setTimeout(() => elLeader.classList.remove("damage-anim"), 300); 
-              const hpText = document.getElementById(`p${attackerPid}-hp-text`);
-              if (hpText) hpText.innerText = `${attackerPlayer.hp} / ${attackerPlayer.maxHp}`;
-          }
-        } else if (targetLeader.hasBarrier) {
-          targetLeader.hasBarrier = false; damageToDeal = 0; playSound('barrier', true);
-        } else {
-          targetPlayer.hp -= pierceDamage;
-          drainAmount += pierceDamage; 
-          showFloatingTextOnElement(`p${targetPid}-leader-zone`, pierceDamage, 'damage');
-          const elLeader = document.getElementById(`p${targetPid}-leader-zone`);
-          if(elLeader) { 
-              elLeader.classList.add("damage-anim"); setTimeout(() => elLeader.classList.remove("damage-anim"), 300); 
+              if (hpSpan) hpSpan.innerText = targetPlayer.hp;
               const hpText = document.getElementById(`p${targetPid}-hp-text`);
               if (hpText) hpText.innerText = `${targetPlayer.hp} / ${targetPlayer.maxHp}`;
           }
         }
-      }
-    }
-  }
-}
-
-  if (actualDamageDealt > 0 && attackerCard.name === "人工生物兵器 ゾンビ") {
-      if (targetZone === 'leader') targetLeader.infection = true;
-      else if (targetCard) targetCard.infection = true;
-  }
-
-  let actualCounterDealt = 0;
-  let counterDmg = oppCounterAtk;
-
-  if (attackerZone !== 'leader') {
-      if (attackerCard.name === "白鱗の竜人") {
-          counterDmg -= 2; if (counterDmg < 0) counterDmg = 0;
-      }
-      if (attackerCard.name === "人工魔導兵器 No.71406202") {
-          counterDmg -= 1; if (counterDmg < 0) counterDmg = 0;
-      }
-      
-      // 👇 修正：反撃や「反撃の反射」で大ダメージが発生する直前にタメを作る！
-      if (counterDmg >= 10 && (!attackerCard.hasBarrier || attackerCard.reflector)) {
-          playSound('tension');
-          await new Promise(r => setTimeout(r, 1200));
-      }
-      // 👆 追加ここまで
-
-      if (counterDmg > 0) {
-        if (attackerCard.reflector) {
-          attackerCard.reflector = false; playSound('barrier');
-          targetPlayer.hp -= counterDmg;
-          triggerConnection(targetPlayer.leader, 'damage', counterDmg);
-          showFloatingTextOnElement(`p${targetPid}-leader-zone`, counterDmg, 'damage');
-          const el = document.getElementById(`p${targetPid}-leader-zone`);
+        oppCounterAtk = targetLeader.counter ? targetLeader.attack + (targetLeader.turnAttackBoost || 0) + (targetPlayer.weapon ? targetPlayer.weapon.effectValue : 0) : 0; 
+      } else { 
+        if (targetCard.reflector) {
+          targetCard.reflector = false; playSound('barrier'); 
+          attackerPlayer.hp -= damageToDeal; 
+          triggerConnection(attackerPlayer.leader, 'damage', damageToDeal); 
+          showFloatingTextOnElement(`p${attackerPid}-leader-zone`, damageToDeal, 'damage'); 
+          const el = document.getElementById(`p${attackerPid}-leader-zone`);
           if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
-          actualCounterDealt = 0; 
-        } else if (attackerCard.hasBarrier) {
-          attackerCard.hasBarrier = false; playSound('barrier'); 
+          damageToDeal = 0; 
+        } else if (targetCard.hasBarrier) {
+          targetCard.hasBarrier = false; damageToDeal = 0; playSound('barrier'); 
         } else {
-          attackerCard.hp -= counterDmg; 
-          actualCounterDealt = counterDmg;
-          triggerConnection(attackerCard, 'damage', actualCounterDealt, attackerLinkedId); 
-          showFloatingTextOnElement(`p${attackerPid}-stage-${attackerZone}`, actualCounterDealt, 'damage'); 
+          targetCard.hp -= damageToDeal; 
+          actualDamageDealt = damageToDeal;
+          drainAmount += actualDamageDealt;
+          triggerConnection(targetCard, 'damage', actualDamageDealt, targetLinkedId); 
+          showFloatingTextOnElement(`p${targetPid}-stage-${targetZone}`, actualDamageDealt, 'damage'); 
           
-          // 👇 アニメーションとHP即時反映
-          const el = document.getElementById(`p${attackerPid}-stage-${attackerZone}`);
-          if(el) { 
-              el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); 
-              let hpSpan = el.querySelector('.stat-hp');
-              if (hpSpan) hpSpan.innerText = attackerCard.hp;
-          }
-
-          if(attackerCard.hp <= 0) { 
-            // 👇 追加：反撃で10以上の大ダメージを受けた時も、1.2秒（1200ms）待つ！
-            let delayTime = actualCounterDealt >= 10 ? 1200 : 600; 
-            await new Promise(r => setTimeout(r, delayTime)); 
+          const el = document.getElementById(`p${targetPid}-stage-${targetZone}`);
+              if(el) { 
+                  el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); 
+                  let hpSpan = el.querySelector('.stat-hp');
+                  if (hpSpan) hpSpan.innerText = targetCard.hp;
+              }
+            }
             
-            destroyCard(attackerPid, attackerZone, false); 
+            let targetBonusAttack = 0; 
+            Object.values(targetPlayer.stage).forEach(c => { if(c && c.name === "戦女神の加護") targetBonusAttack += c.effectValue; });
+        
+        oppCounterAtk = targetCard.attack + (targetCard.turnAttackBoost || 0) + targetBonusAttack; 
+        if (targetCard.name === "海神 アオクジラ" && targetPlayer.lostZone.length > 0 && targetCard.soul) {
+            oppCounterAtk += targetCard.soul.length;
+        }
+
+        if(targetCard.hp <= 0) {
+            if (targetCard.immortalZero) {
+                targetCard.hp = 0; 
+            } else {
+                let delayTime = actualDamageDealt >= 10 ? 1200 : 300; 
+                await new Promise(r => setTimeout(r, delayTime)); 
+                
+                let destroyResult = destroyCard(targetPid, targetZone, false); 
+
+                let isSuperPierce = attackerCard.superPierce || (attackerCard.burnActive && attackerCard.name === "\"Get Ready Going To\" LFA");
+
+                if (destroyResult.destroyed && (attackerCard.pierce || isSuperPierce) && targetZone === 'center' && damageToDeal > 0){
+            
+            await new Promise(r => setTimeout(r, 600)); 
+
+            let pierceDamage = isSuperPierce ? finalAtk * 2 : finalAtk;
+            
+            if (pierceDamage >= 10 && (!targetLeader.hasBarrier || targetLeader.reflector)) {
+                playSound('tension');
+                await new Promise(r => setTimeout(r, 1200));
+            }
+
+            if (targetLeader.reflector) {
+              targetLeader.reflector = false; playSound('barrier', true);
+              attackerPlayer.hp -= pierceDamage;
+              triggerConnection(attackerPlayer.leader, 'damage', pierceDamage);
+              showFloatingTextOnElement(`p${attackerPid}-leader-zone`, pierceDamage, 'damage');
+              const elLeader = document.getElementById(`p${attackerPid}-leader-zone`);
+              if(elLeader) { 
+                  elLeader.classList.add("damage-anim"); setTimeout(() => elLeader.classList.remove("damage-anim"), 300); 
+                  const hpText = document.getElementById(`p${attackerPid}-hp-text`);
+                  if (hpText) hpText.innerText = `${attackerPlayer.hp} / ${attackerPlayer.maxHp}`;
+              }
+            } else if (targetLeader.hasBarrier) {
+              targetLeader.hasBarrier = false; damageToDeal = 0; playSound('barrier', true);
+            } else {
+              targetPlayer.hp -= pierceDamage;
+              drainAmount += pierceDamage; 
+              showFloatingTextOnElement(`p${targetPid}-leader-zone`, pierceDamage, 'damage');
+              const elLeader = document.getElementById(`p${targetPid}-leader-zone`);
+              if(elLeader) { 
+                  elLeader.classList.add("damage-anim"); setTimeout(() => elLeader.classList.remove("damage-anim"), 300); 
+                  const hpText = document.getElementById(`p${targetPid}-hp-text`);
+                  if (hpText) hpText.innerText = `${targetPlayer.hp} / ${targetPlayer.maxHp}`;
+              }
+            }
           }
         }
       }
-  } else if (attackerZone === 'leader') {
-          let takesCounter = (attackerLeader.name === "王国の勇者 ブレイブ" && targetCard && targetCard.type === "monster") || (targetZone === 'leader' && targetLeader.counter);
-            if (takesCounter && oppCounterAtk > 0) {
-              if (attackerLeader.reflector) {
-                  attackerLeader.reflector = false; playSound('barrier');
-              targetPlayer.hp -= oppCounterAtk;
-              triggerConnection(targetPlayer.leader, 'damage', oppCounterAtk);
-              showFloatingTextOnElement(`p${targetPid}-leader-zone`, oppCounterAtk, 'damage');
+    }
+
+      if (actualDamageDealt > 0 && attackerCard.name === "人工生物兵器 ゾンビ") {
+          if (targetZone === 'leader') targetLeader.infection = true;
+          else if (targetCard) targetCard.infection = true;
+      }
+
+      let actualCounterDealt = 0;
+      let counterDmg = oppCounterAtk;
+
+      if (attackerZone !== 'leader') {
+          if (attackerCard.name === "白鱗の竜人") {
+              counterDmg -= 2; if (counterDmg < 0) counterDmg = 0;
+          }
+          if (attackerCard.name === "人工魔導兵器 No.71406202") {
+              counterDmg -= 1; if (counterDmg < 0) counterDmg = 0;
+          }
+          
+          if (counterDmg >= 10 && (!attackerCard.hasBarrier || attackerCard.reflector)) {
+              playSound('tension');
+              await new Promise(r => setTimeout(r, 1200));
+          }
+
+          if (counterDmg > 0) {
+            if (attackerCard.reflector) {
+              attackerCard.reflector = false; playSound('barrier');
+              targetPlayer.hp -= counterDmg;
+              triggerConnection(targetPlayer.leader, 'damage', counterDmg);
+              showFloatingTextOnElement(`p${targetPid}-leader-zone`, counterDmg, 'damage');
               const el = document.getElementById(`p${targetPid}-leader-zone`);
               if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
-          } else if (attackerLeader.hasBarrier) {
-                  attackerLeader.hasBarrier = false; playSound('barrier');
-          } else {
-            attackerPlayer.hp -= oppCounterAtk;
-            actualCounterDealt = oppCounterAtk;
-            triggerConnection(attackerLeader, 'damage', actualCounterDealt, attackerLinkedId); 
-            showFloatingTextOnElement(`p${attackerPid}-leader-zone`, actualCounterDealt, 'damage'); 
-            
-            // 👇 アニメーションとHP即時反映
-            const el = document.getElementById(`p${attackerPid}-leader-zone`);
-            if(el) { 
-                el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); 
-                let hpSpan = el.querySelector('.stat-hp');
-                if (hpSpan) hpSpan.innerText = attackerPlayer.hp;
-                const hpText = document.getElementById(`p${attackerPid}-hp-text`);
-                if (hpText) hpText.innerText = `${attackerPlayer.hp} / ${attackerPlayer.maxHp}`;
+              actualCounterDealt = 0; 
+            } else if (attackerCard.hasBarrier) {
+              attackerCard.hasBarrier = false; playSound('barrier'); 
+            } else {
+              attackerCard.hp -= counterDmg; 
+              actualCounterDealt = counterDmg;
+              triggerConnection(attackerCard, 'damage', actualCounterDealt, attackerLinkedId); 
+              showFloatingTextOnElement(`p${attackerPid}-stage-${attackerZone}`, actualCounterDealt, 'damage'); 
+              
+              const el = document.getElementById(`p${attackerPid}-stage-${attackerZone}`);
+              if(el) { 
+                  el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); 
+                  let hpSpan = el.querySelector('.stat-hp');
+                  if (hpSpan) hpSpan.innerText = attackerCard.hp;
+              }
+
+              if(attackerCard.hp <= 0) { 
+                let delayTime = actualCounterDealt >= 10 ? 1200 : 600; 
+                await new Promise(r => setTimeout(r, delayTime)); 
+                
+                destroyCard(attackerPid, attackerZone, false); 
+              }
+            }
+          }
+      } else if (attackerZone === 'leader') {
+              let takesCounter = (attackerLeader.name === "王国の勇者 ブレイブ" && targetCard && targetCard.type === "monster") || (targetZone === 'leader' && targetLeader.counter);
+                if (takesCounter && oppCounterAtk > 0) {
+                  if (attackerLeader.reflector) {
+                      attackerLeader.reflector = false; playSound('barrier');
+                  targetPlayer.hp -= oppCounterAtk;
+                  triggerConnection(targetPlayer.leader, 'damage', oppCounterAtk);
+                  showFloatingTextOnElement(`p${targetPid}-leader-zone`, oppCounterAtk, 'damage');
+                  const el = document.getElementById(`p${targetPid}-leader-zone`);
+                  if(el) { el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); }
+              } else if (attackerLeader.hasBarrier) {
+                      attackerLeader.hasBarrier = false; playSound('barrier');
+              } else {
+                attackerPlayer.hp -= oppCounterAtk;
+                actualCounterDealt = oppCounterAtk;
+                triggerConnection(attackerLeader, 'damage', actualCounterDealt, attackerLinkedId); 
+                showFloatingTextOnElement(`p${attackerPid}-leader-zone`, actualCounterDealt, 'damage'); 
+                
+                const el = document.getElementById(`p${attackerPid}-leader-zone`);
+                if(el) { 
+                    el.classList.add("damage-anim"); setTimeout(() => el.classList.remove("damage-anim"), 300); 
+                    let hpSpan = el.querySelector('.stat-hp');
+                    if (hpSpan) hpSpan.innerText = attackerPlayer.hp;
+                    const hpText = document.getElementById(`p${attackerPid}-hp-text`);
+                    if (hpText) hpText.innerText = `${attackerPlayer.hp} / ${attackerPlayer.maxHp}`;
+                }
             }
         }
-    }
-  }
+      }
 
-  if (actualCounterDealt > 0 && targetCard && targetCard.name === "人工生物兵器 ゾンビ") {
-      if (attackerZone === 'leader') attackerLeader.infection = true;
-      else if (attackerCard) attackerCard.infection = true;
-  }
+      if (actualCounterDealt > 0 && targetCard && targetCard.name === "人工生物兵器 ゾンビ") {
+          if (attackerZone === 'leader') attackerLeader.infection = true;
+          else if (attackerCard) attackerCard.infection = true;
+      }
 
-  // 🌟 ここにあった attackCount を増やす処理は上（確定時）に移動したため削除しました！ 🌟
+      if (attackerCard && attackerCard.drain && drainAmount > 0) {
+        if (attackerZone === 'leader') {
+          attackerPlayer.hp += drainAmount;
+          if (attackerPlayer.hp > attackerPlayer.maxHp) attackerPlayer.hp = attackerPlayer.maxHp;
+        } else {
+          attackerCard.hp += drainAmount;
+        }
+        triggerConnection(attackerCard, 'heal', drainAmount, attackerLinkedId); 
+        const healEl = document.getElementById(attackerZone === 'leader' ? `p${attackerPid}-leader-zone` : `p${attackerPid}-stage-${attackerZone}`);
+        if(healEl) { healEl.classList.add("heal-anim"); setTimeout(() => healEl.classList.remove("heal-anim"), 300); }
+        showFloatingTextOnElement(attackerZone === 'leader' ? `p${attackerPid}-leader-zone` : `p${attackerPid}-stage-${attackerZone}`, drainAmount, 'heal');
+      }
 
-  if (attackerCard && attackerCard.drain && drainAmount > 0) {
-    if (attackerZone === 'leader') {
-      attackerPlayer.hp += drainAmount;
-      if (attackerPlayer.hp > attackerPlayer.maxHp) attackerPlayer.hp = attackerPlayer.maxHp;
-    } else {
-      attackerCard.hp += drainAmount;
-    }
-    triggerConnection(attackerCard, 'heal', drainAmount, attackerLinkedId); 
-    const healEl = document.getElementById(attackerZone === 'leader' ? `p${attackerPid}-leader-zone` : `p${attackerPid}-stage-${attackerZone}`);
-    if(healEl) { healEl.classList.add("heal-anim"); setTimeout(() => healEl.classList.remove("heal-anim"), 300); }
-    showFloatingTextOnElement(attackerZone === 'leader' ? `p${attackerPid}-leader-zone` : `p${attackerPid}-stage-${attackerZone}`, drainAmount, 'heal');
-  }
-
-  renderAll(); sendGameState(); 
+      renderAll(); sendGameState(); 
   } finally {
-    if (!wasLocked) window.isActionLocked = false; // 🔓 処理完了！ロックを解除する
+    if (!wasLocked) window.isActionLocked = false; 
   }
 }
 
@@ -2727,114 +2702,38 @@ window.pullFromDeck = function(pId, conditionFn, count = 1, uniqueName = false) 
     return pulledCards;
 };
 
-async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
-  let wasLocked = window.isActionLocked;
-  window.isActionLocked = true; 
-  try {
-      const attackerPlayer = players[attackerPid]; const targetPlayer = players[targetPid];
-      const attackerLeader = attackerPlayer.leader; const targetLeader = targetPlayer.leader;
+// 👇👇 ここから復旧：消滅してしまった必須関数 👇👇
+window.triggerOnCallPassives = async function(pId, zone) {
+    let p = players[pId];
+    let card = p.stage[zone];
+    if (!card) return;
+    
+    if (p.leader && p.leader.name === "\"Absolutely Main Gamer\" ONE") { 
+        await window.showPassiveEffect(pId, 'leader'); 
+        card.soul.push(resetCardState({name: "絶対不可止の鼓動"})); 
+        showFloatingTextOnElement(`p${pId}-stage-${zone}`, "SOUL", 'heal');
+        renderAll(); 
+    }
+};
 
-      let hasTaunt = false;
-      ['leader', 'item', 'left', 'center', 'right'].forEach(z => {
-          let c = z === 'leader' ? targetPlayer.leader : (z === 'item' ? targetPlayer.weapon : targetPlayer.stage[z]);
-          if (c && c.taunt) hasTaunt = true;
-      });
-      
-      let actualTargetCard = targetZone === 'leader' ? targetPlayer.leader : (targetZone === 'item' ? targetPlayer.weapon : targetPlayer.stage[targetZone]);
-      
-      if (hasTaunt && (!actualTargetCard || !actualTargetCard.taunt)) {
-          if (attackerPid === myPlayerId) {
-              playSound('barrier');
-              alert("【挑発】を持つカードが場にいるため、そのカードしか攻撃対象に選べません！");
-          }
-          return;
-      }
+window.summonToEmptyZone = async function(pId, card) {
+    let p = players[pId];
+    let emptyZones = ['left', 'center', 'right'].filter(z => p.stage[z] === null).sort(() => Math.random() - 0.5);
+    if (emptyZones.length === 0) return false; 
+    
+    let z = emptyZones[0];
+    card.attackCount = 0; card.hasBarrier = false; card.soul = []; card.infection = false; card.turnAttackBoost = 0; card.burnActive = false;
+    
+    p.stage[z] = card;
 
-      playSound('attack'); 
-      let drainAmount = 0;
-
-      const attackerCard = attackerZone === 'leader' ? attackerLeader : attackerPlayer.stage[attackerZone];
-      if (!attackerCard) return;
-      const targetCard = targetZone === 'leader' ? null : targetPlayer.stage[targetZone];
-
-      const attackerLinkedId = attackerCard.isConnected;
-      const targetLinkedId = targetCard ? targetCard.isConnected : null;
-
-      let baseDamage = attackerCard.attack + (attackerCard.turnAttackBoost || 0);
-      if (targetCard && targetCard.name === "\"Born from competition\" YRIS") { baseDamage = 0; }
-      if (targetCard && targetCard.isConnected && targetPlayer.leader && targetPlayer.leader.id === targetCard.isConnected && targetPlayer.leader.name === "≪Conecting other world≫ ヴァイス&シュヴァルツ") { baseDamage = 0; }
-
-      let actualDamage = baseDamage;
-      if (targetCard && targetCard.name === "白鱗の竜人") { actualDamage -= 2; if(actualDamage<0) actualDamage=0; }
-      if (targetCard && targetCard.name === "黒鱗の竜人" && targetZone === 'center') { actualDamage = 1; }
-      if (targetCard && targetCard.name === "人工魔導兵器 No.71406202") { actualDamage -= 1; if(actualDamage<0) actualDamage=0; }
-      
-      if (actualDamage > 0 && targetZone !== 'leader' && targetCard.immortalZero && targetCard.hp === 0) actualDamage = 0;
-
-      if (targetCard && targetCard.reflector) {
-          targetCard.reflector = false; playSound('barrier', true);
-          players[attackerPid].hp -= actualDamage;
-          triggerConnection(attackerLeader, 'damage', actualDamage);
-          showFloatingTextOnElement(`p${attackerPid}-leader-zone`, actualDamage, 'damage');
-          const targetEl = document.getElementById(`p${attackerPid}-leader-zone`);
-          if(targetEl){ targetEl.classList.add("damage-anim"); setTimeout(() => targetEl.classList.remove("damage-anim"), 300); let hpText = document.getElementById(`p${attackerPid}-hp-text`); if(hpText) hpText.innerText = `${players[attackerPid].hp} / ${players[attackerPid].maxHp}`; }
-      } else if (targetCard && targetCard.hasBarrier) {
-          targetCard.hasBarrier = false; playSound('barrier', true);
-      } else {
-          if (targetZone === 'leader') { targetPlayer.hp -= actualDamage; } 
-          else { targetCard.hp -= actualDamage; }
-          
-          triggerConnection(targetCard, 'damage', actualDamage);
-          let effectElId = targetZone === 'leader' ? `p${targetPid}-leader-zone` : `p${targetPid}-stage-${targetZone}`;
-          
-          // 👇 ここでダメージ数値を表示させつつ、自動で音も鳴らす！
-          showFloatingTextOnElement(effectElId, actualDamage, 'damage');
-
-          if (targetZone === 'leader') {
-              // ※古い playSound('damage') は削除済み
-              const targetEl = document.getElementById(`p${targetPid}-leader-zone`);
-              if(targetEl){ targetEl.classList.add("damage-anim"); setTimeout(() => targetEl.classList.remove("damage-anim"), 300); let hpText = document.getElementById(`p${targetPid}-hp-text`); if(hpText) hpText.innerText = `${targetPlayer.hp} / ${targetPlayer.maxHp}`; }
-          } else {
-              // ※古い playSound('damage') は削除済み
-              const targetEl = document.getElementById(`p${targetPid}-stage-${targetZone}`);
-              if(targetEl) { targetEl.classList.add("damage-anim"); setTimeout(() => targetEl.classList.remove("damage-anim"), 300); }
-              if (targetCard.hp <= 0) {
-                  if (targetCard.immortalZero) { targetCard.hp = 0; }
-                  else {
-                      if (attackerCard.drain && !targetCard.isDestroyed) { drainAmount += actualDamage; }
-                      destroyCard(targetPid, targetZone, attackerCard.superPierce);
-                      targetCard.isDestroyed = true;
-                  }
-              } else if (attackerCard.drain) { drainAmount += actualDamage; }
-          }
-      }
-
-      if (attackerCard.drain && drainAmount > 0) {
-          attackerPlayer.hp += drainAmount; if(attackerPlayer.hp > attackerPlayer.maxHp) attackerPlayer.hp = attackerPlayer.maxHp;
-          triggerConnection(attackerLeader, 'heal', drainAmount);
-          showFloatingTextOnElement(`p${attackerPid}-leader-zone`, drainAmount, 'heal');
-          const el = document.getElementById(`p${attackerPid}-leader-zone`);
-          if(el) { el.classList.add("heal-anim"); setTimeout(() => el.classList.remove("heal-anim"), 300); }
-      }
-
-      const atkEl = document.getElementById(attackerZone === 'leader' ? `p${attackerPid}-leader-zone` : `p${attackerPid}-stage-${attackerZone}`);
-      if(atkEl) {
-          atkEl.classList.add("attacker-thrust");
-          setTimeout(() => { atkEl.classList.remove("attacker-thrust"); }, 300);
-      }
-
-      attackerCard.attackCount += 1;
-      checkGameOver();
-      
-      if (!isSoloMode && attackerPid === myPlayerId) {
-          socket.emit('attack', { roomId: myRoomId, attackerPid, attackerZone, targetPid, targetZone });
-      }
-
-      renderAll(); sendGameState();
-  } finally {
-      if (!wasLocked) window.isActionLocked = false;
-  }
-}
+    renderAll(); 
+    window.showSummonEffect(pId, z);
+    
+    await window.triggerOnCallPassives(pId, z); 
+    
+    return true;
+};
+// 👆👆 復旧ここまで 👆👆
 
 async function playCard(cardId, targetZone, pId) {
   const p = players[pId]; const cardIndex = p.hand.findIndex(c => c.id === cardId); if(cardIndex === -1) return; const card = p.hand[cardIndex];
