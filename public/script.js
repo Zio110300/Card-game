@@ -4569,26 +4569,44 @@ window.triggerInvertEffects = async function(pId, card) {
     if (card && card.name === "架ける光 サイン&フェム") p.leader.hasBarrier = true;
 };
 
-// 👇👇 ここから修正：手動で反転した時にパッシブを呼ぶようにする 👇👇
+// 👇👇 ここから修正：アイテムの反転にも完全対応した InvertSkill 👇👇
 window.useInvertSkill = async function(zone) {
   let p = players[myPlayerId];
   if (isSelectingHand || isSelectingStage) return;
-  let card = p.stage[zone];
+  
+  // 修正①：アイテム枠かステージ枠かを正しく判定してカードを取得！
+  let card = zone === 'item' ? p.weapon : p.stage[zone];
   if (!card || !card.invert || card.invertUsed) return;
 
-  // 攻撃力とHPの数値を入れ替える！
-  let temp = card.attack;
-  card.attack = card.hp;
-  card.hp = temp;
+  // 修正②：アイテムとキャラでステータスの入れ替え方を分ける！
+  if (zone === 'item') {
+      let oldHp = card.hp || 0;
+      let temp = card.effectValue || 0;
+      card.effectValue = oldHp;
+      card.hp = temp;
+      
+      // 修正③：アイテムのHPが変わった分、リーダーの最大HPと現在HPも連動して変動させる！
+      let diff = card.hp - oldHp;
+      p.maxHp += diff;
+      p.hp += diff;
+      // 万が一現在HPが最大値を超えたら補正（※0以下になった場合の敗北判定はターンの各種処理やcheckGameOverに委ねる）
+      if (p.hp > p.maxHp) p.hp = p.maxHp; 
+  } else {
+      let temp = card.attack;
+      card.attack = card.hp;
+      card.hp = temp;
+  }
   
   card.invertUsed = true; // このターンは使用済みにする
 
-  // エフェクトと音を鳴らす
   playSound('buff');
-  const el = document.getElementById(`p${myPlayerId}-stage-${zone}`);
+  
+  // 修正④：エフェクトを出すHTML要素のIDも、アイテム枠とステージ枠で正しく分ける！
+  let elId = zone === 'item' ? `p${myPlayerId}-item-zone` : `p${myPlayerId}-stage-${zone}`;
+  const el = document.getElementById(elId);
   if(el) { el.classList.add("heal-anim"); setTimeout(() => el.classList.remove("heal-anim"), 300); }
 
-  await window.triggerInvertEffects(myPlayerId, card); // 👈 修正：反転時にスカーハ等のパッシブを確実に誘発させる！
+  await window.triggerInvertEffects(myPlayerId, card); 
 
   if (!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card }); 
   renderAll(); sendGameState();
