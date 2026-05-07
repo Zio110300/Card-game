@@ -1071,15 +1071,19 @@ socket.on('assign_player', (num) => {
 
 socket.on('game_updated', (gameState) => {
   if (isSoloMode) return;
-  let wasNotStarted = !isGameStarted; // 👈 追加：新しくゲームが始まったかどうかの判定
+  let wasNotStarted = !isGameStarted; 
   
   players = gameState.players; currentTurn = gameState.currentTurn; isGameOver = gameState.isGameOver; 
+
+  // 👇 追加：相手から送られてきた特殊勝利のフラグを受け取り、自分の画面にも反映させる！
+  if (gameState.specialWinner !== undefined) window.specialWinner = gameState.specialWinner;
+  if (gameState.isBadEnd !== undefined) window.isBadEnd = gameState.isBadEnd;
+  if (gameState.badEndReason !== undefined) window.badEndReason = gameState.badEndReason;
+
   isGameStarted = true;
   infoPanel.style.backgroundColor = "#ecf0f1"; 
   
   if (!isGameOver) {
-
-     // 👈 修正：毎回BGMが止まってしまうバグを防ぐため、「最初（新しく始まった時）」のブロックの中に移動！
      if (wasNotStarted) {
          window.fadeOutResultSound();
          if (typeof hideResultScreen === 'function') hideResultScreen(); 
@@ -1089,12 +1093,11 @@ socket.on('game_updated', (gameState) => {
          document.getElementById('game-wrap').style.display = 'block';
          resizeGame();
          
-         // 👇 修正：P2側もランダム（またはボス）BGMを決めて再生する！
          if (isSoloMode) window.currentBattleBgmType = 'boss';
          else window.currentBattleBgmType = 'battle' + (Math.floor(Math.random() * 5) + 1);
          playBGM(window.currentBattleBgmType);
          
-         showVsScreen();    // P2もVS画面を出す！
+         showVsScreen();    
      }
      
      if (myPlayerId === currentTurn) { infoPanel.innerHTML = `🟢 あなたのターンです！`; } 
@@ -1125,7 +1128,17 @@ socket.on('game_retry', () => {
 
 function sendGameState() {
   if (isSoloMode) return;
-  socket.emit('update_game', { roomId: myRoomId, gameState: { players: players, currentTurn: currentTurn, isGameOver: isGameOver } });
+  socket.emit('update_game', { 
+      roomId: myRoomId, 
+      gameState: { 
+          players: players, 
+          currentTurn: currentTurn, 
+          isGameOver: isGameOver,
+          specialWinner: window.specialWinner, // 👈 追加：特殊勝利のフラグを相手に送る！
+          isBadEnd: window.isBadEnd,           // 👈 追加：BAD ENDのフラグを送る！
+          badEndReason: window.badEndReason    // 👈 追加：BAD ENDの理由を送る！
+      } 
+  });
 }
 
 // =========================================================
