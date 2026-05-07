@@ -3244,7 +3244,7 @@ async function playCard(cardId, targetZone, pId) {
     }
     else if (card.name === "その身に過する保護り") { p.leader.hasBarrier = true; let leftCard = p.stage['left']; if (leftCard && leftCard.type === "monster") { leftCard.hp += 3; triggerConnection(leftCard, 'heal', 3); showFloatingTextOnElement(`p${pId}-stage-left`, 3, 'heal'); } }
     
-    // 👇 修正：魔法「反天」の実装を追加！ 👇
+    // 👇 修正：魔法「反天」の実装（バフ・デバフ込みのステータス反転） 👇
     else if (card.name === "反天") {
         let firstTarget = null; isSelectingStage = true;
         selectionStageCallback = async function(tPid, tZone) {
@@ -3252,7 +3252,17 @@ async function playCard(cardId, targetZone, pId) {
             let tCard = players[tPid].stage[tZone]; if (!tCard || tCard.type !== "monster") { alert("キャラを選択してください"); return; }
             consumeThisMagic(); 
             
-            let temp = tCard.attack; tCard.attack = tCard.hp; tCard.hp = temp;
+            // 👇 修正：バフ・デバフ込みの実質的な攻撃力を計算する
+            let currentAtk = tCard.attack + (tCard.turnAttackBoost || 0);
+            if (currentAtk < 0) currentAtk = 0;
+
+            let tempHp = tCard.hp;
+            tCard.hp = currentAtk;
+            tCard.attack = tempHp;
+            
+            // 👇 追加：反転の際にターン中のバフ・デバフをリセットする
+            tCard.turnAttackBoost = 0; 
+            
             tCard.invertUsed = true;
             playSound('buff');
             let elId = `p${tPid}-stage-${tZone}`;
@@ -3260,6 +3270,11 @@ async function playCard(cardId, targetZone, pId) {
             if(el) { el.classList.add("heal-anim"); setTimeout(() => el.classList.remove("heal-anim"), 300); }
             
             await window.triggerInvertEffects(tPid, tCard);
+            
+            // 👇 追加：反転の結果、ライフが0以下になった場合は即座に破壊する！
+            if (tCard.hp <= 0) {
+                destroyCard(tPid, tZone, false);
+            }
             
             isSelectingStage = false; selectionStageCallback = null; pendingSelection = null; infoPanel.style.backgroundColor = "#ecf0f1";
             showCardEffect(card); if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card });
@@ -4569,44 +4584,53 @@ window.triggerInvertEffects = async function(pId, card) {
     if (card && card.name === "架ける光 サイン&フェム") p.leader.hasBarrier = true;
 };
 
-// 👇👇 ここから修正：アイテムの反転にも完全対応した InvertSkill 👇👇
+// 👇👇 ここから修正：アイテムの反転にも完全対応し、バフ・デバフ込みのステータスを反転させる！ 👇👇
 window.useInvertSkill = async function(zone) {
   let p = players[myPlayerId];
   if (isSelectingHand || isSelectingStage) return;
   
-  // 修正①：アイテム枠かステージ枠かを正しく判定してカードを取得！
   let card = zone === 'item' ? p.weapon : p.stage[zone];
   if (!card || !card.invert || card.invertUsed) return;
 
-  // 修正②：アイテムとキャラでステータスの入れ替え方を分ける！
   if (zone === 'item') {
       let oldHp = card.hp || 0;
       let temp = card.effectValue || 0;
       card.effectValue = oldHp;
       card.hp = temp;
       
-      // 修正③：アイテムのHPが変わった分、リーダーの最大HPと現在HPも連動して変動させる！
       let diff = card.hp - oldHp;
       p.maxHp += diff;
       p.hp += diff;
-      // 万が一現在HPが最大値を超えたら補正（※0以下になった場合の敗北判定はターンの各種処理やcheckGameOverに委ねる）
       if (p.hp > p.maxHp) p.hp = p.maxHp; 
   } else {
-      let temp = card.attack;
-      card.attack = card.hp;
-      card.hp = temp;
+      // 👇 修正：バフ・デバフ込みの「現在の実質的な攻撃力」を計算する
+      let currentAtk = card.attack + (card.turnAttackBoost || 0);
+      if (currentAtk < 0) currentAtk = 0; // マイナスの場合は0扱いにする
+
+      let tempHp = card.hp;
+      card.hp = currentAtk; // ライフには「現在の攻撃力」が入る
+      card.attack = tempHp; // 攻撃力には「反転前のライフ」が入る
+      
+      // 👇 追加：反転の際にターン中のバフ・デバフをリセットして二重にかかるのを防ぐ
+      card.turnAttackBoost = 0; 
   }
   
   card.invertUsed = true; // このターンは使用済みにする
 
   playSound('buff');
   
-  // 修正④：エフェクトを出すHTML要素のIDも、アイテム枠とステージ枠で正しく分ける！
   let elId = zone === 'item' ? `p${myPlayerId}-item-zone` : `p${myPlayerId}-stage-${zone}`;
   const el = document.getElementById(elId);
   if(el) { el.classList.add("heal-anim"); setTimeout(() => el.classList.remove("heal-anim"), 300); }
 
   await window.triggerInvertEffects(myPlayerId, card); 
+
+  // 👇 追加：反転の結果、ライフが0以下になった場合は即座に破壊する！
+  if (zone !== 'item' && card.hp <= 0) {
+      destroyCard(myPlayerId, zone, false);
+  } else if (zone === 'item' && p.hp <= 0) {
+      checkGameOver(); // アイテム反転でリーダーのHPが0になったら決着
+  }
 
   if (!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card }); 
   renderAll(); sendGameState();
