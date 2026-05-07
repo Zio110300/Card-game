@@ -3145,9 +3145,18 @@ async function playCard(cardId, targetZone, pId) {
       ['left', 'center', 'right'].forEach(z => {
         let tCard = players[oppId].stage[z];
         if (tCard && tCard.type === "monster") {
-            let currentAtk = tCard.attack + (tCard.turnAttackBoost || 0); let debuffValue = 2; 
+            // 👇 修正：アオクジラや戦女神の加護などの「常在バフ」も含めた真の攻撃力を計算する！
+            let currentAtk = tCard.attack + (tCard.turnAttackBoost || 0);
+            if (tCard.name === "海神 アオクジラ" && players[oppId].lostZone.length > 0 && tCard.soul) currentAtk += tCard.soul.length;
+            Object.values(players[oppId].stage).forEach(c => { if(c && c.name === "戦女神の加護") currentAtk += c.effectValue; });
+            
+            let debuffValue = 2; 
             if (currentAtk - debuffValue < 0) { debuffValue = currentAtk; }
-            if (debuffValue > 0) { tCard.turnAttackBoost = (tCard.turnAttackBoost || 0) - debuffValue; triggerConnection(tCard, 'attack_boost', -debuffValue); showFloatingTextOnElement(`p${oppId}-stage-${z}`, -debuffValue, 'attack_boost'); }
+            if (debuffValue > 0) { 
+                tCard.turnAttackBoost = (tCard.turnAttackBoost || 0) - debuffValue; 
+                triggerConnection(tCard, 'attack_boost', -debuffValue); 
+                showFloatingTextOnElement(`p${oppId}-stage-${z}`, -debuffValue, 'attack_boost'); 
+            }
         }
       });
     }
@@ -3506,9 +3515,14 @@ async function playCard(cardId, targetZone, pId) {
             ['left', 'center', 'right'].forEach(z => {
                 let tCard = players[targetPId].stage[z];
                 if (tCard && tCard.type === "monster") {
+                    // 👇 修正：アオクジラや戦女神の加護などの「常在バフ」も含めた真の攻撃力を計算する！
                     let currentAtk = tCard.attack + (tCard.turnAttackBoost || 0);
+                    if (tCard.name === "海神 アオクジラ" && players[targetPId].lostZone.length > 0 && tCard.soul) currentAtk += tCard.soul.length;
+                    Object.values(players[targetPId].stage).forEach(c => { if(c && c.name === "戦女神の加護") currentAtk += c.effectValue; });
+
                     if (currentAtk > 0) {
-                        totalReduced += currentAtk; tCard.turnAttackBoost = (tCard.turnAttackBoost || 0) - currentAtk;
+                        totalReduced += currentAtk; 
+                        tCard.turnAttackBoost = (tCard.turnAttackBoost || 0) - currentAtk;
                         showFloatingTextOnElement(`p${targetPId}-stage-${z}`, -currentAtk, 'attack_boost');
                     }
                 }
