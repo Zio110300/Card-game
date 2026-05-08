@@ -367,7 +367,8 @@ function getCardInfoText(card) {
     light_soul: "✨👻光/魂", 
     magic_human: "👤🔮人/魔", beast_human: "🐺👤獣/人", machine: "⚙️機械", dragon_human: "🐉👤竜/人",
     magic_fear: "🔮😨魔/恐",
-    freat: "🎤FREAT" 
+    freat: "🎤FREAT",
+    freat_song: "🎤FREAT/🎶歌" 
   };
   const attrName = attrMap[card.attribute] || "不明";
   
@@ -1233,13 +1234,13 @@ function getCardTypes() {
     { category: "pack_5", type: "monster", name: "熱狂の従者", originalCost: 2, cost: 2, attack: 1, hp: 3, image: "images/pack_5/juusha.jpg", attribute: "freat", soulGuard: true, burn: true, flavor: "アイドルを推すのは自由広めるのも自由、しかし自由には責任が伴うのが世の常である。であれば、ファンにも責任が伴うのが道理ではないか。<br>「推ししか勝たん...」", desc: "【ソウルガード】<br>■【燃焼】このカードは【守護】を持つ。<br>■【ターン終了時】自分のリーダーの攻撃力を+1する。" },
     { category: "pack_5", type: "monster", name: "熱狂の宣教者", originalCost: 4, cost: 4, attack: 1, hp: 6, image: "images/pack_5/senkyou.jpg", attribute: "freat", soulGuard: true, burn: true, flavor: "アイドルとは偶像。象徴であり、進行するものではない。<br>「推しのライブなう。」", desc: "【ソウルガード】<br>■【コール】自分のデッキからコスト3以下の属性「FREAT」を含むキャラ1枚をコールする。<br>■【燃焼】自分のステージに存在するカード1枚のソウルを+1する。" },
     { category: "pack_5", type: "monster", name: "熱狂の貢献者", originalCost: 2, cost: 2, attack: 0, hp: 4, image: "images/pack_5/koukenn.jpg", attribute: "freat", soulGuard: true, flavor: "道具も技術もエナジーも、使い方を違えば破滅を招く。「みんな...忘れてしまったの...？」", desc: "【ソウルガード】<br>■【コール】自分のリーダーのライフを+4する。<br>■自分のターン中、このカードは破壊されない。" },
-    { category: "pack_5", type: "magic", name: "舞台の頂 オルデニス", originalCost: 1, cost: 1, image: "images/pack_5/oldeniss.jpg", attribute: "freat", shiftStatue: true, flavor: "全てのアーティストが夢みる最高の舞台。歌う者の心を湧き立て、聴く者全てに熱をもたらす。かつては火薬と金属片が舞い、闘いの熱を蓄えた戦場だったという。", desc: "■自分のキャラ1枚は【挑発】を持つ。<br>■【シフトスタチュー】「このカードは能力で選択されない。」を持つ。<br>■【ターン開始時】相手のターン開始時、このカードのソウルが13以上なら、自分はゲームに勝利する。" },
-    { category: "pack_5", type: "magic", name: "繰り返す歌 少女レイ", originalCost: 3, cost: 3, image: "images/pack_5/rei.jpg", attribute: "freat", flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■このカードと自分の手札1枚を自分のステージにあるカード1枚のソウルに入れる。" },
-    { category: "pack_5", type: "magic", name: "愛を歌う シャルル", originalCost: 2, cost: 2, image: "images/pack_5/shall.jpg", attribute: "freat", flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■相手のステージに存在するキャラ全ての攻撃力を次の相手のターン終了時まで-1する。" },
-    { category: "pack_5", type: "magic", name: "そういう歌 命に嫌われている", originalCost: 1, cost: 1, image: "images/pack_5/inoti.jpg", attribute: "freat", flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■自分のリーダーかステージにいるランダムな自分のキャラ1枚の攻撃力とライフを+1する。" },
-    { category: "pack_5", type: "magic", name: "はんたいことばの愛の歌 天ノ弱", originalCost: 2, cost: 2, image: "images/pack_5/amanojaku.jpg", attribute: "freat", flavor: "", desc: "■自分のリーダーの攻撃力を+1する。<br>■自分のリーダーは次の自分のターン開始時まで【反撃】を持つ。" },
-    { category: "pack_5", type: "magic", name: "終わらない愛の歌 ヒバナ", originalCost: 5, cost: 5, image: "images/pack_5/hibana.jpg", attribute: "freat", flavor: "", desc: "■このカードを自分のステージに存在するランダムなキャラか魔法1枚のソウルに入れる。<br>■相手のステージにいるランダムなキャラ1枚を破壊し、カード3枚を引く。" },
-    { category: "pack_5", type: "magic", name: "世界で一番魅せる歌 ワールドイズマイン", originalCost: 6, cost: 6, image: "images/pack_5/world.jpg", attribute: "freat", flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■ステージに存在するキャラ全ての攻撃力を0まで減らし、自分のリーダーのライフを減らした分+する。" },
+    { category: "pack_5", type: "magic", name: "舞台の頂 オルデニス", originalCost: 1, cost: 1, image: "images/pack_5/oldeniss.jpg", attribute: "freat", shiftStatue: true, flavor: "全てのアーティストが夢みる最高の舞台。歌う者の心を湧き立て、聴く者全てに熱をもたらす。かつては火薬と金属片が舞い、闘いの熱を蓄えた戦場だったという。", desc: "■自分のキャラ1枚は【挑発】を持つ。<br>■【シフトスタチュー】「このカードは能力で選択されない。」を持つ。<br>■【ターン開始時】相手のターン開始時、このカードのソウルが16以上なら、自分はゲームに勝利する。" },
+    { category: "pack_5", type: "magic", name: "少女レイ", originalCost: 3, cost: 3, image: "images/pack_5/rei.jpg", attribute: "freat_song", flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■このカードと自分の手札1枚を自分のステージにあるカード1枚のソウルに入れる。" },
+    { category: "pack_5", type: "magic", name: "劣等上等", originalCost: 2, cost: 2, image: "images/pack_5/rinren.jpg", attribute: "freat_song", flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■【シフト】次から1つ選んで使う。<br>・自分のリーダーと相手のステージにいるキャラ1枚を選択し、「接続」する。<br>・相手のステージに存在するキャラ全ての攻撃力を次の相手のターン終了時まで-1する。" },
+    { category: "pack_5", type: "magic", name: "テトリス", originalCost: 1, cost: 1, image: "images/pack_5/tetlis.jpg", attribute: "freat_song", flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■このターン中、自分のリーダーは【ドレイン】を持つ。<br>■【アーツ3】自分のステージに存在するランダムな魔法1枚のソウルを+1する。" },
+    { category: "pack_5", type: "magic", name: "天ノ弱", originalCost: 2, cost: 2, image: "images/pack_5/amanojaku.jpg", attribute: "freat_song", flavor: "", desc: "■自分のリーダーの攻撃力を+1する。<br>■ステージに存在するキャラ1枚を選択し、【反転】する。" },
+    { category: "pack_5", type: "magic", name: "KING", originalCost: 5, cost: 5, image: "images/pack_5/gumi.jpg", attribute: "freat_song", flavor: "", desc: "■このカードを自分のステージに存在するランダムなキャラか魔法1枚のソウルに入れる。<br>■相手のステージにいるランダムなキャラ1枚を破壊し、カード3枚を引く。" },
+    { category: "pack_5", type: "magic", name: "ワールドイズマイン", originalCost: 6, cost: 6, image: "images/pack_5/world.jpg", attribute: "freat_song", flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■ステージに存在するキャラ全ての攻撃力を0まで減らし、自分のリーダーのライフを減らした分+する。" },
     // 👇 追加：デッキに入らないトークンカード
     { category: "token", type: "token", name: "熱狂と歓声", originalCost: 0, cost: 0, image: "", attribute: "freat", flavor: "「熱」とは力。", desc: "■「迸る閃望 ルミナス=イデオル」の効果でソウルに入るカード。<br>■「舞台の頂 オルデニス」のソウルに入ったカードは全て「熱狂と歓声」に変身する。" },
     { category: "token", type: "token", name: "絶対不可止の鼓動", originalCost: 1, cost: 1, image: "", attribute: "bice_fire", flavor: "", desc: "■「BICE」の能力でソウルに入るカード。" },
@@ -1817,19 +1818,18 @@ function renderAll() {
           let hasLight = ['left', 'center', 'right'].some(z => p.stage[z] && p.stage[z].attribute === "light");
           if (!hasLight) canPlay = false;
       }
-
-      if ((card.name === "繰り返す歌 少女レイ" || card.name === "愛を歌う シャルル" || card.name === "そういう歌 命に嫌われている" || card.name === "世界で一番魅せる歌 ワールドイズマイン") && canPlay) {
-          // 自分か相手、どちらかのステージに「キャラ」が1体でもいれば使える
+      const songMagics = ["少女レイ", "劣等上等", "テトリス", "ワールドイズマイン", "舞台の頂 オルデニス"];
+      if (songMagics.includes(card.name) && canPlay) {
           let anyMonsterExists = false;
-          ['left', 'center', 'right'].forEach(z => {
-              if (players[1].stage[z] && players[1].stage[z].type === "monster") anyMonsterExists = true;
-              if (players[2].stage[z] && players[2].stage[z].type === "monster") anyMonsterExists = true;
+          [1, 2].forEach(pid => {
+              ['left', 'center', 'right'].forEach(z => {
+                  if (players[pid].stage[z] && players[pid].stage[z].type === "monster") anyMonsterExists = true;
+              });
           });
-          
           if (!anyMonsterExists) canPlay = false;
 
-          // 少女レイのみ、自身を含めて手札が2枚以上必要という追加条件
-          if (card.name === "繰り返す歌 少女レイ" && p.hand.length < 2) canPlay = false;
+          // 少女レイのみ、自身を含めて手札が2枚以上必要
+          if (card.name === "少女レイ" && p.hand.length < 2) canPlay = false;
       }
 
       const disabledClass = canPlay ? "" : "disabled"; 
@@ -3124,7 +3124,7 @@ async function playCard(cardId, targetZone, pId) {
         let cIdx = p.hand.findIndex(c => c.id === cardId);
         if (cIdx !== -1) { p.mp -= card.cost; p.hand.splice(cIdx, 1); sendToTrashOrLost(pId, [card]); }
         if (p.weapon && p.weapon.name === "魔法の杖") { p.mp = Math.min(p.maxMp, p.mp + 1); }
-        if (card.name.includes("歌")) {
+        if (card.attribute && card.attribute.includes("song")) {
             if (p.leader && p.leader.name === "迸る閃望 ルミナス=イデオル" && !p.leader.songSkillUsed) {
                 p.leader.songSkillUsed = true; let token = resetCardState({name: "熱狂と歓声"});
                 ['left', 'center', 'right'].forEach(z => {
@@ -3136,11 +3136,134 @@ async function playCard(cardId, targetZone, pId) {
         }
     };
 
-    let isTargetedMagic = ["あなたをおしえて", "狂依存","反天","Drive for future", "舞台の頂 オルデニス", "繰り返す歌 少女レイ"].includes(card.name);
+    let isTargetedMagic = ["あなたをおしえて", "狂依存", "反天", "Drive for future", "舞台の頂 オルデニス", "少女レイ", "天ノ弱"].includes(card.name);
     if (!isTargetedMagic) { 
-        consumeThisMagic(); playSound('play'); showCardEffect(card);
-        if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card });
-        if (card.name === "Absolute punisher！" || card.name === "Erotion the future" || card.name === "侵界の雨") { playSound('tension'); await new Promise(r => setTimeout(r, 1000)); } 
+        if (card.name !== "劣等上等") {
+            consumeThisMagic(); playSound('play'); showCardEffect(card);
+            if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card });
+        }
+    }
+    if (card.name === "舞台の頂 オルデニス" && !window.shiftStatueChoiceAsSetMagic) {
+        isSelectingStage = true;
+        selectionStageCallback = function(tPid, tZone) {
+            if (tPid !== pId || tZone === 'leader') return;
+            let tCard = p.stage[tZone]; if (!tCard || tCard.type !== "monster") return;
+            consumeThisMagic(); tCard.taunt = true;
+            isSelectingStage = false; selectionStageCallback = null; pendingSelection = null;
+            showCardEffect(card); renderAll(); sendGameState();
+        };
+        infoPanel.innerHTML = `【挑発】を与える自分のキャラを選択してください`; return;
+    }
+    else if (card.name === "少女レイ") {
+        let targets = ['left', 'center', 'right'].filter(z => p.stage[z] !== null);
+        targets.push('leader'); if (p.weapon) targets.push('item');
+        isSelectingHand = true;
+        selectionCallback = function(hIndex) {
+            if (p.hand[hIndex].id === cardId) return;
+            let handCard = p.hand.splice(hIndex, 1)[0];
+            isSelectingHand = false; selectionCallback = null;
+            isSelectingStage = true;
+            selectionStageCallback = function(tPid, tZone) {
+                if (tPid !== pId) return;
+                let tCard = tZone === 'leader' ? p.leader : (tZone === 'item' ? p.weapon : p.stage[tZone]);
+                if (!tCard) return;
+                consumeThisMagic();
+                tCard.soul.push(resetCardState(handCard), resetCardState(card));
+                isSelectingStage = false; selectionStageCallback = null; pendingSelection = null;
+                showCardEffect(card); renderAll(); sendGameState();
+            };
+            infoPanel.innerHTML = `ソウルを入れるカードを選択してください`; renderAll();
+        };
+        infoPanel.innerHTML = `ソウルに入れる手札を選択してください`; return;
+    }
+    else if (card.name === "劣等上等") {
+        isSelectingStage = true;
+        let zoneEl = document.getElementById(`p${pId}-stage-center`); // 仮の表示場所
+        let overlay = document.createElement("div"); overlay.className = "card-action-overlay";
+        overlay.innerHTML = `
+            <button class="card-center-btn" style="background:#00bcd4; color:white; margin-bottom:5px;" onclick="event.stopPropagation(); window.resolveRettou(1);">🔗 接続</button>
+            <button class="card-center-btn" style="background:#e74c3c; color:white;" onclick="event.stopPropagation(); window.resolveRettou(2);">📉 デバフ</button>
+        `;
+        if (p.stage.center) { document.getElementById(`p${pId}-stage-center`).appendChild(overlay); }
+        else { document.getElementById(`p${pId}-leader-zone`).appendChild(overlay); }
+
+        window.resolveRettou = async function(choice) {
+            overlay.remove(); isSelectingStage = false;
+            if (choice === 1) {
+                isSelectingStage = true;
+                selectionStageCallback = function(tPid, tZone) {
+                    if (tPid !== oppId || tZone === 'leader') return;
+                    consumeThisMagic(); connectCards(pId, 'leader', tPid, tZone);
+                    isSelectingStage = false; selectionStageCallback = null; renderAll(); sendGameState();
+                };
+                infoPanel.innerHTML = `接続する相手キャラを選択してください`;
+            } else {
+                consumeThisMagic();
+                ['left', 'center', 'right'].forEach(z => {
+                    let oCard = players[oppId].stage[z];
+                    if (oCard && oCard.type === "monster") {
+                        oCard.turnAttackBoost = (oCard.turnAttackBoost || 0) - 1;
+                        showFloatingTextOnElement(`p${oppId}-stage-${z}`, -1, 'attack_boost');
+                    }
+                });
+                renderAll(); sendGameState();
+            }
+        };
+        return;
+    }
+    else if (card.name === "テトリス") {
+        p.leader.drain = true;
+        if (artsTriggered) {
+            let myMagics = ['left', 'center', 'right'].filter(z => p.stage[z] && p.stage[z].type === "set_magic");
+            if (myMagics.length > 0) {
+                let targetZ = myMagics[Math.floor(Math.random() * myMagics.length)];
+                p.stage[targetZ].soul.push(resetCardState({name: "熱狂と歓声"}));
+                showFloatingTextOnElement(`p${pId}-stage-${targetZ}`, "SOUL", 'heal');
+            }
+        }
+    }
+    else if (card.name === "天ノ弱") {
+        p.leader.attack += 1; triggerConnection(p.leader, 'permanent_attack_boost', 1);
+        isSelectingStage = true;
+        selectionStageCallback = async function(tPid, tZone) {
+            if (tZone === 'leader') return;
+            let tCard = players[tPid].stage[tZone]; if (!tCard || tCard.type !== "monster") return;
+            consumeThisMagic();
+            let currentAtk = tCard.attack + (tCard.turnAttackBoost || 0);
+            let tempHp = tCard.hp; tCard.hp = Math.max(0, currentAtk); tCard.attack = tempHp; tCard.turnAttackBoost = 0;
+            if (tCard.hp <= 0) destroyCard(tPid, tZone, false);
+            isSelectingStage = false; selectionStageCallback = null; renderAll(); sendGameState();
+        };
+        infoPanel.innerHTML = `【反転】させるキャラを選択してください`; return;
+    }
+    else if (card.name === "KING") {
+        let potential = [];
+        ['left', 'center', 'right'].forEach(z => { if (p.stage[z]) potential.push(z); });
+        if (potential.length > 0) {
+            let targetZ = potential[Math.floor(Math.random() * potential.length)];
+            p.stage[targetZ].soul.push(resetCardState(card));
+        }
+        let oppMonsters = ['left', 'center', 'right'].filter(z => players[oppId].stage[z] && players[oppId].stage[z].type === "monster");
+        if (oppMonsters.length > 0) { destroyCard(oppId, oppMonsters[Math.floor(Math.random() * oppMonsters.length)], false); }
+        drawCard(pId); drawCard(pId); drawCard(pId);
+    }
+    else if (card.name === "ワールドイズマイン") {
+        let totalReduced = 0;
+        [1, 2].forEach(pid => {
+            ['left', 'center', 'right'].forEach(z => {
+                let tCard = players[pid].stage[z];
+                if (tCard && tCard.type === "monster") {
+                    let currentAtk = tCard.attack + (tCard.turnAttackBoost || 0);
+                    if (currentAtk > 0) {
+                        totalReduced += currentAtk;
+                        tCard.turnAttackBoost = (tCard.turnAttackBoost || 0) - currentAtk;
+                        showFloatingTextOnElement(`p${pid}-stage-${z}`, -currentAtk, 'attack_boost');
+                    }
+                }
+            });
+        });
+        p.hp += totalReduced; if (p.hp > p.maxHp) p.hp = p.maxHp;
+        showFloatingTextOnElement(`p${pId}-leader-zone`, totalReduced, 'heal');
     }
     
     if (card.name === "RBA") {
@@ -3413,138 +3536,7 @@ async function playCard(cardId, targetZone, pId) {
         };
         infoPanel.innerHTML = `破壊する自分のキャラ1枚を選択してください`; infoPanel.style.backgroundColor = "#e74c3c"; renderAll(); return; 
     }
-    else if (card.name === "舞台の頂 オルデニス" && !window.shiftStatueChoiceAsSetMagic) {
-        let targets = ['left', 'center', 'right'].filter(z => p.stage[z] !== null && p.stage[z].type === "monster");
-        if (targets.length > 0) {
-            isSelectingStage = true;
-            selectionStageCallback = function(tPid, tZone) {
-                if (tPid !== pId || tZone === 'leader') return; let tCard = p.stage[tZone]; if (!tCard || tCard.type !== "monster") return;
-                consumeThisMagic(); 
-                tCard.taunt = true; 
-                
-                isSelectingStage = false; selectionStageCallback = null; pendingSelection = null;
-                infoPanel.style.backgroundColor = "#ecf0f1";
-                playSound('play'); showCardEffect(card); if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card });
-                renderAll(); sendGameState();
-            };
-            infoPanel.innerHTML = `【挑発】を付与する自分のキャラを選択してください`;
-            infoPanel.style.backgroundColor = "#e74c3c";
-            renderAll(); return;
-        } else {
-            consumeThisMagic();
-        }
-    }
-    else if (card.name === "繰り返す歌 少女レイ") {
-        let targets = ['left', 'center', 'right'].filter(z => p.stage[z] !== null);
-        if (p.weapon) targets.push('item'); targets.push('leader');
-        
-        if (targets.length > 0 && p.hand.length > 1) { 
-            isSelectingHand = true; window.cancelActionCallback = () => { renderAll(); };
-            selectionCallback = function(hIndex) {
-                if (p.hand[hIndex].id === cardId) return; 
-                let handCard = p.hand[hIndex]; isSelectingHand = false; selectionCallback = null; pendingSelection = null;
-                
-                isSelectingStage = true;
-                selectionStageCallback = function(tPid, tZone) {
-                    if (tPid !== pId) return; let tCard = tZone === 'leader' ? p.leader : (tZone === 'item' ? p.weapon : p.stage[tZone]); if (!tCard) return;
-                    
-                    consumeThisMagic();
-                    let actualHandCard = p.hand.splice(p.hand.indexOf(handCard), 1)[0];
-                    let thisCardInTrash = p.trash.findIndex(c => c.name === "繰り返す歌 少女レイ");
-                    if(thisCardInTrash !== -1) p.trash.splice(thisCardInTrash, 1);
-                    
-                    let soul1 = resetCardState(actualHandCard); let soul2 = resetCardState(card);
-                    if(tCard.name === "舞台の頂 オルデニス") { soul1 = resetCardState({name:"熱狂と歓声"}); soul2 = resetCardState({name:"熱狂と歓声"}); }
-                    
-                    tCard.soul.push(soul1, soul2); showFloatingTextOnElement(`p${pId}-stage-${tZone}`, "SOUL", 'heal');
-                    
-                    isSelectingStage = false; selectionStageCallback = null; pendingSelection = null; infoPanel.style.backgroundColor = "#ecf0f1";
-                    playSound('play'); showCardEffect(card); if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card });
-                    renderAll(); sendGameState();
-                };
-                infoPanel.innerHTML = `ソウルを入れる先のカードを選択してください`; infoPanel.style.backgroundColor = "#f1c40f"; renderAll();
-            };
-            infoPanel.innerHTML = `ソウルに入れる手札を1枚選択してください`; infoPanel.style.backgroundColor = "#f1c40f"; renderAll();
-            return;
-        } else { consumeThisMagic(); }
-    }
-    else if (card.name === "愛を歌う シャルル") {
-        consumeThisMagic();
-        let oppTargets = ['left', 'center', 'right'].filter(z => players[oppId].stage[z] !== null && players[oppId].stage[z].type === "monster");
-        if (oppTargets.length > 0) {
-            oppTargets.forEach(z => {
-                let oCard = players[oppId].stage[z];
-                oCard.turnAttackBoost = (oCard.turnAttackBoost || 0) - 1; 
-                showFloatingTextOnElement(`p${oppId}-stage-${z}`, -1, 'attack_boost');
-            });
-        }
-    }
-    else if (card.name === "そういう歌 命に嫌われている") {
-        consumeThisMagic();
-        let myTargets = ['left', 'center', 'right'].filter(z => p.stage[z] !== null && p.stage[z].type === "monster");
-        let myRand = Math.floor(Math.random() * (myTargets.length + 1));
-        
-        // myRand がキャラの数と同じなら、リーダーにバフをかける
-        if (myRand === myTargets.length) {
-            p.leader.attack += 1; p.hp += 1; 
-            if (p.hp > p.maxHp) p.hp = p.maxHp; 
-            showFloatingTextOnElement(`p${pId}-leader-zone`, 1, 'attack_boost');
-        } else {
-            // それ以外なら選ばれたキャラにバフをかける
-            let tCard = p.stage[myTargets[myRand]]; 
-            tCard.attack += 1; tCard.hp += 1; 
-            showFloatingTextOnElement(`p${pId}-stage-${myTargets[myRand]}`, 1, 'attack_boost');
-        }
-    }
-    else if (card.name === "はんたいことばの愛の歌 天ノ弱") {
-        consumeThisMagic(); p.leader.attack += 1; p.leader.counter = true; showFloatingTextOnElement(`p${pId}-leader-zone`, 1, 'attack_boost');
-    }
-    else if (card.name === "終わらない愛の歌 ヒバナ") {
-        consumeThisMagic();
-        let myTargets = ['left', 'center', 'right'].filter(z => p.stage[z] !== null && (p.stage[z].type === "monster" || p.stage[z].type === "set_magic"));
-        if (myTargets.length > 0) {
-            let thisCardInTrash = p.trash.findIndex(c => c.id === cardId);
-            if (thisCardInTrash !== -1) p.trash.splice(thisCardInTrash, 1);
-            else {
-                let thisCardInLost = p.lostZone.findIndex(c => c.id === cardId);
-                if (thisCardInLost !== -1) p.lostZone.splice(thisCardInLost, 1);
-            }
-            let myZ = myTargets[Math.floor(Math.random() * myTargets.length)];
-            let mCard = p.stage[myZ];
-            let soulCard = resetCardState(card);
-            if (mCard.name === "舞台の頂 オルデニス") soulCard = resetCardState({name: "熱狂と歓声"});
-            mCard.soul.push(soulCard);
-            showFloatingTextOnElement(`p${pId}-stage-${myZ}`, "SOUL", 'heal');
-        }
-        let oppTargets = ['left', 'center', 'right'].filter(z => players[oppId].stage[z] !== null && players[oppId].stage[z].type === "monster");
-        if (oppTargets.length > 0) {
-            let oppZ = oppTargets[Math.floor(Math.random() * oppTargets.length)];
-            destroyCard(oppId, oppZ, false);
-        }
-        drawCard(pId); drawCard(pId); drawCard(pId);
-    }
-    else if (card.name === "世界で一番魅せる歌 ワールドイズマイン") {
-        consumeThisMagic(); let totalReduced = 0;
-        [1, 2].forEach(targetPId => {
-            ['left', 'center', 'right'].forEach(z => {
-                let tCard = players[targetPId].stage[z];
-                if (tCard && tCard.type === "monster") {
-                    // 👇 修正：アオクジラや戦女神の加護などの「常在バフ」も含めた真の攻撃力を計算する！
-                    let currentAtk = tCard.attack + (tCard.turnAttackBoost || 0);
-                    if (tCard.name === "海神 アオクジラ" && players[targetPId].lostZone.length > 0 && tCard.soul) currentAtk += tCard.soul.length;
-                    Object.values(players[targetPId].stage).forEach(c => { if(c && c.name === "戦女神の加護") currentAtk += c.effectValue; });
-
-                    if (currentAtk > 0) {
-                        totalReduced += currentAtk; 
-                        tCard.turnAttackBoost = (tCard.turnAttackBoost || 0) - currentAtk;
-                        showFloatingTextOnElement(`p${targetPId}-stage-${z}`, -currentAtk, 'attack_boost');
-                    }
-                }
-            });
-        });
-        if (totalReduced > 0) { p.hp += totalReduced; if (p.hp > p.maxHp) p.hp = p.maxHp; showFloatingTextOnElement(`p${pId}-leader-zone`, totalReduced, 'heal'); }
-    }
-    isSuccess = true;
+        isSuccess = true;
   }
 
   if (isSuccess) { 
@@ -3882,22 +3874,6 @@ async function endTurnProcess(pId) {
       // ==========================================
       // 【Phase 4】 ターン開始時能力
       // ==========================================
-      
-      // ① オルデニスの勝利チェック (相手のターン開始時に発動)
-      for (let z of ['left', 'center', 'right']) {
-          let myCard = p.stage[z]; // 直前にターンを終了したプレイヤーの場を見る
-          if (myCard && myCard.name === "舞台の頂 オルデニス" && myCard.soul && myCard.soul.length >= 13) {
-              await window.showPassiveEffect(pId, z); // 👈 波紋
-              window.specialWinner = pId; 
-          }
-      }
-
-      // ② ボス（ディザスター）のターン開始時効果
-      if (nextP.leader && nextP.leader.name === "降り注ぐ絶望 ディザスター") {
-          // ...(中略)...
-      }
-
-      // 👇👇 ここから追加：ルミナス=イデオルのターン開始時ドロー効果 👇👇
       if (nextP.leader && nextP.leader.name === "迸る閃望 ルミナス=イデオル") {
           // ソウルが3枚以上あるかチェック
           if (nextP.leader.soul && nextP.leader.soul.length >= 3) {
@@ -3915,7 +3891,14 @@ async function endTurnProcess(pId) {
               showFloatingTextOnElement(`p${nextPId}-leader-zone`, "DRAW", 'heal');
           }
       }
-      // 👆👆 追加ここまで 👆👆
+      for (let z of ['left', 'center', 'right']) {
+          let myCard = p.stage[z]; 
+          // 修正：条件をソウル13枚以上に変更（16から戻しました！）
+          if (myCard && myCard.name === "舞台の頂 オルデニス" && myCard.soul && myCard.soul.length >= 13) {
+              await window.showPassiveEffect(pId, z);
+              window.specialWinner = pId; 
+          }
+      }
 
       renderAll(); sendGameState(); 
       checkGameOver(); // Phase4の終わりにゲーム終了＆BAD END判定を呼び出す
@@ -3925,7 +3908,7 @@ async function endTurnProcess(pId) {
           let taiju = nextP.stage['left']; let dekan = nextP.stage['right'];
 
           if (dekan && dekan.name === "災いの出看") {
-              await window.showPassiveEffect(nextPId, 'right'); // 👈 波紋
+              await window.showPassiveEffect(nextPId, 'right'); 
               if (dekan.hp > 0) {
                   dekan.hp -= 1; showFloatingTextOnElement(`p${nextPId}-stage-right`, 1, 'damage');
                   infoPanel.innerHTML = `🌋 災いの出看がライフを削り、破滅を振りまく！`; renderAll();
@@ -3947,7 +3930,7 @@ async function endTurnProcess(pId) {
           }
           if (taiju && taiju.name === "災いの胎呪") {
               if (nextP.mp > 0) {
-                  await window.showPassiveEffect(nextPId, 'left'); // 👈 波紋
+                  await window.showPassiveEffect(nextPId, 'left'); 
                   let addHp = nextP.mp;
                   taiju.hp += addHp; showFloatingTextOnElement(`p${nextPId}-stage-left`, addHp, 'heal');
                   renderAll(); await new Promise(r => setTimeout(r, 600));
@@ -4006,9 +3989,6 @@ async function playAITurn() {
 
         let targetZone = 'leader';
         let centerCard = p1.stage['center'];
-        
-        // 👇👇 ここから追加・修正：AIの攻撃対象選択ロジック 👇👇
-        // 1. まず、相手（プレイヤー）の場に【挑発】を持つカードがあるかチェックする
         let tauntZones = ['leader', 'item', 'left', 'center', 'right'].filter(tz => {
             let tc = tz === 'leader' ? p1.leader : (tz === 'item' ? p1.weapon : p1.stage[tz]);
             return tc && tc.taunt;
@@ -4038,17 +4018,14 @@ async function playAITurn() {
               });
               if (wZone) targetZone = wZone;
             }
-        }
-        // 👆👆 追加・修正ここまで 👆👆
-        
+        }        
         await executeAttack(2, z, 1, targetZone); 
         await new Promise(r => setTimeout(r, 800));
       }
-
       if (isGameOver) return;
       await endTurnProcess(2);
   } finally {
-      if (!wasLocked) window.isActionLocked = false; // 🔓 処理完了！ロックを解除する
+      if (!wasLocked) window.isActionLocked = false; 
   }
 }
 
