@@ -4744,7 +4744,6 @@ window.showReviveEffect = function(playerId, zone) {
 };
 // 👆👆 ここまで追加 👆👆
 
-// 👇👇 ここから追加：破壊・ロスト時の視覚エフェクト 👇👇
 function showDestroyEffect(playerId, zone, isLost) {
   let elId = zone === 'leader' ? `p${playerId}-leader-zone` : (zone === 'item' ? `p${playerId}-item-zone` : `p${playerId}-stage-${zone}`);
   let el = document.getElementById(elId);
@@ -4756,14 +4755,14 @@ function showDestroyEffect(playerId, zone, isLost) {
   // カードの見た目をそのままコピー（クローン）する
   let clone = cardEl.cloneNode(true);
   
-  // 👇 追加：攻撃モーションを持ったまま破壊された場合、バグを防ぐためクローンから攻撃クラスを剥がす！
+  // 攻撃モーションを持ったまま破壊された場合、バグを防ぐためクローンから攻撃クラスを剥がす
   clone.classList.remove("attacker-thrust");
   
-  // 👇 修正：画面全体が縮小（スケール）されている場合のズレを計算して補正する！
+  // 画面全体が縮小（スケール）されている場合のズレを計算して補正する
   let container = document.getElementById('game-container');
   let containerRect = container.getBoundingClientRect();
   let cardRect = cardEl.getBoundingClientRect();
-  let scale = containerRect.width / 1920; // 現在の縮小率を計算
+  let scale = containerRect.width / 1920; 
   
   clone.style.position = "absolute";
   clone.style.left = ((cardRect.left - containerRect.left) / scale) + "px";
@@ -4771,17 +4770,21 @@ function showDestroyEffect(playerId, zone, isLost) {
   clone.style.width = (cardRect.width / scale) + "px";
   clone.style.height = (cardRect.height / scale) + "px";
   clone.style.margin = "0";
-  clone.style.zIndex = "99999"; // 一番手前に表示
+  clone.style.zIndex = "99999"; 
   clone.style.pointerEvents = "none";
   clone.style.transition = "none";
 
+  // 👇👇 ここに2行追加して音を鳴らす！ 👇👇
   if (isLost) {
       clone.classList.add("lost-anim");
+      playSound('lost'); // 👈 追加：ロスト時のヒュォォォン…という音
   } else {
       clone.classList.add("destroy-anim");
+      playSound('destroy'); // 👈 追加：破壊時のガシャァン！という音
   }
+  // 👆👆 追加ここまで 👆👆
 
-  // document.body ではなく、縮小の影響を受ける container の中に追加する！
+  // document.body ではなく、縮小の影響を受ける container の中に追加する
   container.appendChild(clone);
   
   // アニメーションが終わる頃にダミー要素を消去
