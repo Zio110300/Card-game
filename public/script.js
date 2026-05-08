@@ -1237,7 +1237,7 @@ function getCardTypes() {
     { category: "pack_5", type: "magic", name: "舞台の頂 オルデニス", originalCost: 1, cost: 1, image: "images/pack_5/oldeniss.jpg", attribute: "freat", shiftStatue: true, flavor: "全てのアーティストが夢みる最高の舞台。歌う者の心を湧き立て、聴く者全てに熱をもたらす。かつては火薬と金属片が舞い、闘いの熱を蓄えた戦場だったという。", desc: "■自分のキャラ1枚は【挑発】を持つ。<br>■【シフトスタチュー】「このカードは能力で選択されない。」を持つ。<br>■【ターン開始時】相手のターン開始時、このカードのソウルが16以上なら、自分はゲームに勝利する。" },
     { category: "pack_5", type: "magic", name: "少女レイ", originalCost: 3, cost: 3, image: "images/pack_5/rei.jpg", attribute: "freat_song", flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■このカードと自分の手札1枚を自分のステージにあるカード1枚のソウルに入れる。" },
     { category: "pack_5", type: "magic", name: "劣等上等", originalCost: 2, cost: 2, image: "images/pack_5/rinren.jpg", attribute: "freat_song", flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■【シフト】次から1つ選んで使う。<br>・自分のリーダーと相手のステージにいるキャラ1枚を選択し、「接続」する。<br>・相手のステージに存在するキャラ全ての攻撃力を次の相手のターン終了時まで-1する。" },
-    { category: "pack_5", type: "magic", name: "テトリス", originalCost: 1, cost: 1, image: "images/pack_5/tetlis.jpg", attribute: "freat_song", flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■このターン中、自分のリーダーは【ドレイン】を持つ。<br>■【アーツ3】自分のステージに存在するランダムな魔法1枚のソウルを+1する。" },
+    { category: "pack_5", type: "magic", name: "テトリス", originalCost: 1, cost: 1, arts: 3, image: "images/pack_5/tetlis.jpg", attribute: "freat_song", flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■このターン中、自分のリーダーは【ドレイン】を持つ。<br>■【アーツ3】自分のステージに存在するランダムな魔法1枚のソウルを+1する。" },
     { category: "pack_5", type: "magic", name: "天ノ弱", originalCost: 2, cost: 2, image: "images/pack_5/amanojaku.jpg", attribute: "freat_song", flavor: "", desc: "■自分のリーダーの攻撃力を+1する。<br>■ステージに存在するキャラ1枚を選択し、【反転】する。" },
     { category: "pack_5", type: "magic", name: "KING", originalCost: 5, cost: 5, image: "images/pack_5/gumi.jpg", attribute: "freat_song", flavor: "", desc: "■このカードを自分のステージに存在するランダムなキャラか魔法1枚のソウルに入れる。<br>■相手のステージにいるランダムなキャラ1枚を破壊し、カード3枚を引く。" },
     { category: "pack_5", type: "magic", name: "ワールドイズマイン", originalCost: 6, cost: 6, image: "images/pack_5/world.jpg", attribute: "freat_song", flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■ステージに存在するキャラ全ての攻撃力を0まで減らし、自分のリーダーのライフを減らした分+する。" },
@@ -2654,7 +2654,6 @@ window.resolveShiftStatue = async function(asSetMagic) {
     }
     window.shiftStatueResolved = false; 
 }
-// 👇👇 ここから追加：常在能力の波紋演出用CSSと関数 👇👇
 const passiveStyle = document.createElement('style');
 passiveStyle.innerHTML = `
 .passive-ripple {
@@ -2749,7 +2748,28 @@ window.summonToEmptyZone = async function(pId, card) {
     
     return true;
 };
-// 👆👆 復旧ここまで 👆👆
+
+window.executeArtsEffect = async function(pId, card, targetZone) {
+    let p = players[pId];
+    let oppId = pId === 1 ? 2 : 1;
+
+    switch (card.name) {
+        case "テトリス":
+            // 設置魔法だけでなく、「魔法」タイプ全般を対象にする
+            let myMagics = ['left', 'center', 'right'].filter(z => 
+                p.stage[z] && (p.stage[z].type === "set_magic" || p.stage[z].type === "magic")
+            );
+            if (myMagics.length > 0) {
+                let targetZ = myMagics[Math.floor(Math.random() * myMagics.length)];
+                p.stage[targetZ].soul.push(resetCardState({name: "熱狂と歓声"}));
+                showFloatingTextOnElement(`p${pId}-stage-${targetZ}`, "SOUL UP!", 'heal');
+                playSound('buff');
+            }
+            break;
+        
+        // 💡 今後アーツカードを増やすときは、ここに case "カード名": を追加すればOK！
+    }
+};
 
 async function playCard(cardId, targetZone, pId) {
   const p = players[pId]; const cardIndex = p.hand.findIndex(c => c.id === cardId); if(cardIndex === -1) return; const card = p.hand[cardIndex];
@@ -3090,11 +3110,11 @@ async function playCard(cardId, targetZone, pId) {
     }
 
     if (isSuccess && targetZone !== 'leader') { 
-        renderAll(); // 👈 画面に出す
-        await window.triggerOnCallPassives(pId, targetZone); // 👈 パッシブ誘発
+        renderAll(); 
+        await window.triggerOnCallPassives(pId, targetZone); 
         if (await executeEnterEffects(card, targetZone)) return; 
     }
-
+    
   } else if(card.type === "item") {
     if(targetZone !== 'item') { return; }
     if (p.weapon !== null && card.evolution) {
@@ -3213,14 +3233,6 @@ async function playCard(cardId, targetZone, pId) {
     }
     else if (card.name === "テトリス") {
         p.leader.drain = true;
-        if (artsTriggered) {
-            let myMagics = ['left', 'center', 'right'].filter(z => p.stage[z] && p.stage[z].type === "set_magic");
-            if (myMagics.length > 0) {
-                let targetZ = myMagics[Math.floor(Math.random() * myMagics.length)];
-                p.stage[targetZ].soul.push(resetCardState({name: "熱狂と歓声"}));
-                showFloatingTextOnElement(`p${pId}-stage-${targetZ}`, "SOUL", 'heal');
-            }
-        }
     }
     else if (card.name === "天ノ弱") {
         p.leader.attack += 1; triggerConnection(p.leader, 'permanent_attack_boost', 1);
@@ -3545,8 +3557,15 @@ async function playCard(cardId, targetZone, pId) {
           showCardEffect(card); 
           if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card }); 
       }
-      window.isActionLocked = true; setTimeout(() => { window.isActionLocked = false; }, 300);
-  }
+      let artsTriggered = (card.arts !== undefined && p.mp >= card.arts);
+        if (artsTriggered) {
+            p.mp -= card.arts;
+            await window.executeArtsEffect(pId, card, targetZone);
+        }
+
+        window.isActionLocked = true; 
+        setTimeout(() => { window.isActionLocked = false; }, 300);
+    }
   renderAll(); sendGameState(); 
 } 
 
