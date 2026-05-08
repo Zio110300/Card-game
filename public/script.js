@@ -1818,7 +1818,7 @@ function renderAll() {
           let hasLight = ['left', 'center', 'right'].some(z => p.stage[z] && p.stage[z].attribute === "light");
           if (!hasLight) canPlay = false;
       }
-      const songMagics = ["少女レイ", "劣等上等", "テトリス", "ワールドイズマイン", "舞台の頂 オルデニス"];
+      const songMagics = ["少女レイ", "劣等上等", "テトリス", "ワールドイズマイン"];
       if (songMagics.includes(card.name) && canPlay) {
           let anyMonsterExists = false;
           [1, 2].forEach(pid => {
@@ -3114,7 +3114,7 @@ async function playCard(cardId, targetZone, pId) {
         await window.triggerOnCallPassives(pId, targetZone); 
         if (await executeEnterEffects(card, targetZone)) return; 
     }
-    
+
   } else if(card.type === "item") {
     if(targetZone !== 'item') { return; }
     if (p.weapon !== null && card.evolution) {
