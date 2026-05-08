@@ -3557,9 +3557,7 @@ async function playCard(cardId, targetZone, pId) {
           showCardEffect(card); 
           if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card }); 
       }
-      let artsTriggered = (card.arts !== undefined && p.mp >= card.arts);
         if (artsTriggered) {
-            p.mp -= card.arts;
             await window.executeArtsEffect(pId, card, targetZone);
         }
 
