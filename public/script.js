@@ -1363,6 +1363,24 @@ function destroyCard(playerId, zone, isLost = false, isDirectDrop = false) {
   // 👆👆 追加ここまで 👆👆
 
   let linkedId = targetCard.isConnected;
+
+  if (linkedId) window.breakConnection(targetCard);
+  
+  if (isLost) {
+      p.lostZone.push(resetCardState(targetCard));
+  } else {
+      p.trash.push(resetCardState(targetCard));
+  }
+  
+  p.stage[zone] = null;
+  p.destroyedThisTurn = (p.destroyedThisTurn || 0) + 1;
+
+  if (!isDirectDrop) {
+      showDestroyEffect(playerId, zone, isLost);
+  }
+  
+  return { destroyed: true };
+}
   
 window.useLeaderSkill = async function() {
   let p = players[myPlayerId];
