@@ -1350,45 +1350,112 @@ function destroyCard(playerId, zone, isLost = false, isDirectDrop = false) {
   if (!targetCard) return { destroyed: true };
 
   if (targetCard.immortalZero) {
-      if (targetCard.hp < 0) targetCard.hp = 0; 
+      if (targetCard.hp < 0) targetCard.hp = 0; // HPがマイナスになっていたら0に戻して生存させる
       return { destroyed: false };
   }
+
   if (targetCard.name === "熱狂の貢献者" && currentTurn === playerId && !isLost && !isDirectDrop) {
       if (targetCard.hp <= 0) targetCard.hp = 1; // ダメージで0以下になってもHP1で耐える！
       return { destroyed: false };
   }
-  if (targetCard.soulGuard && targetCard.soul && targetCard.soul.length > 0 && !isLost && !isDirectDrop) {
-      // ソウルを1つ消費して破壊を防ぎ、HPを1残す
-      let consumed = targetCard.soul.pop();
-      p.trash.push(resetCardState(consumed));
-      
-      if (targetCard.hp <= 0) targetCard.hp = 1; 
-      
-      showFloatingTextOnElement(`p${playerId}-stage-${zone}`, "SOUL GUARD!", 'heal');
-      playSound('buff');
-      renderAll(); 
-      return { destroyed: false };
-  }
+
   let linkedId = targetCard.isConnected;
+  if (targetCard.isConnected) breakConnection(targetCard);
 
-  if (linkedId) window.breakConnection(targetCard);
-  
-  if (isLost) {
-      p.lostZone.push(resetCardState(targetCard));
-  } else {
-      p.trash.push(resetCardState(targetCard));
+  let isSandglass = p.leader && p.leader.name === "蒼深の砂時計";
+  let actualLost = isLost || isSandglass; 
+
+  // 👇 変更：直接ロストや「直接ドロップ」の時は、破壊時効果やソウルガードを無視する！
+  if (!isLost && !isDirectDrop) {
+      players[playerId].destroyedThisTurn++; // 👈 修正：破壊された側のプレイヤーのカウントだけを増やす！
+
+// 👇 pack_3 破壊時効果 👇
+  if (targetCard.type === "monster") {
+      if (p.weapon && p.weapon.name === "拠りどこ露") {
+          let ownMonsters = ['left', 'center', 'right'].filter(z => p.stage[z] !== null && p.stage[z] !== targetCard);
+          if (ownMonsters.length > 0) {
+              let randZone = ownMonsters[Math.floor(Math.random() * ownMonsters.length)];
+              p.stage[randZone].hp += 3; // 👈 3回復にアップ！
+              triggerConnection(p.stage[randZone], 'heal', 3);
+              showFloatingTextOnElement(`p${playerId}-stage-${randZone}`, 3, 'heal');
+          }
+      }
   }
-  
+  if (targetCard.attribute && targetCard.attribute.includes("bice")) {
+      let hasGR = Object.values(p.stage).some(c => c && c.name === "\"Born from competition\" YRIS");
+      if (hasGR) {
+          p.hp += 1; if (p.hp > p.maxHp) p.hp = p.maxHp;
+          triggerConnection(p.leader, 'heal', 1); 
+          showFloatingTextOnElement(`p${playerId}-leader-zone`, 1, 'heal');
+          Object.values(p.stage).forEach(c => {
+             if (c && c.name === "\"Born from competition\" YRIS") {
+                 c.hp += 1;
+                 triggerConnection(c, 'heal', 1);
+                 let zName = p.stage.left === c ? 'left' : p.stage.center === c ? 'center' : 'right';
+                 const el = document.getElementById(`p${playerId}-stage-` + zName);
+                 if(el){ el.classList.add("heal-anim"); setTimeout(() => el.classList.remove("heal-anim"), 300); }
+                 showFloatingTextOnElement(`p${playerId}-stage-${zName}`, 1, 'heal'); // 👈 文字表示も追加
+             }
+          });
+      }
+  }
+  if (targetCard.attribute === "light") {
+      if (p.weapon && p.weapon.name === "シャドウパニッシャー！") {
+          p.weapon.hp += 1;
+          p.maxHp += 1; // リーダーの最大HPもアップ！
+          p.hp += 1;    // リーダーの現在HPもアップ！
+          showFloatingTextOnElement(`p${playerId}-item-zone`, 1, 'heal');
+          showFloatingTextOnElement(`p${playerId}-leader-zone`, 1, 'heal'); // リーダーの回復も表示！
+      }
+      Object.values(p.stage).forEach(c => {
+          if (c && c.name === "影の国の闇 スカージ") {
+              c.hp += 1; p.hp += 1; if (p.hp > p.maxHp) p.hp = p.maxHp;
+              triggerConnection(c, 'heal', 1); triggerConnection(p.leader, 'heal', 1);
+              let zName = p.stage.left === c ? 'left' : p.stage.center === c ? 'center' : 'right';
+              showFloatingTextOnElement(`p${playerId}-stage-${zName}`, 1, 'heal');
+              showFloatingTextOnElement(`p${playerId}-leader-zone`, 1, 'heal');
+          }
+      });
+  }
+
+  if (targetCard.soulGuard && targetCard.soul && targetCard.soul.length > 0) {
+        // 👇 一度「破壊」された演出（爆発と破壊音）を出す！
+        playSound('destroy');
+        showDestroyEffect(playerId, zone, false);
+
+        let sacrificedSoul = targetCard.soul.pop(); 
+        sendToTrashOrLost(playerId, [sacrificedSoul]); 
+        targetCard.hp = 1; 
+
+        // 👇 修正：【貫通】がリーダーに飛んでいくのを見届けてから復活するように、遅延を800msに変更！
+        setTimeout(() => {
+            window.showReviveEffect(playerId, zone);
+        }, 800);
+
+        // 👇 修正：システムには「一度破壊された（destroyed: true）」と伝えて【貫通】を起動させる！
+        return { destroyed: true, soulGuarded: true }; 
+  }
+  }
+  let soulsToDrop = targetCard.soul ? [...targetCard.soul] : [];
+
+  // 👇 追加：ここでようやくカードが盤面から消えるので、音を鳴らす！
+  if (actualLost) {
+      playSound('lost');
+      showDestroyEffect(playerId, zone, true); // 👈 追加：ロスト演出！
+  } else if (!isDirectDrop) {
+      playSound('destroy');
+      showDestroyEffect(playerId, zone, false); // 👈 追加：破壊演出！
+  }
+
+  // 👇 修正：フェアリーの特別処理を消去し、すべて通常通りドロップかロストへ送る！
+  let destArray = actualLost ? p.lostZone : p.trash;
+  destArray.push(resetCardState(targetCard));
+  soulsToDrop.forEach(s => destArray.push(resetCardState(s)));
   p.stage[zone] = null;
-  p.destroyedThisTurn = (p.destroyedThisTurn || 0) + 1;
-
-  if (!isDirectDrop) {
-      showDestroyEffect(playerId, zone, isLost);
-  }
   
   return { destroyed: true };
 }
-  
+
 window.useLeaderSkill = async function() {
   let p = players[myPlayerId];
   if (isSelectingHand || isSelectingStage) return; 
@@ -4751,6 +4818,7 @@ window.showReviveEffect = function(playerId, zone) {
 };
 // 👆👆 ここまで追加 👆👆
 
+// 👇👇 ここから追加：破壊・ロスト時の視覚エフェクト 👇👇
 function showDestroyEffect(playerId, zone, isLost) {
   let elId = zone === 'leader' ? `p${playerId}-leader-zone` : (zone === 'item' ? `p${playerId}-item-zone` : `p${playerId}-stage-${zone}`);
   let el = document.getElementById(elId);
@@ -4762,14 +4830,14 @@ function showDestroyEffect(playerId, zone, isLost) {
   // カードの見た目をそのままコピー（クローン）する
   let clone = cardEl.cloneNode(true);
   
-  // 攻撃モーションを持ったまま破壊された場合、バグを防ぐためクローンから攻撃クラスを剥がす
+  // 👇 追加：攻撃モーションを持ったまま破壊された場合、バグを防ぐためクローンから攻撃クラスを剥がす！
   clone.classList.remove("attacker-thrust");
   
-  // 画面全体が縮小（スケール）されている場合のズレを計算して補正する
+  // 👇 修正：画面全体が縮小（スケール）されている場合のズレを計算して補正する！
   let container = document.getElementById('game-container');
   let containerRect = container.getBoundingClientRect();
   let cardRect = cardEl.getBoundingClientRect();
-  let scale = containerRect.width / 1920; 
+  let scale = containerRect.width / 1920; // 現在の縮小率を計算
   
   clone.style.position = "absolute";
   clone.style.left = ((cardRect.left - containerRect.left) / scale) + "px";
@@ -4777,21 +4845,17 @@ function showDestroyEffect(playerId, zone, isLost) {
   clone.style.width = (cardRect.width / scale) + "px";
   clone.style.height = (cardRect.height / scale) + "px";
   clone.style.margin = "0";
-  clone.style.zIndex = "99999"; 
+  clone.style.zIndex = "99999"; // 一番手前に表示
   clone.style.pointerEvents = "none";
   clone.style.transition = "none";
 
-  // 👇👇 ここに2行追加して音を鳴らす！ 👇👇
   if (isLost) {
       clone.classList.add("lost-anim");
-      playSound('lost'); // 👈 追加：ロスト時のヒュォォォン…という音
   } else {
       clone.classList.add("destroy-anim");
-      playSound('destroy'); // 👈 追加：破壊時のガシャァン！という音
   }
-  // 👆👆 追加ここまで 👆👆
 
-  // document.body ではなく、縮小の影響を受ける container の中に追加する
+  // document.body ではなく、縮小の影響を受ける container の中に追加する！
   container.appendChild(clone);
   
   // アニメーションが終わる頃にダミー要素を消去
