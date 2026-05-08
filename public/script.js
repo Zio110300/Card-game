@@ -1232,6 +1232,7 @@ function getCardTypes() {
     { category: "pack_5", type: "monster", name: "古参の熱狂者", originalCost: 3, cost: 3, attack: 1, hp: 5, image: "images/pack_5/kosann.jpg", attribute: "freat", soulGuard: true, burn: true, flavor: "ファンの支援に応えるために、彼女の活動はより規模を拡大させていく。<br>「ウチの推しは今日も尊みがふか～い」", desc: "【ソウルガード】<br>■【燃焼】相手のステージに存在するキャラ全てにダメージ2。<br>■【ターン終了時】自分のステージにあるランダムな魔法1枚のソウルを+1する。" },
     { category: "pack_5", type: "monster", name: "熱狂の従者", originalCost: 2, cost: 2, attack: 1, hp: 3, image: "images/pack_5/juusha.jpg", attribute: "freat", soulGuard: true, burn: true, flavor: "アイドルを推すのは自由広めるのも自由、しかし自由には責任が伴うのが世の常である。であれば、ファンにも責任が伴うのが道理ではないか。<br>「推ししか勝たん...」", desc: "【ソウルガード】<br>■【燃焼】このカードは【守護】を持つ。<br>■【ターン終了時】自分のリーダーの攻撃力を+1する。" },
     { category: "pack_5", type: "monster", name: "熱狂の宣教者", originalCost: 4, cost: 4, attack: 1, hp: 6, image: "images/pack_5/senkyou.jpg", attribute: "freat", soulGuard: true, burn: true, flavor: "アイドルとは偶像。象徴であり、進行するものではない。<br>「推しのライブなう。」", desc: "【ソウルガード】<br>■【コール】自分のデッキからコスト3以下の属性「FREAT」を含むキャラ1枚をコールする。<br>■【燃焼】自分のステージに存在するカード1枚のソウルを+1する。" },
+    { category: "pack_5", type: "monster", name: "熱狂の貢献者", originalCost: 2, cost: 2, attack: 0, hp: 4, image: "images/pack_5/koukenn.jpg", attribute: "freat", soulGuard: true, flavor: "道具も技術もエナジーも、使い方を違えば破滅を招く。「みんな...忘れてしまったの...？」", desc: "【ソウルガード】<br>■【コール】自分のリーダーのライフを+4する。<br>■自分のターン中、このカードは破壊されない。" },
     { category: "pack_5", type: "magic", name: "舞台の頂 オルデニス", originalCost: 1, cost: 1, image: "images/pack_5/oldeniss.jpg", attribute: "freat", shiftStatue: true, flavor: "全てのアーティストが夢みる最高の舞台。歌う者の心を湧き立て、聴く者全てに熱をもたらす。かつては火薬と金属片が舞い、闘いの熱を蓄えた戦場だったという。", desc: "■自分のキャラ1枚は【挑発】を持つ。<br>■【シフトスタチュー】「このカードは能力で選択されない。」を持つ。<br>■【ターン開始時】相手のターン開始時、このカードのソウルが13以上なら、自分はゲームに勝利する。" },
     { category: "pack_5", type: "magic", name: "繰り返す歌 少女レイ", originalCost: 3, cost: 3, image: "images/pack_5/rei.jpg", attribute: "freat", flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■このカードと自分の手札1枚を自分のステージにあるカード1枚のソウルに入れる。" },
     { category: "pack_5", type: "magic", name: "愛を歌う シャルル", originalCost: 2, cost: 2, image: "images/pack_5/shall.jpg", attribute: "freat", flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■相手のステージに存在するキャラ全ての攻撃力を次の相手のターン終了時まで-1する。" },
@@ -1343,113 +1344,26 @@ function sendToTrashOrLost(playerId, cardsArray) {
   cardsArray.forEach(c => dest.push(resetCardState(c)));
 }
 
-function destroyCard(playerId, zone, isLost = false, isDirectDrop = false) { // 👈 変更
+function destroyCard(playerId, zone, isLost = false, isDirectDrop = false) { 
   let p = players[playerId];
   let targetCard = p.stage[zone];
   if (!targetCard) return { destroyed: true };
 
   if (targetCard.immortalZero) {
-      if (targetCard.hp < 0) targetCard.hp = 0; // HPがマイナスになっていたら0に戻して生存させる
+      if (targetCard.hp < 0) targetCard.hp = 0; 
       return { destroyed: false };
   }
+  
+  // 👇👇 ここに追加：熱狂の貢献者の「自ターン中破壊されない」処理 👇👇
+  // （※ロストや直接ドロップ効果の場合は防げない仕様にしています）
+  if (targetCard.name === "熱狂の貢献者" && currentTurn === playerId && !isLost && !isDirectDrop) {
+      if (targetCard.hp <= 0) targetCard.hp = 1; // ダメージで0以下になってもHP1で耐える！
+      return { destroyed: false };
+  }
+  // 👆👆 追加ここまで 👆👆
 
   let linkedId = targetCard.isConnected;
-  if (targetCard.isConnected) breakConnection(targetCard);
-
-  let isSandglass = p.leader && p.leader.name === "蒼深の砂時計";
-  let actualLost = isLost || isSandglass; 
-
-  // 👇 変更：直接ロストや「直接ドロップ」の時は、破壊時効果やソウルガードを無視する！
-  if (!isLost && !isDirectDrop) {
-      players[playerId].destroyedThisTurn++; // 👈 修正：破壊された側のプレイヤーのカウントだけを増やす！
-
-// 👇 pack_3 破壊時効果 👇
-  if (targetCard.type === "monster") {
-      if (p.weapon && p.weapon.name === "拠りどこ露") {
-          let ownMonsters = ['left', 'center', 'right'].filter(z => p.stage[z] !== null && p.stage[z] !== targetCard);
-          if (ownMonsters.length > 0) {
-              let randZone = ownMonsters[Math.floor(Math.random() * ownMonsters.length)];
-              p.stage[randZone].hp += 3; // 👈 3回復にアップ！
-              triggerConnection(p.stage[randZone], 'heal', 3);
-              showFloatingTextOnElement(`p${playerId}-stage-${randZone}`, 3, 'heal');
-          }
-      }
-  }
-  if (targetCard.attribute && targetCard.attribute.includes("bice")) {
-      let hasGR = Object.values(p.stage).some(c => c && c.name === "\"Born from competition\" YRIS");
-      if (hasGR) {
-          p.hp += 1; if (p.hp > p.maxHp) p.hp = p.maxHp;
-          triggerConnection(p.leader, 'heal', 1); 
-          showFloatingTextOnElement(`p${playerId}-leader-zone`, 1, 'heal');
-          Object.values(p.stage).forEach(c => {
-             if (c && c.name === "\"Born from competition\" YRIS") {
-                 c.hp += 1;
-                 triggerConnection(c, 'heal', 1);
-                 let zName = p.stage.left === c ? 'left' : p.stage.center === c ? 'center' : 'right';
-                 const el = document.getElementById(`p${playerId}-stage-` + zName);
-                 if(el){ el.classList.add("heal-anim"); setTimeout(() => el.classList.remove("heal-anim"), 300); }
-                 showFloatingTextOnElement(`p${playerId}-stage-${zName}`, 1, 'heal'); // 👈 文字表示も追加
-             }
-          });
-      }
-  }
-  if (targetCard.attribute === "light") {
-      if (p.weapon && p.weapon.name === "シャドウパニッシャー！") {
-          p.weapon.hp += 1;
-          p.maxHp += 1; // リーダーの最大HPもアップ！
-          p.hp += 1;    // リーダーの現在HPもアップ！
-          showFloatingTextOnElement(`p${playerId}-item-zone`, 1, 'heal');
-          showFloatingTextOnElement(`p${playerId}-leader-zone`, 1, 'heal'); // リーダーの回復も表示！
-      }
-      Object.values(p.stage).forEach(c => {
-          if (c && c.name === "影の国の闇 スカージ") {
-              c.hp += 1; p.hp += 1; if (p.hp > p.maxHp) p.hp = p.maxHp;
-              triggerConnection(c, 'heal', 1); triggerConnection(p.leader, 'heal', 1);
-              let zName = p.stage.left === c ? 'left' : p.stage.center === c ? 'center' : 'right';
-              showFloatingTextOnElement(`p${playerId}-stage-${zName}`, 1, 'heal');
-              showFloatingTextOnElement(`p${playerId}-leader-zone`, 1, 'heal');
-          }
-      });
-  }
-
-  if (targetCard.soulGuard && targetCard.soul && targetCard.soul.length > 0) {
-        // 👇 一度「破壊」された演出（爆発と破壊音）を出す！
-        playSound('destroy');
-        showDestroyEffect(playerId, zone, false);
-
-        let sacrificedSoul = targetCard.soul.pop(); 
-        sendToTrashOrLost(playerId, [sacrificedSoul]); 
-        targetCard.hp = 1; 
-
-        // 👇 修正：【貫通】がリーダーに飛んでいくのを見届けてから復活するように、遅延を800msに変更！
-        setTimeout(() => {
-            window.showReviveEffect(playerId, zone);
-        }, 800);
-
-        // 👇 修正：システムには「一度破壊された（destroyed: true）」と伝えて【貫通】を起動させる！
-        return { destroyed: true, soulGuarded: true }; 
-  }
-  }
-  let soulsToDrop = targetCard.soul ? [...targetCard.soul] : [];
-
-  // 👇 追加：ここでようやくカードが盤面から消えるので、音を鳴らす！
-  if (actualLost) {
-      playSound('lost');
-      showDestroyEffect(playerId, zone, true); // 👈 追加：ロスト演出！
-  } else if (!isDirectDrop) {
-      playSound('destroy');
-      showDestroyEffect(playerId, zone, false); // 👈 追加：破壊演出！
-  }
-
-  // 👇 修正：フェアリーの特別処理を消去し、すべて通常通りドロップかロストへ送る！
-  let destArray = actualLost ? p.lostZone : p.trash;
-  destArray.push(resetCardState(targetCard));
-  soulsToDrop.forEach(s => destArray.push(resetCardState(s)));
-  p.stage[zone] = null;
   
-  return { destroyed: true };
-}
-
 window.useLeaderSkill = async function() {
   let p = players[myPlayerId];
   if (isSelectingHand || isSelectingStage) return; 
@@ -3024,6 +2938,14 @@ async function playCard(cardId, targetZone, pId) {
       else if (playedCard.name === "熱狂の宣教者") {
           let cards = window.pullFromDeck(pId, c => c.type === "monster" && c.attribute && c.attribute.includes("freat") && (c.originalCost || c.cost) <= 3, 1);
           for (let c of cards) await window.summonToEmptyZone(pId, c); 
+      }
+      else if (playedCard.name === "熱狂の貢献者") {
+          p.hp += 4; 
+          if (p.hp > p.maxHp) p.hp = p.maxHp;
+          triggerConnection(p.leader, 'heal', 4);
+          showFloatingTextOnElement(`p${pId}-leader-zone`, 4, 'heal');
+          const el = document.getElementById(`p${pId}-leader-zone`);
+          if (el) { el.classList.add("heal-anim"); setTimeout(() => el.classList.remove("heal-anim"), 300); }
       }
       return false; 
   };
