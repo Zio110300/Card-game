@@ -1353,15 +1353,22 @@ function destroyCard(playerId, zone, isLost = false, isDirectDrop = false) {
       if (targetCard.hp < 0) targetCard.hp = 0; 
       return { destroyed: false };
   }
-  
-  // 👇👇 ここに追加：熱狂の貢献者の「自ターン中破壊されない」処理 👇👇
-  // （※ロストや直接ドロップ効果の場合は防げない仕様にしています）
   if (targetCard.name === "熱狂の貢献者" && currentTurn === playerId && !isLost && !isDirectDrop) {
       if (targetCard.hp <= 0) targetCard.hp = 1; // ダメージで0以下になってもHP1で耐える！
       return { destroyed: false };
   }
-  // 👆👆 追加ここまで 👆👆
-
+  if (targetCard.soulGuard && targetCard.soul && targetCard.soul.length > 0 && !isLost && !isDirectDrop) {
+      // ソウルを1つ消費して破壊を防ぎ、HPを1残す
+      let consumed = targetCard.soul.pop();
+      p.trash.push(resetCardState(consumed));
+      
+      if (targetCard.hp <= 0) targetCard.hp = 1; 
+      
+      showFloatingTextOnElement(`p${playerId}-stage-${zone}`, "SOUL GUARD!", 'heal');
+      playSound('buff');
+      renderAll(); 
+      return { destroyed: false };
+  }
   let linkedId = targetCard.isConnected;
 
   if (linkedId) window.breakConnection(targetCard);
