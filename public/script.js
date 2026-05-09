@@ -1521,17 +1521,15 @@ window.useSkahaSkill1 = function() {
     let p = players[myPlayerId];
     if (isSelectingHand || isSelectingStage) return;
     if (p.hand.length === 0) return;
-    isSelectingHand = true;
-    selectionCallback = function(selectedIndex) {
-        let targetHandCard = p.hand[selectedIndex];
+    
+    // 共通関数を呼び出す（1枚選択）
+    window.startHandSelection(myPlayerId, 1, null, function(selectedCards) {
+        let targetHandCard = selectedCards[0];
         p.leader.soul.push(targetHandCard);
-        p.hand.splice(selectedIndex, 1);
-        isSelectingHand = false; selectionCallback = null; pendingSelection = null;
+        infoPanel.style.backgroundColor = "#ecf0f1";
         if (!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: p.leader });
         renderAll(); sendGameState(); 
-    };
-    infoPanel.innerHTML = `ソウルに入れる手札1枚を選択してください`;
-    infoPanel.style.backgroundColor = "#9b59b6"; renderAll();
+    });
 }
 window.useSkahaSkill2 = function() {
     let p = players[myPlayerId];
@@ -2717,7 +2715,77 @@ window.pullFromDeck = function(pId, conditionFn, count = 1, uniqueName = false) 
     return pulledCards;
 };
 
-// 👇👇 ここから復旧：消滅してしまった必須関数 👇👇
+window.startHandSelection = function(pId, count, excludeCardId, onCompleteCallback) {
+    let p = players[pId];
+    let selectedCards = []; // 選んだカードを一時的に保管する
+    
+    // キャンセルされた時の巻き戻し処理
+    let originalCancel = window.cancelActionCallback;
+    window.cancelActionCallback = () => {
+        if (selectedCards.length > 0) {
+            p.hand.push(...selectedCards); // 抜いたカードを手札に戻す
+        }
+        isSelectingHand = false; selectionCallback = null; pendingSelection = null;
+        infoPanel.style.backgroundColor = "#ecf0f1";
+        if (originalCancel) originalCancel();
+        else renderAll();
+    };
+
+    let selectNext = function() {
+        // 指定された枚数に達したら確定してコールバックへ
+        if (selectedCards.length >= count) {
+            isSelectingHand = false; selectionCallback = null; pendingSelection = null;
+            window.cancelActionCallback = originalCancel; 
+            onCompleteCallback(selectedCards);
+            return;
+        }
+        
+        isSelectingHand = true;
+        let text = count > 1 ? `手札を${count}枚選択してください（現在 ${selectedCards.length}/${count}枚）` : `手札を${count}枚選択してください`;
+        infoPanel.innerHTML = text;
+        infoPanel.style.backgroundColor = "#f1c40f";
+        
+        selectionCallback = function(hIndex) {
+            let card = p.hand[hIndex];
+            if (excludeCardId && card.id === excludeCardId) {
+                alert("このカード自身は選択できません！");
+                pendingSelection = null; renderAll(); return;
+            }
+            // 選んだカードを手札から引き抜いて保管し、次へ
+            selectedCards.push(p.hand.splice(hIndex, 1)[0]);
+            selectNext();
+        };
+        renderAll(); // 👈 これで確実に手札が光る！
+    };
+    
+    selectNext();
+};
+
+window.startStageSelection = function(message, filterFn, onCompleteCallback) {
+    isSelectingStage = true;
+    infoPanel.innerHTML = message;
+    infoPanel.style.backgroundColor = "#00bcd4"; // ステージ選択時は水色にする
+    
+    let originalCancel = window.cancelActionCallback;
+    window.cancelActionCallback = () => {
+        isSelectingStage = false; selectionStageCallback = null; pendingSelection = null;
+        infoPanel.style.backgroundColor = "#ecf0f1";
+        if (originalCancel) originalCancel();
+        else renderAll();
+    };
+
+    selectionStageCallback = function(tPid, tZone) {
+        // フィルター条件に合わない場合は無視（例：相手のキャラ限定など）
+        if (!filterFn(tPid, tZone)) return;
+        
+        isSelectingStage = false; selectionStageCallback = null; pendingSelection = null;
+        infoPanel.style.backgroundColor = "#ecf0f1";
+        window.cancelActionCallback = originalCancel;
+        onCompleteCallback(tPid, tZone);
+    };
+    renderAll();
+};
+
 window.triggerOnCallPassives = async function(pId, zone) {
     let p = players[pId];
     let card = p.stage[zone];
@@ -3001,18 +3069,16 @@ async function playCard(cardId, targetZone, pId) {
             if (tZone !== 'leader' && p.stage[tZone]) p.stage[tZone].soul.push(targetHandCard);
             p.hand.splice(randIndex, 1);
         } else {
-            isSelectingHand = true; window.cancelActionCallback = revertSummon;
-            selectionCallback = function(selectedIndex) {
-              let targetHandCard = p.hand[selectedIndex]; window.cancelActionCallback = null;
-              if (tZone !== 'leader' && p.stage[tZone]) p.stage[tZone].soul.push(targetHandCard);
-              p.hand.splice(selectedIndex, 1);
-              isSelectingHand = false; selectionCallback = null; pendingSelection = null;
-              showCardEffect(playedCard); if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: playedCard });
-              renderAll(); sendGameState(); 
-            };
-            infoPanel.innerHTML = `ソウルに入れる手札1枚を選択してください`; infoPanel.style.backgroundColor = "#f1c40f"; 
-            showCardEffect(playedCard); if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: playedCard });
-            renderAll(); return true; 
+            window.cancelActionCallback = revertSummon; // キャンセル時はコールを無かったことにする
+            window.startHandSelection(pId, 1, null, function(selectedCards) {
+                window.cancelActionCallback = null;
+                let targetHandCard = selectedCards[0];
+                if (tZone !== 'leader' && p.stage[tZone]) p.stage[tZone].soul.push(targetHandCard);
+                infoPanel.style.backgroundColor = "#ecf0f1";
+                showCardEffect(playedCard); if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: playedCard });
+                renderAll(); sendGameState(); 
+            });
+            return true; 
         }
       }
       else if (playedCard.name === "冬辞 アオトウ") {
@@ -3164,37 +3230,32 @@ async function playCard(cardId, targetZone, pId) {
         }
     }
     if (card.name === "舞台の頂 オルデニス" && !window.shiftStatueChoiceAsSetMagic) {
-        isSelectingStage = true;
-        selectionStageCallback = function(tPid, tZone) {
-            if (tPid !== pId || tZone === 'leader') return;
-            let tCard = p.stage[tZone]; if (!tCard || tCard.type !== "monster") return;
-            consumeThisMagic(); tCard.taunt = true;
-            isSelectingStage = false; selectionStageCallback = null; pendingSelection = null;
-            showCardEffect(card); renderAll(); sendGameState();
-        };
-        infoPanel.innerHTML = `【挑発】を与える自分のキャラを選択してください`; return;
+        window.startStageSelection(
+            `【挑発】を与える自分のキャラを選択してください`,
+            (tPid, tZone) => (tPid === pId && tZone !== 'leader' && p.stage[tZone] && p.stage[tZone].type === "monster"),
+            function(tPid, tZone) {
+                let tCard = p.stage[tZone];
+                consumeThisMagic(); tCard.taunt = true;
+                showCardEffect(card); renderAll(); sendGameState();
+            }
+        );
+        return;
     }
     else if (card.name === "少女レイ") {
-        let targets = ['left', 'center', 'right'].filter(z => p.stage[z] !== null);
-        targets.push('leader'); if (p.weapon) targets.push('item');
-        isSelectingHand = true;
-        selectionCallback = function(hIndex) {
-            if (p.hand[hIndex].id === cardId) return;
-            let handCard = p.hand.splice(hIndex, 1)[0];
-            isSelectingHand = false; selectionCallback = null;
-            isSelectingStage = true;
-            selectionStageCallback = function(tPid, tZone) {
-                if (tPid !== pId) return;
-                let tCard = tZone === 'leader' ? p.leader : (tZone === 'item' ? p.weapon : p.stage[tZone]);
-                if (!tCard) return;
-                consumeThisMagic();
-                tCard.soul.push(resetCardState(handCard), resetCardState(card));
-                isSelectingStage = false; selectionStageCallback = null; pendingSelection = null;
-                showCardEffect(card); renderAll(); sendGameState();
-            };
-            infoPanel.innerHTML = `ソウルを入れるカードを選択してください`; renderAll();
-        };
-        infoPanel.innerHTML = `ソウルに入れる手札を選択してください`; return;
+        window.startHandSelection(pId, 1, cardId, function(selectedCards) {
+            let handCard = selectedCards[0];
+            window.startStageSelection(
+                `ソウルを入れるカードを選択してください`,
+                (tPid, tZone) => (tPid === pId && (tZone === 'leader' || tZone === 'item' || p.stage[tZone])),
+                function(tPid, tZone) {
+                    let tCard = tZone === 'leader' ? p.leader : (tZone === 'item' ? p.weapon : p.stage[tZone]);
+                    consumeThisMagic();
+                    tCard.soul.push(resetCardState(handCard), resetCardState(card));
+                    showCardEffect(card); renderAll(); sendGameState();
+                }
+            );
+        });
+        return;
     }
     else if (card.name === "劣等上等") {
         isSelectingStage = true;
@@ -3210,13 +3271,14 @@ async function playCard(cardId, targetZone, pId) {
         window.resolveRettou = async function(choice) {
             overlay.remove(); isSelectingStage = false;
             if (choice === 1) {
-                isSelectingStage = true;
-                selectionStageCallback = function(tPid, tZone) {
-                    if (tPid !== oppId || tZone === 'leader') return;
-                    consumeThisMagic(); connectCards(pId, 'leader', tPid, tZone);
-                    isSelectingStage = false; selectionStageCallback = null; renderAll(); sendGameState();
-                };
-                infoPanel.innerHTML = `接続する相手キャラを選択してください`;
+                window.startStageSelection(
+                    `接続する相手キャラを選択してください`,
+                    (tPid, tZone) => (tPid === oppId && tZone !== 'leader' && players[oppId].stage[tZone]),
+                    function(tPid, tZone) {
+                        consumeThisMagic(); connectCards(pId, 'leader', tPid, tZone);
+                        renderAll(); sendGameState();
+                    }
+                );
             } else {
                 consumeThisMagic();
                 ['left', 'center', 'right'].forEach(z => {
@@ -3235,18 +3297,33 @@ async function playCard(cardId, targetZone, pId) {
         p.leader.drain = true;
     }
     else if (card.name === "天ノ弱") {
-        p.leader.attack += 1; triggerConnection(p.leader, 'permanent_attack_boost', 1);
-        isSelectingStage = true;
-        selectionStageCallback = async function(tPid, tZone) {
-            if (tZone === 'leader') return;
-            let tCard = players[tPid].stage[tZone]; if (!tCard || tCard.type !== "monster") return;
-            consumeThisMagic();
-            let currentAtk = tCard.attack + (tCard.turnAttackBoost || 0);
-            let tempHp = tCard.hp; tCard.hp = Math.max(0, currentAtk); tCard.attack = tempHp; tCard.turnAttackBoost = 0;
-            if (tCard.hp <= 0) destroyCard(tPid, tZone, false);
-            isSelectingStage = false; selectionStageCallback = null; renderAll(); sendGameState();
-        };
-        infoPanel.innerHTML = `【反転】させるキャラを選択してください`; return;
+        // 先にステージ選択を開始する（ここではまだバフをかけない！）
+        window.startStageSelection(
+            `【反転】させるキャラを選択してください`,
+            (tPid, tZone) => (tZone !== 'leader' && players[tPid].stage[tZone] && players[tPid].stage[tZone].type === "monster"),
+            async function(tPid, tZone) {
+                let tCard = players[tPid].stage[tZone];
+                
+                // 対象が決定したら魔法を消費する
+                consumeThisMagic();
+                
+                // 👇 ここで初めてリーダーにバフをかける！（キャンセルされた場合はここを通らないので安全）
+                p.leader.attack += 1; 
+                triggerConnection(p.leader, 'permanent_attack_boost', 1);
+                showFloatingTextOnElement(`p${pId}-leader-zone`, 1, 'attack_boost'); // ついでに赤い数字のエフェクトも出します
+
+                // キャラクターの反転処理
+                let currentAtk = tCard.attack + (tCard.turnAttackBoost || 0);
+                let tempHp = tCard.hp; 
+                tCard.hp = Math.max(0, currentAtk); 
+                tCard.attack = tempHp; 
+                tCard.turnAttackBoost = 0;
+                
+                if (tCard.hp <= 0) destroyCard(tPid, tZone, false);
+                renderAll(); sendGameState();
+            }
+        );
+        return;
     }
     else if (card.name === "KING") {
         let potential = [];
