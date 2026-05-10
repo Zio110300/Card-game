@@ -1146,6 +1146,8 @@ socket.on('p2_ready', (p2Data) => {
 
 socket.on('assign_player', (num) => {
   if (isSoloMode) return;
+  myPlayerId = num; 
+
   applyBoardLayout(myPlayerId);
   if (isGameStarted) {
      sendGameState(); 
