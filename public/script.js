@@ -318,7 +318,6 @@ window.showDeckCardInfo = function(cardName, isFlavorMode = false) {
 // 👇 追加：情報パネルの表示をデフォルトに戻す専用関数
 window.clearCardInfo = function() {
     if (!isGameStarted || isGameOver) return;
-    infoPanel.style.backgroundColor = "rgba(236, 240, 241, 0.8)";
     infoPanel.innerHTML = (myPlayerId === currentTurn) ? `あなたのターン` : `相手のターン中...`;
 };
 
@@ -358,6 +357,96 @@ function resetCardState(card) {
   
   return newCard;
 }
+
+// 👇👇 ここからコピー 👇👇
+window.keywordDefinitions = {
+    "進化": "手札にあるこのカードを自分のステージにいるキャラに重ねてコールできる。",
+    "守護": "このカードがステージにいるとき、相手はリーダーよりも優先してこのカードを攻撃しなければならない。",
+    "挑発": "このカードがステージにいるとき、相手は他のキャラやリーダーを攻撃できない。",
+    "貫通": "このカードの攻撃でセンターのカードを破壊したとき、リーダーにもこのカードの攻撃力分のダメージを与える。",
+    "超貫通": "このカードが【貫通】で与えるダメージを2倍にする！",
+    "2回攻撃": "ターン中に1度だけ自力でスタンド状態になる（1ターンに2回攻撃できる）。",
+    "ソウルガード": "このカードが破壊されたとき、このカードのソウルを1消費してライフ1で復活する。",
+    "感染症": "ターン終了時、このカードにダメージ1を与え、この能力を失う。",
+    "ドレイン": "このカードがダメージを与えたとき、そのダメージ分、このカードのライフを+する。",
+    "反撃": "攻撃してきたカードに反撃する（攻撃されたカードの攻撃力分のダメージを攻撃したカードに与える）。",
+    "反転": "ターン中に1回使える。カードのステータスを反転する（攻撃力とライフを交換する）。",
+    "コール": "このカードがコールされたときに発動する。",
+    "ターン終了時": "ターン終了時に発動する。",
+    "ターン開始時": "ターン開始時に発動する。",
+    "アクト": "このカードがステージにいるときに使える。1ターンに何度でも使うことができる。",
+    "アーツ": "指定されたコストのPPを支払うことで発動する。",
+    "燃焼": "ステージにいるこのカードを破壊して使える。",
+    "コネクト": "「接続」状態にできる能力を持つ【アクト】（「接続」状態とは、カード同士のステータスの増減を共有する状態である）。",
+    "設置": "基本的に魔法に与えられる能力。ステージに存在し続ける。",
+    "シフト": "状況に応じて複数の効果から1つを選んで発動する能力。",
+    "シフトスタチュー": "このカードを設置魔法として使うことができる。",
+    "シフトスぺル": "このカードを魔法として使い捨てることができる。",
+    "ロスト": "破壊よりも強力な除去効果。ロストされたカードはロストゾーンに置かれる。",
+    "バリア": "このカードが次に受けるダメージを無効化する。",
+    "リフレクター": "このカードが次に受けるダメージを相手のリーダーに反射する（無効化してダメージを与える）。"
+};
+
+window.formatKeywordAbilities = function(text) {
+    if (!document.getElementById("keyword-tooltip-style")) {
+    const style = document.createElement("style");
+    style.id = "keyword-tooltip-style";
+    style.innerHTML = `
+    .keyword-hover {
+        position: relative;
+        cursor: help;
+        color: #f1c40f;
+        font-weight: bold;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        border-bottom: 2px dashed #f1c40f; /* 下線を少し太くしてわかりやすく */
+    }
+    .keyword-desc {
+        visibility: hidden;
+        opacity: 0;
+        position: absolute;
+        /* 👇 変更：文字の「下（top:130%）」かつ「右寄り（left:10px）」に表示する */
+        top: 130%;
+        left: 10px;
+        transform: none; 
+        
+        background-color: rgba(26, 37, 47, 0.95);
+        color: #ecf0f1;
+        padding: 12px 16px; /* 余白を少し広く */
+        border-radius: 8px;
+        border: 2px solid #f1c40f;
+        width: max-content;
+        max-width: 400px; /* ボックスの最大幅を広く */
+        font-size: 18px; /* 全体の文字サイズをアップ！ */
+        font-weight: normal;
+        z-index: 100000;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+        transition: 0.2s;
+        pointer-events: none; 
+        text-shadow: none;
+        line-height: 1.5; /* 行間を広げて読みやすく */
+    }
+    .keyword-hover:hover .keyword-desc {
+        visibility: visible;
+        opacity: 1;
+    }
+    `;
+    document.head.appendChild(style);
+}
+
+// キーワード変換処理（ホバー式）
+window.formatKeywordAbilities = function(text) {
+    if (!text) return "";
+    return text.replace(/【(.*?)】/g, (match, p1) => {
+        let baseWord = p1.startsWith("アーツ") ? "アーツ" : p1;
+        if (window.keywordDefinitions[baseWord]) {
+            let desc = window.keywordDefinitions[baseWord];
+            // 👇 変更：解説の中の見出し文字も大きく（font-size: 20px）する！
+            return `<span class="keyword-hover">【${p1}】<span class="keyword-desc"><strong style="color:#f1c40f; font-size: 20px;">【${baseWord}】</strong><br>${desc}</span></span>`;
+        }
+        return match; 
+    });
+};
+};
 
 function getCardInfoText(card) {
   const attrMap = { 
@@ -412,7 +501,7 @@ function getCardInfoText(card) {
     if (ownerId && players[ownerId].lostZone.length > 0) { displayAttack += card.soul.length; }
   }
 
-  if (displayAttack < 0) displayAttack = 0; // 👈 2箇所とも、この1行をここに追加する！
+  if (displayAttack < 0) displayAttack = 0;
 
   if (card.type === "monster") {
       let ownerId = null;
@@ -440,8 +529,11 @@ function getCardInfoText(card) {
   let soulText = (card.soul && card.soul.length > 0) ? `<br>🟣 <b>ソウル:</b> ${card.soul.length}枚` : "";
   if (card.burnActive) soulText += `<br><span style="color:#e74c3c; font-weight:bold;">🔥 燃焼スキル発動中！</span>`;
 
-  // 👇 修正：フレーバーテキストは専用画面に移行するため、ここでの直表示は消す！
-  return `🔍 <b>${card.name}</b> ${statsText} 【属性: ${attrName}】<br>${skillPrefix}効果: ${descText}${soulText}`;
+  let text = `🔍 <b>${card.name}</b> ${statsText} 【属性: ${attrName}】<br>${skillPrefix}効果: ${descText}${soulText}`;
+
+  text = window.formatKeywordAbilities(text);
+
+  return text;
 }
 
 function showCardEffect(card) {
@@ -945,7 +1037,7 @@ function generateCardHtml(card, extraAttrs = "", extraClass = "", badgeCount = 1
 
   let barrierHtml = "";
   if (card.hasBarrier) {
-    barrierHtml = `<div style="position: absolute; top: -15px; left: -15px; font-size: 30px; z-index: 20; filter: drop-shadow(0 0 5px #3498db);" title="バリア展開中！">🛡️</div>`;
+    barrierHtml = `<div style="position: absolute; top: -15px; left: -15px; font-size: 30px; z-index: 20; filter: drop-shadow(0 0 5px #3498db);" title="【バリア】展開中！">🛡️</div>`;
     inlineStyle += " box-shadow: 0 0 15px 5px #3498db; border: 2px solid #3498db;";
   }
   if (card.infection) {
@@ -967,7 +1059,7 @@ function generateCardHtml(card, extraAttrs = "", extraClass = "", badgeCount = 1
     barrierHtml += `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 60px; z-index: 15; filter: drop-shadow(0 0 10px #bdc3c7) drop-shadow(0 0 20px #ffffff); opacity: 0.85; pointer-events: none;" title="守護！">🛡️</div>`;
   }
   if (card.reflector) {
-    barrierHtml += `<div style="position: absolute; top: -15px; left: 20%; font-size: 30px; z-index: 20; filter: drop-shadow(0 0 5px #f1c40f);" title="リフレクター展開中！">🪞</div>`;
+    barrierHtml += `<div style="position: absolute; top: -15px; left: 20%; font-size: 30px; z-index: 20; filter: drop-shadow(0 0 5px #f1c40f);" title="【リフレクター】展開中！">🪞</div>`;
     inlineStyle += " box-shadow: 0 0 15px 5px #f1c40f; border: 2px solid #f1c40f;";
   }
   if (card.soul && card.soul.length > 0) {
@@ -1031,7 +1123,6 @@ socket.on('connect', () => {
 socket.on('disconnect', () => {
   if (isSoloMode) return;
   infoPanel.innerHTML = `⚠️ 通信が不安定です。自動で再接続しています...`; 
-  infoPanel.style.backgroundColor = "rgba(231, 76, 60, 0.8)"; 
 });
 
 socket.on('p2_ready', (p2Data) => {
@@ -1055,16 +1146,14 @@ socket.on('p2_ready', (p2Data) => {
 
 socket.on('assign_player', (num) => {
   if (isSoloMode) return;
-  myPlayerId = num; infoPanel.style.backgroundColor = "#ecf0f1"; 
   applyBoardLayout(myPlayerId);
   if (isGameStarted) {
      sendGameState(); 
      infoPanel.innerHTML = `🟢 復帰しました！`;
   } else {
-     // 👈 修正：P2側（後から入ったプレイヤー）もマッチング成立演出を出す！
      if (myPlayerId === 2) {
          document.getElementById("waiting-title").innerText = "🔥 マッチング成立！ バトル開始！";
-         playSound('buff', true); // 👈 修正：ローカルでのみ鳴らす！
+         playSound('buff', true); 
      }
   }
   renderAll();
@@ -1156,7 +1245,7 @@ function getCardTypes() {
     { category: "pack_1", type: "monster", name: "アオノメ", originalCost: 1, cost: 1, attack: 1, hp: 1, image: "images/pack_1/aonome.jpg", attribute: "sea_god", flavor: "依然として、海神の顕現条件について詳しいことは判明していない。しかしながら、稀少な海神の目撃条件から、対象には被害者の要素と一致することが判明した。-海神に関する調査報告書(2)-", desc: "<br>■自分のステージにいる「アオノメ」の数だけ、手札の「アオノメ」のコストを-1する。<br>■このカードはデッキに何枚でも入れることができる" },
     { category: "pack_1", type: "magic", name: "Erotion the future", originalCost: 7, cost: 7, image: "images/pack_1/erotionthefuture.jpg", attribute: "sea_god", flavor: "未来さえ吞み込む、未曾有の脅威。", desc: "<br>■自分のステージにいる全てのキャラをロストし、相手のステージにいるライフ6以下のキャラ全てをロストする。" },
     { category: "pack_1", type: "magic", name: "海神の権能", originalCost: 5, cost: 5, image: "images/pack_1/kaishinnnokennnou.jpg", attribute: "sea_god", flavor: "これが、これがボクのチカラ...！", desc: "<br>■相手のステージにいるキャラからランダムに1枚をロストし、カード3枚を引く。" },
-    { category: "pack_1", type: "magic", name: "侵界の跡", originalCost: 1, cost: 1, image: "images/pack_1/shinnkainoato.jpg", attribute: "sea_god", flavor: "むかしむかし、ここは海の底でした。", desc: "<br>■自分のリーダーにバリア付与。自分のロストが13枚以上なら、相手のステージにいるライフ3以下のキャラ全てをロストする。" },
+    { category: "pack_1", type: "magic", name: "侵界の跡", originalCost: 1, cost: 1, image: "images/pack_1/shinnkainoato.jpg", attribute: "sea_god", flavor: "むかしむかし、ここは海の底でした。", desc: "<br>■自分のリーダーに【バリア】付与。自分のロストが13枚以上なら、相手のステージにいるライフ3以下のキャラ全てをロストする。" },
     { category: "pack_1", type: "magic", name: "侵界の雨", originalCost: 10, cost: 10, image: "images/pack_1/shinnkainoame.jpg", attribute: "sea_god", flavor: "降り注ぐ絶望が、世界を蒼く染め上げる。", desc: "<br>■お互いのステージのキャラと、手札のカード全てをロストする。" },
     { category: "pack_1", type: "magic", name: "侵界の光", originalCost: 3, cost: 3, image: "images/pack_1/shinnkainohikari.jpg", attribute: "sea_god", flavor: "その光は希望か、それとも破滅の導きか。", desc: "<br>■自分のデッキからコスト1の属性「海神」キャラ3枚をコールする。" },
     { category: "pack_1", type: "monster", name: "蒼神", originalCost: 11, cost: 11, attack: 30, hp: 30, image: "images/pack_1/soushinn.jpg", attribute: "sea_god", flavor: "最も深く、最も広く、そして最も蒼い。それを形容するのに最も適した言葉、それが「神」だ。", desc: "<br>■お互いのロスト合計が10枚以上なら、手札のこのカードのコストは10になる。" },
@@ -1193,8 +1282,8 @@ function getCardTypes() {
     { category: "pack_2", type: "monster", name: "\"To Just Zero\" A8000", originalCost: 3, cost: 3, attack: 3, hp: 3, image: "images/pack_2/supra.jpg", attribute: "bice", soulGuard: true, burn: true, flavor: "無類の強さを誇る「BICE」のトップランカー。彼女の機体から発生する出力はあたり一面を焼け野原にする。", desc: "<br>■【燃焼】このターン中、このカードがキャラに与えるダメージ+2する。" },
     { category: "pack_2", type: "monster", name: "\"Comact OPElator of No.1\" LA4000", originalCost: 1, cost: 1, attack: 1, hp: 1, image: "images/pack_2/copen.jpg", attribute: "bice", burn: true, soulGuard: true, flavor: "とある研究者の一人が愛した量産型の人型機体。小さく取り回しがきくことから、当時は幅広い層から支持された。", desc: "<br>■【燃焼】自分のキャラ1枚を選択し、ソウルを+1する。<br>【ソウルガード】" },
     { category: "pack_2", type: "monster", name: "\"Greater Than 2nd\" 911GT2RS", originalCost: 5, cost: 5, attack: 2, hp: 2, image: "images/pack_2/911.jpg", attribute: "bice", soulGuard: true, burn: true, flavor: "誰よりも速く、何よりも強く。をコンセプトに開発された超大型BICE。これまでの通念を大きく覆した大型のBICEは、それまでのBICEの在り方を否定した。", desc: "<br>■【登場時】カード3枚を引く。<br>■【燃焼】相手のステージからランダムなキャラ1枚にダメージ4！" },
-    { category: "pack_2", type: "monster", name: "\"Ultimate Buddy\" ヴァルキリー", originalCost: 4, cost: 4, attack: 1, hp: 3, image: "images/pack_2/valkily.jpg", attribute: "bice", soulGuard: true, burn: true, flavor: "これまでのBICEを環境に合わせて利用する戦法を得意とする。大きな変革期を迎えたBICEたちに居場所を与えた。<br>「全てのBICEが俺の相棒！」", desc: "<br>■【コール】デッキからコスト3以下の「BICE」キャラを最大2枚コールする。<br>■【燃焼】自分のセンターのキャラにバリアを付与する。" },
-    { category: "pack_2", type: "magic", name: "RBA", originalCost: 1, cost: 1, image: "images/pack_2/RBA.jpg", attribute: "bice", flavor: "「YRIS」が救助活動に向かう時のコマンド。これを知る者は彼女を設計した研究者と、「ONE」のみ。", desc: "<br>■自分のリーダーにバリア付与。自分のステージに「GR」がいるなら、自分のドロップからランダムにキャラを1枚手札に加える。" },
+    { category: "pack_2", type: "monster", name: "\"Ultimate Buddy\" ヴァルキリー", originalCost: 4, cost: 4, attack: 1, hp: 3, image: "images/pack_2/valkily.jpg", attribute: "bice", soulGuard: true, burn: true, flavor: "これまでのBICEを環境に合わせて利用する戦法を得意とする。大きな変革期を迎えたBICEたちに居場所を与えた。<br>「全てのBICEが俺の相棒！」", desc: "<br>■【コール】デッキからコスト3以下の「BICE」キャラを最大2枚コールする。<br>■【燃焼】自分のセンターのキャラに【バリア】を付与する。" },
+    { category: "pack_2", type: "magic", name: "RBA", originalCost: 1, cost: 1, image: "images/pack_2/RBA.jpg", attribute: "bice", flavor: "「YRIS」が救助活動に向かう時のコマンド。これを知る者は彼女を設計した研究者と、「ONE」のみ。", desc: "<br>■自分のリーダーに【バリア】付与。自分のステージに「GR」がいるなら、自分のドロップからランダムにキャラを1枚手札に加える。" },
     { category: "pack_2", type: "magic", name: "Absolute enforcer", originalCost: 4, cost: 4, image: "images/pack_2/enforcer.jpg", attribute: "bice", flavor: "「跪け、私が裁く。」", desc: "<br>■相手のステージにいるキャラ全ての攻撃力を-2する。" },
     { category: "pack_2", type: "magic", name: "Exaust re boost", originalCost: 1, cost: 1, image: "images/pack_2/boost.jpg", attribute: "bice", flavor: "とある研究者によって開発された機構。当時は画期的なものであったが、今ではどの機械にも設定されている。", desc: "<br>■このターン中、自分のステージにいる属性「BICE」のキャラ全ての攻撃力を+1する。" },
     { category: "pack_2", type: "magic", name: "Absolute punisher！", originalCost: 11, cost: 11, image: "images/pack_2/punisher.jpg", attribute: "bice", flavor: "すべてを失った少女たちの、絶対の一撃", desc: "<br>■自分のターン中、自分のステージにいるキャラが破壊されたとき、このカードのコストを-1する。<br>■リーダーが「ONE」でお互いセンターが空なら使える。<br>■相手リーダーにダメージ11！" },
@@ -1208,7 +1297,7 @@ function getCardTypes() {
     { category: "pack_3", type: "monster", name: "≪従属≫ オデッセイ", originalCost: 2, cost: 2, attack: 1, hp: 1, image: "images/pack_3/odyssey.jpg", attribute: "reliance", flavor: "我々は主に忠誠を誓っている。", desc: "<br>■【コール】このカードと同名のカード2枚を自分のステージにコールする。" },
     { category: "pack_3", type: "monster", name: "“絶対依存の情” マッハ", originalCost: 8, cost: 8, attack: 1, hp: 4, image: "images/pack_3/mahha.jpg", attribute: "reliance", transform: true, flavor: "あなたのことを守ってあげる。だから私のこと、見捨てないよね……？", desc: "<br>■自分のリーダーが「接続」状態なら、手札のこのカードのコストを-2する。<br>■【コール】相手のキャラ1枚を選択し、相手のリーダーと「接続」する。<br>■【ターン終了時】自分のターン終了時、目の前のキャラにダメージ11！<br>【変身】" },
     { category: "pack_3", type: "magic", name: "あなたをおしえて", originalCost: 1, cost: 1, image: "images/pack_3/teach.jpg", attribute: "reliance", flavor: "もっと、あなたのことが知りたいの。", desc: "<br>■ステージからキャラを2枚選択し、選択したカード同士を「接続」する。" },
-    { category: "pack_3", type: "magic", name: "その身に過する保護り", originalCost: 1, cost: 1, image: "images/pack_3/hokori.jpg", attribute: "reliance", flavor: "神が汝らを守ってくれるのです！", desc: "<br>■自分のレフトにいるキャラのライフを+3し、自分のリーダーにバリアを付与する。" },
+    { category: "pack_3", type: "magic", name: "その身に過する保護り", originalCost: 1, cost: 1, image: "images/pack_3/hokori.jpg", attribute: "reliance", flavor: "神が汝らを守ってくれるのです！", desc: "<br>■自分のレフトにいるキャラのライフを+3し、自分のリーダーに【バリア】を付与する。" },
     { category: "pack_3", type: "magic", name: "狂依存", originalCost: 1, cost: 1, image: "images/pack_3/kyouizonn.jpg", attribute: "reliance", flavor: "狂おしいほどに、求めている。", desc: "■自分のドロップゾーンにいるキャラ1枚の能力を無効化し、攻撃力を0、ライフを1にして任意のエリアにコールする。" },
     { category: "pack_3", type: "magic", name: "信用", originalCost: 5, cost: 5, image: "images/pack_3/shinnyou.jpg", attribute: "reliance", flavor: "あなたの未来を信じます。", desc: "<br>■相手のステージからランダムなキャラ1枚破壊し、カード3枚を引く。その後、自分のレフトにいるキャラのライフを破壊したキャラのライフ分、ライフを+する。" },
     { category: "pack_3", type: "magic", name: "Trust my future", originalCost: 4, cost: 4, image: "images/pack_3/future.jpg", attribute: "reliance", flavor: "私の未来を信じたまえ！。", desc: "<br>■このターン中、自分のステージのキャラ全ての攻撃力を+2する。" },
@@ -1218,18 +1307,18 @@ function getCardTypes() {
     { category: "pack_4", type: "monster", name: "幸せの誘い ナギ&ナミ", originalCost: 6, cost: 6, attack: 1, hp: 7, image: "images/pack_4/naginami.jpg", attribute: "light", flavor: "わたしたち！ぼくたち！幸せ（だ/ね）！", desc: "■【コール】自分のドロップゾーンからキャラ1枚を選択し、コールする。その後、自分のステージにいるキャラ全てのライフを+1する。" },
     { category: "pack_4", type: "monster", name: "影の国の闇 スカージ", originalCost: 3, cost: 3, attack: 1, hp: 4, image: "images/pack_4/skaji.jpg", attribute: "light", flavor: "光あるところに影あり。", desc: "■【ターン終了時】自分のターン終了時、ステージのキャラ全てにダメージ1。<br>■自分のステージにいる属性「光」のキャラが破壊されたとき、このカードと自分のリーダーのライフを+1する。" },
     { category: "pack_4", type: "monster", name: "影陰る瞳 インサイト", originalCost: 2, cost: 2, attack: 2, hp: 5, image: "images/pack_4/insight.jpg", attribute: "light", flavor: "その瞳は、すべての真実を見透かす。", desc: "■【ターン終了時】自分のターン終了時、自身にダメージ2。" },
-    { category: "pack_4", type: "monster", name: "反光 シェード", originalCost: 2, cost: 2, attack: 2, hp: 1, image: "images/pack_4/shade.jpg", attribute: "light", flavor: "光を反射し、闇を照らす。", desc: "■【ターン終了時】自分のターン終了時、自身にダメージ1を与え、リフレクターを付与する。" },
+    { category: "pack_4", type: "monster", name: "反光 シェード", originalCost: 2, cost: 2, attack: 2, hp: 1, image: "images/pack_4/shade.jpg", attribute: "light", flavor: "光を反射し、闇を照らす。", desc: "■【ターン終了時】自分のターン終了時、自身にダメージ1を与え、【リフレクター】を付与する。" },
     { category: "pack_4", type: "monster", name: "五大魂魄その弐 シュト", originalCost: 1, cost: 1, attack: 1, hp: 1, image: "images/pack_4/shut.jpg", attribute: "light", flavor: "知ってるかい？影は魂そのものなんだ。", desc: "■自分のキャラが【反転】したとき、このカードをアクティブにする。" },
-    { category: "pack_4", type: "monster", name: "架ける光 サイン&フェム", originalCost: 4, cost: 4, attack: 1, hp: 4, image: "images/pack_4/saifem.jpg", attribute: "light", flavor: "私たちが、希望の架け橋になる！", desc: "■【コール】自分のデッキからコスト2以下の属性「光」キャラ1枚をコールする。<br>■このカードが【反転】したとき、自分のリーダーにバリアを付与する。" },
+    { category: "pack_4", type: "monster", name: "架ける光 サイン&フェム", originalCost: 4, cost: 4, attack: 1, hp: 4, image: "images/pack_4/saifem.jpg", attribute: "light", flavor: "私たちが、希望の架け橋になる！", desc: "■【コール】自分のデッキからコスト2以下の属性「光」キャラ1枚をコールする。<br>■このカードが【反転】したとき、自分のリーダーに【バリア】を付与する。" },
     { category: "pack_4", type: "magic", name: "灰色の研究", originalCost: 5, cost: 5, image: "images/pack_4/kennkyuu.jpg", attribute: "light", flavor: "光と闇の境界。そこに真理がある。", desc: "■自分のドロップゾーンからランダムなキャラ1枚をコールし、カード3枚を引く。" },
-    { category: "pack_4", type: "magic", name: "リバース・コントラクト", originalCost: 1, cost: 1, image: "images/pack_4/contract.jpg", attribute: "light", flavor: "契約は交わされた。世界よ、反転せよ。", desc: "■自分のステージにいるキャラ全ての攻撃力を+1、ライフを-1する。自分のリーダーにリフレクターを付与する。" },
+    { category: "pack_4", type: "magic", name: "リバース・コントラクト", originalCost: 1, cost: 1, image: "images/pack_4/contract.jpg", attribute: "light", flavor: "契約は交わされた。世界よ、反転せよ。", desc: "■自分のステージにいるキャラ全ての攻撃力を+1、ライフを-1する。自分のリーダーに【リフレクター】を付与する。" },
     { category: "pack_4", type: "magic", name: "反天", originalCost: 1, cost: 1, image: "images/pack_4/hanntenn.jpg", attribute: "light", flavor: "スカーハ様に負けはない。たとえ天地がひっくり返ってもね。", desc: "■ステージからキャラ1枚を選択し、【反転】させる。" },
     { category: "pack_4", type: "set_magic", name: "反逆の光旗", originalCost: 2, cost: 2, image: "images/pack_4/noroshi.jpg", attribute: "light", flavor: "今こそ反逆の時！光の御旗のもとに集え！", desc: "【設置】<br>■【アクト】自分のドロップゾーンからキャラ1枚を選択し、このカードを破壊する。選択したキャラを自分のセンターにコールし、コールしたキャラのライフを+2する。" },
     { category: "pack_4", type: "item", name: "シャドウパニッシャー！", originalCost: 3, cost: 3, effectValue: 0, hp: 0, image: "images/pack_4/shadow.jpg", attribute: "light", invert: true, flavor: "陰から生まれた深い闇が、独りよがりな光を断ち切る！", desc: "【反転】<br>■自分のステージに属性「光」のカードがあるなら、このカードを使える。<br>■自分のステージにいる属性「光」のキャラが破壊されたとき、このカードのライフを+1する。" },
-    { category: "pack_4", type: "set_magic", name: "リフレクト・ブラスト", originalCost: 2, cost: 2, image: "images/pack_4/counter.jpg", attribute: "light", flavor: "油断しちゃ、ダーメ♪", desc: "【設置】<br>■自分のリーダーにリフレクターを付与する。<br>■【アクト】ステージにいるキャラ1枚にダメージ4！このカードを破壊する。" },
+    { category: "pack_4", type: "set_magic", name: "リフレクト・ブラスト", originalCost: 2, cost: 2, image: "images/pack_4/counter.jpg", attribute: "light", flavor: "油断しちゃ、ダーメ♪", desc: "【設置】<br>■自分のリーダーに【リフレクター】を付与する。<br>■【アクト】ステージにいるキャラ1枚にダメージ4！このカードを破壊する。" },
 
     { category: "pack_5", type: "leader", name: "迸る閃望 ルミナス=イデオル", originalCost: 0, cost: 0, attack: 0, hp: 20, image: "images/pack_5/ideol.jpg", attribute: "freat", flavor: "果てしなく広大な世界で一番のアイドルを目指すうら若き少女。大きく文化が発展した現代、アイドルを目指す者も数多く存在し、とてつもない倍率の競争が発生しているアイドルの世界で、己のカリスマ性を武器に人々を魅了する。", desc: "■【アクト】このカードのソウルを1消費する。このターン中、このカードの攻撃力を+1する。<br>■【ターン開始時】自分のターン開始時、このカードのソウルを3消費してカード1枚を引く。<br>■自分のターン中に1度、自分が名前に「歌」を含む魔法を使った時、自分のステージにあるカード全てのソウルを+1する。" },
-    { category: "pack_5", type: "monster", name: "新参の熱狂者", originalCost: 1, cost: 1, attack: 0, hp: 2, image: "images/pack_5/shinnzann.jpg", attribute: "freat", soulGuard: true, burn: true, flavor: "人々は彼女の熱に引き寄せられ、支援する。<br>「最近人気のこの子、まじ推せる！」", desc: "【ソウルガード】<br>■【燃焼】このカードの攻撃力を+1する。<br>■【ターン終了時】自分のリーダーにバリアを付与する。" },
+    { category: "pack_5", type: "monster", name: "新参の熱狂者", originalCost: 1, cost: 1, attack: 0, hp: 2, image: "images/pack_5/shinnzann.jpg", attribute: "freat", soulGuard: true, burn: true, flavor: "人々は彼女の熱に引き寄せられ、支援する。<br>「最近人気のこの子、まじ推せる！」", desc: "【ソウルガード】<br>■【燃焼】このカードの攻撃力を+1する。<br>■【ターン終了時】自分のリーダーに【バリア】を付与する。" },
     { category: "pack_5", type: "monster", name: "古参の熱狂者", originalCost: 3, cost: 3, attack: 1, hp: 5, image: "images/pack_5/kosann.jpg", attribute: "freat", soulGuard: true, burn: true, flavor: "ファンの支援に応えるために、彼女の活動はより規模を拡大させていく。<br>「ウチの推しは今日も尊みがふか～い」", desc: "【ソウルガード】<br>■【燃焼】相手のステージに存在するキャラ全てにダメージ2。<br>■【ターン終了時】自分のステージにあるランダムな魔法1枚のソウルを+1する。" },
     { category: "pack_5", type: "monster", name: "熱狂の従者", originalCost: 2, cost: 2, attack: 1, hp: 3, image: "images/pack_5/juusha.jpg", attribute: "freat", soulGuard: true, burn: true, flavor: "アイドルを推すのは自由広めるのも自由、しかし自由には責任が伴うのが世の常である。であれば、ファンにも責任が伴うのが道理ではないか。<br>「推ししか勝たん...」", desc: "【ソウルガード】<br>■【燃焼】このカードは【守護】を持つ。<br>■【ターン終了時】自分のリーダーの攻撃力を+1する。" },
     { category: "pack_5", type: "monster", name: "熱狂の宣教者", originalCost: 4, cost: 4, attack: 1, hp: 6, image: "images/pack_5/senkyou.jpg", attribute: "freat", soulGuard: true, burn: true, flavor: "アイドルとは偶像。象徴であり、進行するものではない。<br>「推しのライブなう。」", desc: "【ソウルガード】<br>■【コール】自分のデッキからコスト3以下の属性「FREAT」を含むキャラ1枚をコールする。<br>■【燃焼】自分のステージに存在するカード1枚のソウルを+1する。" },
@@ -1594,7 +1683,6 @@ window.useBurnSkill = function(zone) {
         renderAll(); sendGameState(); 
       };
       infoPanel.innerHTML = `キャラ1枚を自分のステージから選択してください`;
-      infoPanel.style.backgroundColor = "rgba(241, 196, 15, 0.8)"; 
       renderAll();
       return; // 選択待機のためここで抜ける
   } else if (card.name === "\"Greater Than 2nd\" 911GT2RS") {
@@ -1663,7 +1751,6 @@ window.useBurnSkill = function(zone) {
           renderAll(); sendGameState(); 
       };
       infoPanel.innerHTML = `ソウルを追加する自分のカードを選択してください`;
-      infoPanel.style.backgroundColor = "rgba(241, 196, 15, 0.8)"; 
       renderAll();
       return; // 選択待機のためここで抜ける
   }
@@ -2097,7 +2184,6 @@ function attachStageListeners() {
           renderAll(); sendGameState();
         };
         infoPanel.innerHTML = `接続するキャラを選択してください`;
-        infoPanel.style.backgroundColor = "#00bcd4"; 
         renderAll();
       }
 
@@ -2615,43 +2701,95 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
   }
 }
 
-window.resolveShiftStatue = async function(asSetMagic) {
-    if (!pendingSelection || pendingSelection.type !== 'shift_statue') return;
-    window.shiftStatueChoiceAsSetMagic = asSetMagic;
-    window.shiftStatueResolved = true;
-    
-    let pid = pendingSelection.pid;
-    let targetZone = pendingSelection.targetZone;
-    let cardId = pendingSelection.cardId;
-    
-    let p = players[pid];
-    let card = p.hand.find(c => c.id === cardId);
-    let originalType = card ? card.type : "monster";
-    
-    if (card && asSetMagic) {
-        card.type = "set_magic"; // 設置魔法としてプレイするためにタイプを書き換える
+window.executeShiftTypeSelection = function(pId, cardId, card, targetZone, shiftType) {
+    let p = players[pId];
+    isSelectingStage = true;
+    pendingSelection = { type: 'shift_type', cardId: cardId, targetZone: targetZone, pid: pId, shiftType: shiftType };
+
+    let overlay = document.createElement("div");
+    overlay.id = "shift-type-modal";
+    overlay.style = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 100000; display: flex; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(5px);";
+
+    let titleText = shiftType === "statue" ? "【シフトスタチュー】" : "【シフトスペル】";
+    let btn1 = "";
+    let btn2 = "";
+
+    if (shiftType === "statue") {
+        btn1 = `<button onclick="event.stopPropagation(); window.resolveShiftType(false)" onmouseover="this.style.background='rgba(230, 126, 34, 0.5)'" onmouseout="this.style.background='rgba(230, 126, 34, 0.2)'" style="width: 300px; padding: 30px; background: rgba(230, 126, 34, 0.2); border: 3px solid #e67e22; border-radius: 12px; color: white; font-size: 18px; cursor: pointer; transition: 0.2s; text-align: center; box-shadow: 0 0 15px rgba(230, 126, 34, 0.3); margin: 10px;">
+                    <div style="font-size: 28px; font-weight: bold; margin-bottom: 15px; color: #e67e22; text-shadow: 0 0 10px rgba(230, 126, 34, 0.8);">🪄 魔法として</div>
+                    <div style="line-height: 1.5;">使い捨ての魔法として<br>発動します。</div>
+                </button>`;
+        btn2 = `<button onclick="event.stopPropagation(); window.resolveShiftType(true)" onmouseover="this.style.background='rgba(52, 152, 219, 0.5)'" onmouseout="this.style.background='rgba(52, 152, 219, 0.2)'" style="width: 300px; padding: 30px; background: rgba(52, 152, 219, 0.2); border: 3px solid #3498db; border-radius: 12px; color: white; font-size: 18px; cursor: pointer; transition: 0.2s; text-align: center; box-shadow: 0 0 15px rgba(52, 152, 219, 0.3); margin: 10px;">
+                    <div style="font-size: 28px; font-weight: bold; margin-bottom: 15px; color: #3498db; text-shadow: 0 0 10px rgba(52, 152, 219, 0.8);">⚙️ 設置魔法として</div>
+                    <div style="line-height: 1.5;">場に残り続ける<br>設置魔法として発動します。</div>
+                </button>`;
+    } else {
+        btn1 = `<button onclick="event.stopPropagation(); window.resolveShiftType(false)" onmouseover="this.style.background='rgba(46, 204, 113, 0.5)'" onmouseout="this.style.background='rgba(46, 204, 113, 0.2)'" style="width: 300px; padding: 30px; background: rgba(46, 204, 113, 0.2); border: 3px solid #2ecc71; border-radius: 12px; color: white; font-size: 18px; cursor: pointer; transition: 0.2s; text-align: center; box-shadow: 0 0 15px rgba(46, 204, 113, 0.3); margin: 10px;">
+                    <div style="font-size: 28px; font-weight: bold; margin-bottom: 15px; color: #2ecc71; text-shadow: 0 0 10px rgba(46, 204, 113, 0.8);">🐉 キャラとして</div>
+                    <div style="line-height: 1.5;">ステージにキャラとして<br>コールします。</div>
+                </button>`;
+        btn2 = `<button onclick="event.stopPropagation(); window.resolveShiftType(true)" onmouseover="this.style.background='rgba(230, 126, 34, 0.5)'" onmouseout="this.style.background='rgba(230, 126, 34, 0.2)'" style="width: 300px; padding: 30px; background: rgba(230, 126, 34, 0.2); border: 3px solid #e67e22; border-radius: 12px; color: white; font-size: 18px; cursor: pointer; transition: 0.2s; text-align: center; box-shadow: 0 0 15px rgba(230, 126, 34, 0.3); margin: 10px;">
+                    <div style="font-size: 28px; font-weight: bold; margin-bottom: 15px; color: #e67e22; text-shadow: 0 0 10px rgba(230, 126, 34, 0.8);">🪄 魔法として</div>
+                    <div style="line-height: 1.5;">使い捨ての魔法として<br>発動します。</div>
+                </button>`;
     }
-    
-    isSelectingStage = false;
-    pendingSelection = null;
-    window.cancelActionCallback = null;
-    
-    // オーバーレイのボタンを即座に消す
-    let zoneEl = document.getElementById(`p${pid}-stage-${targetZone}`);
-    if (zoneEl) {
-        let overlays = zoneEl.querySelectorAll('.card-action-overlay');
-        overlays.forEach(o => o.remove());
-    }
-    
-    let oldHandLength = p.hand.length;
-    await playCard(cardId, targetZone, pid);
-    
-    // プレイに失敗して手札に残った場合（コスト不足など）はタイプを元に戻す
-    if (card && p.hand.find(c => c.id === cardId)) {
-        card.type = originalType;
-    }
-    window.shiftStatueResolved = false; 
-}
+
+    overlay.innerHTML = `
+        <div style="font-size: 32px; color: #f1c40f; font-weight: bold; margin-bottom: 40px; text-shadow: 0 0 15px rgba(241,196,15,0.8);">${titleText} 使用方法を選択してください</div>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; max-width: 900px;">
+            ${btn1}
+            ${btn2}
+        </div>
+        <button onclick="event.stopPropagation(); window.cancelActionCallback()" style="margin-top: 50px; padding: 12px 40px; background: #7f8c8d; border: 2px solid #95a5a6; border-radius: 8px; color: white; font-size: 20px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#95a5a6'" onmouseout="this.style.background='#7f8c8d'">キャンセル</button>
+    `;
+    document.body.appendChild(overlay);
+
+    window.cancelActionCallback = () => {
+        let m = document.getElementById("shift-type-modal");
+        if (m) m.remove();
+        isSelectingStage = false;
+        window.shiftTypeResolved = false;
+        window.cancelActionCallback = null;
+        renderAll();
+    };
+
+    window.resolveShiftType = async function(useAsSecondary) {
+        let m = document.getElementById("shift-type-modal");
+        if (m) m.remove();
+        
+        window.shiftTypeChoiceSecondary = useAsSecondary;
+        window.shiftTypeResolved = true;
+        
+        let pid = pendingSelection.pid;
+        let tZone = pendingSelection.targetZone;
+        let cId = pendingSelection.cardId;
+        let sType = pendingSelection.shiftType;
+        
+        let pRef = players[pid];
+        let cRef = pRef.hand.find(c => c.id === cId);
+        let originalType = cRef ? cRef.type : "magic";
+        
+        if (cRef) {
+            if (sType === "statue" && useAsSecondary) {
+                cRef.type = "set_magic";
+            } else if (sType === "spell" && useAsSecondary) {
+                cRef.type = "magic";
+            }
+        }
+        
+        isSelectingStage = false;
+        pendingSelection = null;
+        window.cancelActionCallback = null;
+        
+        await playCard(cId, tZone, pid);
+        
+        // プレイがキャンセルされた場合などに元のタイプに戻す
+        if (cRef && pRef.hand.find(c => c.id === cId)) {
+            cRef.type = originalType;
+        }
+        window.shiftTypeResolved = false; 
+    };
+};
 const passiveStyle = document.createElement('style');
 passiveStyle.innerHTML = `
 .passive-ripple {
@@ -2839,6 +2977,101 @@ window.executeArtsEffect = async function(pId, card, targetZone) {
     }
 };
 
+window.executeShiftAbility = function(pId, cardId, card, targetZone, consumeThisMagic) {
+    let p = players[pId];
+    let oppId = pId === 1 ? 2 : 1;
+    isSelectingStage = true;
+
+    let choices = [];
+
+    // 💡 今後【シフト】持ちのカードが増えたら、ここに case "カード名": を追加していく！
+    switch (card.name) {
+        case "劣等上等":
+            choices = [
+                {
+                    title: "🔗 接続", 
+                    color: "#00bcd4", bgDef: "rgba(0, 188, 212, 0.2)", bgHov: "rgba(0, 188, 212, 0.5)", shadow: "rgba(0, 188, 212, 0.3)", glow: "rgba(0, 188, 212, 0.8)",
+                    desc: "自分のリーダーと<br>相手のキャラ1枚を「接続」する。",
+                    action: async () => {
+                        window.startStageSelection(
+                            `接続する相手キャラを選択してください`,
+                            (tPid, tZone) => (tPid === oppId && tZone !== 'leader' && players[oppId].stage[tZone]),
+                            function(tPid, tZone) {
+                                consumeThisMagic(); connectCards(pId, 'leader', tPid, tZone);
+                                renderAll(); sendGameState();
+                            }
+                        );
+                    }
+                },
+                {
+                    title: "📉 デバフ", 
+                    color: "#e74c3c", bgDef: "rgba(231, 76, 60, 0.2)", bgHov: "rgba(231, 76, 60, 0.5)", shadow: "rgba(231, 76, 60, 0.3)", glow: "rgba(231, 76, 60, 0.8)",
+                    desc: "相手のステージに存在する<br>キャラ全ての攻撃力を-1する。",
+                    action: async () => {
+                        consumeThisMagic();
+                        ['left', 'center', 'right'].forEach(z => {
+                            let oCard = players[oppId].stage[z];
+                            if (oCard && oCard.type === "monster") {
+                                oCard.turnAttackBoost = (oCard.turnAttackBoost || 0) - 1;
+                                showFloatingTextOnElement(`p${oppId}-stage-${z}`, -1, 'attack_boost');
+                            }
+                        });
+                        renderAll(); sendGameState();
+                    }
+                }
+            ];
+            break;
+            
+        // 例: case "新しいシフトカード":
+        //     choices = [ ...選択肢... ];
+        //     break;
+    }
+
+    if (choices.length === 0) {
+        isSelectingStage = false;
+        return; // 選択肢が設定されていない場合は不発で戻す
+    }
+
+    // モーダルの生成
+    let overlay = document.createElement("div");
+    overlay.id = "shift-choice-modal";
+    overlay.style = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 100000; display: flex; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(5px);";
+
+    let buttonsHtml = choices.map((c, i) => `
+        <button onclick="event.stopPropagation(); window.resolveShift(${i})" onmouseover="this.style.background='${c.bgHov}'" onmouseout="this.style.background='${c.bgDef}'" style="width: 350px; padding: 30px; background: ${c.bgDef}; border: 3px solid ${c.color}; border-radius: 12px; color: white; font-size: 18px; cursor: pointer; transition: 0.2s; text-align: center; box-shadow: 0 0 15px ${c.shadow}; margin: 10px;">
+            <div style="font-size: 28px; font-weight: bold; margin-bottom: 15px; color: ${c.color}; text-shadow: 0 0 10px ${c.glow};">${c.title}</div>
+            <div style="line-height: 1.5;">${c.desc}</div>
+        </button>
+    `).join("");
+
+    overlay.innerHTML = `
+        <div style="font-size: 32px; color: #f1c40f; font-weight: bold; margin-bottom: 40px; text-shadow: 0 0 15px rgba(241,196,15,0.8);">【シフト】発動する能力を選択してください</div>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; max-width: 900px;">
+            ${buttonsHtml}
+        </div>
+        <button onclick="event.stopPropagation(); window.cancelActionCallback()" style="margin-top: 50px; padding: 12px 40px; background: #7f8c8d; border: 2px solid #95a5a6; border-radius: 8px; color: white; font-size: 20px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#95a5a6'" onmouseout="this.style.background='#7f8c8d'">キャンセル</button>
+    `;
+    document.body.appendChild(overlay);
+
+    // キャンセル処理
+    window.cancelActionCallback = () => {
+        let m = document.getElementById("shift-choice-modal");
+        if (m) m.remove();
+        isSelectingStage = false;
+        window.cancelActionCallback = null;
+        renderAll();
+    };
+
+    // 決定処理
+    window.resolveShift = async function(index) {
+        let m = document.getElementById("shift-choice-modal");
+        if (m) m.remove();
+        isSelectingStage = false;
+        window.cancelActionCallback = null;
+        await choices[index].action();
+    };
+};
+
 async function playCard(cardId, targetZone, pId) {
   const p = players[pId]; const cardIndex = p.hand.findIndex(c => c.id === cardId); if(cardIndex === -1) return; const card = p.hand[cardIndex];
   if(p.mp < card.cost) { return; }
@@ -2885,26 +3118,23 @@ async function playCard(cardId, targetZone, pId) {
       return;
   }
 
-  if (card.shiftStatue && !window.shiftStatueResolved && targetZone !== 'leader' && targetZone !== 'item') {
-      if (p.stage[targetZone] !== null) {
-          window.shiftStatueChoiceAsSetMagic = false; window.shiftStatueResolved = true;
+  if ((card.shiftStatue || card.spellShift) && !window.shiftTypeResolved && targetZone !== 'leader' && targetZone !== 'item') {
+      let isTargetingEmpty = (p.stage[targetZone] === null);
+      if (!isTargetingEmpty) {
+          // すでにキャラがいる場所に置こうとしているなら、自動で魔法扱いにする
+          window.shiftTypeChoiceSecondary = false; 
+          window.shiftTypeResolved = true;
       } else if (isSoloMode && pId === 2) {
-          window.shiftStatueChoiceAsSetMagic = false; window.shiftStatueResolved = true;
+          window.shiftTypeChoiceSecondary = false; 
+          window.shiftTypeResolved = true;
       } else {
-          isSelectingStage = true;
-          window.cancelActionCallback = () => { window.shiftStatueResolved = false; window.shiftStatueChoiceAsSetMagic = false; renderAll(); };
-          pendingSelection = { type: 'shift_statue', cardId: cardId, targetZone: targetZone, pid: pId };
-          let zoneEl = document.getElementById(`p${pId}-stage-${targetZone}`);
-          if (zoneEl) {
-              let overlay = document.createElement("div"); overlay.className = "card-action-overlay";
-              overlay.innerHTML = `<button class="card-center-btn" style="background:#e67e22; color:white; margin-bottom:5px;" onclick="event.stopPropagation(); resolveShiftStatue(false);">🪄 魔法として</button><button class="card-center-btn" style="background:#3498db; color:white;" onclick="event.stopPropagation(); resolveShiftStatue(true);">⚙️ 設置魔法として</button>`;
-              zoneEl.appendChild(overlay);
-          }
-          infoPanel.innerHTML = `【シフトスタチュー】使用方法を選択してください`; infoPanel.style.backgroundColor = "#f39c12"; return; 
+          // 共通の選択モーダルを呼び出す！
+          let sType = card.shiftStatue ? "statue" : "spell";
+          window.executeShiftTypeSelection(pId, cardId, card, targetZone, sType);
+          return; 
       }
   }
-  
-  window.shoutenResolved = false; window.hantenResolved = false; window.shiftStatueResolved = false; 
+  window.shoutenResolved = false; window.hantenResolved = false; window.shiftTypeResolved = false;
 
   let isSuccess = false;
   const oppId = pId === 1 ? 2 : 1;
@@ -3224,12 +3454,13 @@ async function playCard(cardId, targetZone, pId) {
 
     let isTargetedMagic = ["あなたをおしえて", "狂依存", "反天", "Drive for future", "舞台の頂 オルデニス", "少女レイ", "天ノ弱"].includes(card.name);
     if (!isTargetedMagic) { 
-        if (card.name !== "劣等上等") {
+        // 修正：今後は「card.shift が true のカード」もここで一旦ストップする！
+        if (!card.shift && card.name !== "劣等上等") {
             consumeThisMagic(); playSound('play'); showCardEffect(card);
             if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card });
         }
     }
-    if (card.name === "舞台の頂 オルデニス" && !window.shiftStatueChoiceAsSetMagic) {
+    if (card.name === "舞台の頂 オルデニス" && !window.shiftTypeChoiceSecondary) {
         window.startStageSelection(
             `【挑発】を与える自分のキャラを選択してください`,
             (tPid, tZone) => (tPid === pId && tZone !== 'leader' && p.stage[tZone] && p.stage[tZone].type === "monster"),
@@ -3257,40 +3488,8 @@ async function playCard(cardId, targetZone, pId) {
         });
         return;
     }
-    else if (card.name === "劣等上等") {
-        isSelectingStage = true;
-        let zoneEl = document.getElementById(`p${pId}-stage-center`); // 仮の表示場所
-        let overlay = document.createElement("div"); overlay.className = "card-action-overlay";
-        overlay.innerHTML = `
-            <button class="card-center-btn" style="background:#00bcd4; color:white; margin-bottom:5px;" onclick="event.stopPropagation(); window.resolveRettou(1);">🔗 接続</button>
-            <button class="card-center-btn" style="background:#e74c3c; color:white;" onclick="event.stopPropagation(); window.resolveRettou(2);">📉 デバフ</button>
-        `;
-        if (p.stage.center) { document.getElementById(`p${pId}-stage-center`).appendChild(overlay); }
-        else { document.getElementById(`p${pId}-leader-zone`).appendChild(overlay); }
-
-        window.resolveRettou = async function(choice) {
-            overlay.remove(); isSelectingStage = false;
-            if (choice === 1) {
-                window.startStageSelection(
-                    `接続する相手キャラを選択してください`,
-                    (tPid, tZone) => (tPid === oppId && tZone !== 'leader' && players[oppId].stage[tZone]),
-                    function(tPid, tZone) {
-                        consumeThisMagic(); connectCards(pId, 'leader', tPid, tZone);
-                        renderAll(); sendGameState();
-                    }
-                );
-            } else {
-                consumeThisMagic();
-                ['left', 'center', 'right'].forEach(z => {
-                    let oCard = players[oppId].stage[z];
-                    if (oCard && oCard.type === "monster") {
-                        oCard.turnAttackBoost = (oCard.turnAttackBoost || 0) - 1;
-                        showFloatingTextOnElement(`p${oppId}-stage-${z}`, -1, 'attack_boost');
-                    }
-                });
-                renderAll(); sendGameState();
-            }
-        };
+    else if (card.shift || card.name === "劣等上等") {
+        window.executeShiftAbility(pId, cardId, card, targetZone, consumeThisMagic);
         return;
     }
     else if (card.name === "テトリス") {
@@ -4999,3 +5198,13 @@ function showVsScreen() {
         }, 500);
     }, 3500);
 }
+const infoPanelStyle = document.createElement("style");
+infoPanelStyle.innerHTML = `
+    #info-panel {
+        background-color: rgba(0, 0, 0, 0.5) !important; 
+        color: #ffffff !important; 
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.8) !important; 
+        border: 1px solid rgba(255,255,255,0.2) !important; 
+    }
+`;
+document.head.appendChild(infoPanelStyle);
