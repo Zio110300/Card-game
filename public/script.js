@@ -2286,9 +2286,9 @@ function showFloatingTextOnElement(elementId, value, type) {
   
   if (type === 'damage') {
       if (numValue >= 10) {
-          playSound('huge_damage'); // 👈 修正：制限解除！
+          playSound('huge_damage'); 
       } else if (numValue > 0) {
-          playSound('damage');      // 👈 修正：制限解除！
+          playSound('damage');    
       }
   } else if (type === 'heal') {
       playSound('heal');
@@ -2817,14 +2817,14 @@ window.showPassiveEffect = async function(pid, zone) {
             let ripple = document.createElement("div");
             ripple.className = "passive-ripple";
             cardEl.appendChild(ripple);
-            playSound('buff'); // 発動音
+            playSound('play'); // 発動音
             setTimeout(() => ripple.remove(), 600);
         }
     }
     // 次の処理へ移る前にしっかりタメを作る
     await new Promise(r => setTimeout(r, 600)); 
 };
-// 👇👇 追加：デッキから条件に合うカードを検索し、デッキから消しつつ抜き取る最強関数！ 👇👇
+
 window.pullFromDeck = function(pId, conditionFn, count = 1, uniqueName = false) {
     let p = players[pId];
     let pulledCards = [];
@@ -3485,6 +3485,11 @@ async function playCard(cardId, targetZone, pId) {
                     showCardEffect(card); renderAll(); sendGameState();
                 }
             );
+            let originalStageCancel = window.cancelActionCallback;
+            window.cancelActionCallback = () => {
+                players[pId].hand.push(handCard); // 抜かれていたカードを手札に返却する
+                if (originalStageCancel) originalStageCancel();
+            };
         });
         return;
     }
