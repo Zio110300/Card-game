@@ -4544,6 +4544,8 @@ document.getElementById("new-retry-btn").addEventListener("click", () => {
   document.getElementById("result-message").innerText = `次のバトルへ移行中...`;
 
   isGameStarted = false; 
+  window.isMulliganing = false;       // 👈 追加：自分がボタンを押した時もマリガン状態をリセット！
+  window.mulliganFinishedFlag = false; // 👈 追加：自分がボタンを押した時も完了フラグをリセット！
 
   if (isSoloMode) {
       setTimeout(() => {
