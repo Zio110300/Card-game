@@ -1197,7 +1197,9 @@ socket.on('game_retry', () => {
   
   if (typeof hideResultScreen === 'function') hideResultScreen(); 
 
-  isGameStarted = false; // 👈 追加：相手が押した時もゲーム状態を確実にリセットしておく！
+  isGameStarted = false; 
+  window.isMulliganing = false;       // 👈 追加：マリガン状態を確実にリセット！
+  window.mulliganFinishedFlag = false; // 👈 追加：完了フラグも確実にリセット！
 
   if (myPlayerId === 1) {
     setTimeout(() => { 
@@ -1356,7 +1358,7 @@ function startGame() {
   
   window.mulliganFinishedFlag = false;
   [1, 2].forEach(pId => { 
-    players[pId] = { hp: 15, maxHp: 15, mp: 1, maxMp: 1, deck: [], hand: [], stage: {left: null, center: null, right: null}, leader: null, weapon: null, leaderAttackCount: 0, trash: [], lostZone: [], destroyedThisTurn: 0 }; 
+    players[pId] = { hp: 15, maxHp: 15, mp: 1, maxMp: 1, deck: [], hand: [], stage: {left: null, center: null, right: null}, leader: null, weapon: null, leaderAttackCount: 0, trash: [], lostZone: [], destroyedThisTurn: 0, mulliganFinished: false }; 
   });
 
   players[1].leader = JSON.parse(JSON.stringify(myLeaderCard));
@@ -4578,6 +4580,8 @@ document.getElementById("back-home-btn").addEventListener("click", () => {
       isGameOver = false;
       isSoloMode = false;
       myRoomId = "";
+      window.isMulliganing = false;       // 👈 追加：ホームに戻る時もリセット！
+      window.mulliganFinishedFlag = false; // 👈 追加：ホームに戻る時もリセット！
       
       playBGM('home'); 
   }, 2500); 
