@@ -1131,11 +1131,24 @@ socket.on('assign_player', (num) => {
   renderAll();
 });
 
+window.isMulliganing = false; // マリガン中かどうかのフラグ
+
 socket.on('game_updated', (gameState) => {
   if (isSoloMode) return;
   let wasNotStarted = !isGameStarted; 
   
-  players = gameState.players; currentTurn = gameState.currentTurn; isGameOver = gameState.isGameOver; 
+  // 👇 修正：自分がマリガン中の時は、相手から送られてきたデータで自分の手札とデッキを上書きしないように保護する！
+  if (window.isMulliganing && myPlayerId) {
+      let myHandBackup = [...players[myPlayerId].hand];
+      let myDeckBackup = [...players[myPlayerId].deck];
+      players = gameState.players;
+      players[myPlayerId].hand = myHandBackup;
+      players[myPlayerId].deck = myDeckBackup;
+  } else {
+      players = gameState.players; 
+  }
+  
+  currentTurn = gameState.currentTurn; isGameOver = gameState.isGameOver; 
 
   // 👇 追加：相手から送られてきた特殊勝利のフラグを受け取り、自分の画面にも反映させる！
   if (gameState.specialWinner !== undefined) window.specialWinner = gameState.specialWinner;
@@ -1288,13 +1301,14 @@ function getCardTypes() {
     { category: "pack_4", type: "set_magic", name: "反逆の光旗", originalCost: 2, cost: 2, image: "images/pack_4/noroshi.jpg", attribute: "light", flavor: "今こそ反逆の時！光の御旗のもとに集え！", desc: "【設置】<br>■【アクト】自分のドロップゾーンからキャラ1枚を選択し、このカードを破壊する。選択したキャラを自分のセンターにコールし、コールしたキャラのライフを+2する。" },
     { category: "pack_4", type: "item", name: "シャドウパニッシャー！", originalCost: 3, cost: 3, effectValue: 0, hp: 0, image: "images/pack_4/shadow.jpg", attribute: "light", invert: true, flavor: "陰から生まれた深い闇が、独りよがりな光を断ち切る！", desc: "【反転】<br>■自分のステージに属性「光」のカードがあるなら、このカードを使える。<br>■自分のステージにいる属性「光」のキャラが破壊されたとき、このカードのライフを+1する。" },
     { category: "pack_4", type: "set_magic", name: "リフレクト・ブラスト", originalCost: 2, cost: 2, image: "images/pack_4/counter.jpg", attribute: "light", flavor: "油断しちゃ、ダーメ♪", desc: "【設置】<br>■自分のリーダーに【リフレクター】を付与する。<br>■【アクト】ステージにいるキャラ1枚にダメージ4！このカードを破壊する。" },
-    { category: "pack_5", type: "leader", name: "迸る閃望 ルミナス=イデオル", originalCost: 0, cost: 0, attack: 0, hp: 20, image: "images/pack_5/ideol.jpg", attribute: "freat", flavor: "果てしなく広大な世界で一番のアイドルを目指すうら若き少女。大きく文化が発展した現代、アイドルを目指す者も数多く存在し、とてつもない倍率の競争が発生しているアイドルの世界で、己のカリスマ性を武器に人々を魅了する。", desc: "■【アクト】このカードのソウルを1消費する。このターン中、このカードの攻撃力を+2する。<br>■自分のターン中に1度、自分が属性に「歌」を含む魔法を使った時、自分のステージにあるカード全てのソウルを+1する。" },
+    
+    { category: "pack_5", type: "leader", name: "迸る閃望 ルミナス=イデオル", originalCost: 0, cost: 0, attack: 0, hp: 20, image: "images/pack_5/ideol.jpg", attribute: "freat", flavor: "果てしなく広大な世界で一番のアイドルを目指すうら若き少女。大きく文化が発展した現代、アイドルを目指す者も数多く存在し、とてつもない倍率の競争が発生しているアイドルの世界で、己のカリスマ性を武器に人々を魅了する。", desc: "■【アクト】このカードのソウルを1消費する。このターン中、このカードの攻撃力を+2する。<br>■自分が属性に「歌」を含む魔法を使った時、自分のステージにあるカード全てのソウルを+1する。" },
     { category: "pack_5", type: "monster", name: "新参の熱狂者", originalCost: 1, cost: 1, attack: 0, hp: 2, image: "images/pack_5/shinnzann.jpg", attribute: "freat", soulGuard: true, burn: true, flavor: "人々は彼女の熱に引き寄せられ、支援する。「最近人気のこの子、まじ推せる！」", desc: "【ソウルガード】<br>■【燃焼】このカードの攻撃力を+1する。<br>■【ターン終了時】自分のリーダーにバリアを付与する。" },
-    { category: "pack_5", type: "monster", name: "古参の熱狂者", originalCost: 3, cost: 3, attack: 1, hp: 5, image: "images/pack_5/kosann.jpg", attribute: "freat", soulGuard: true, burn: true, flavor: "ファンの支援に応えるために、彼女の活動はより規模を拡大させていく。「ウチの推しは今日も尊みがふか～い」", desc: "【ソウルガード】<br>■【燃焼】相手のステージに存在するキャラ全てにダメージ2。<br>■【ターン終了時】自分のリーダーのソウルを+1する。" },
-    { category: "pack_5", type: "monster", name: "熱狂の従者", originalCost: 2, cost: 2, attack: 1, hp: 3, image: "images/pack_5/juusha.jpg", attribute: "freat", soulGuard: true, burn: true, flavor: "アイドルを推すのは自由広めるのも自由、しかし自由には責任が伴うのが世の常である。であれば、ファンにも責任が伴うのが道理ではないか。「推ししか勝たん...」", desc: "【ソウルガード】<br>■【燃焼】自分のドロップゾーンの属性に「歌」を含むカード1枚を手札に加える。<br>■【ターン終了時】このカードは【守護】を持つ。" },
-    { category: "pack_5", type: "monster", name: "熱狂の宣教者", originalCost: 4, cost: 4, attack: 1, hp: 7, image: "images/pack_5/senkyou.jpg", attribute: "freat", soulGuard: true, burn: true, flavor: "アイドルとは偶像。象徴であり、進行するものではない。「推しのライブなう。」", desc: "【ソウルガード】<br>■【燃焼】相手のステージに存在するキャラ全ての攻撃力を-1する。<br>■【ターン終了時】自分のリーダーのソウルを+1する。" },
-    { category: "pack_5", type: "monster", name: "熱狂の貢献者", originalCost: 2, cost: 2, attack: 0, hp: 4, image: "images/pack_5/koukenn.jpg", attribute: "freat", soulGuard: true, flavor: "道具も技術もエナジーも、使い方を誤れば破滅を招く。「みんな...忘れてしまったの...？」", desc: "【ソウルガード】<br>■【コール】自分のリーダーのライフを+4する。<br>■自分のターン中、このカードは破壊されない。" },
-    { category: "pack_5", type: "magic", name: "舞台の頂 オルデニス", originalCost: 1, cost: 1, image: "images/pack_5/oldeniss.jpg", attribute: "freat", arts: 7, shiftStatue: true, flavor: "全てのアーティストが夢みる最高の舞台。歌う者の心を湧き立て、聴く者全てに熱をもたらす。かつては火薬と金属片が舞い、闘いの熱を蓄えた戦場だったという。", desc: "■自分のキャラ1枚は【挑発】を持つ。<br>■【アーツ7】【シフトスタチュー】「このカードは能力で選択されない。」を持つ。<br>■【ターン開始時】相手のターン開始時、自分のステージにソウルが13以上のカードがあるなら、自分はゲームに勝利する。" },
+    { category: "pack_5", type: "monster", name: "古参の熱狂者", originalCost: 3, cost: 3, attack: 2, hp: 2, image: "images/pack_5/kosann.jpg", attribute: "freat", soulGuard: true, burn: true, flavor: "ファンの支援に応えるために、彼女の活動はより規模を拡大させていく。「ウチの推しは今日も尊みがふか～い」", desc: "【ソウルガード】<br>■【燃焼】相手のステージに存在するキャラ全てにダメージ3。<br>■【ターン終了時】自分のステージに存在するキャラ全ての攻撃力とライフを+1する。" },
+    { category: "pack_5", type: "monster", name: "熱狂の従者", originalCost: 2, cost: 2, attack: 2, hp: 2, image: "images/pack_5/juusha.jpg", attribute: "freat", soulGuard: true, burn: true, flavor: "アイドルを推すのは自由広めるのも自由、しかし自由には責任が伴うのが世の常である。であれば、ファンにも責任が伴うのが道理ではないか。「推ししか勝たん...」", desc: "【ソウルガード】<br>■【燃焼】自分のドロップゾーンの属性に「歌」を含むカード1枚を手札に加える。<br>■【ターン終了時】自分リーダーのライフを+2し、このカードは【守護】を持つ。" },
+    { category: "pack_5", type: "monster", name: "熱狂の宣教者", originalCost: 4, cost: 4, attack: 1, hp: 6, image: "images/pack_5/senkyou.jpg", attribute: "freat", soulGuard: true, burn: true, flavor: "アイドルとは偶像。象徴であり、進行するものではない。「推しのライブなう。」", desc: "【ソウルガード】<br>■【コール】自分のデッキからコスト3以下の属性に「FREAT」を含むキャラ2種類を1枚ずつコールする。<br>■【燃焼】自分のリーダーのソウルを+1する。<br>■【ターン終了時】相手のステージに存在するキャラ全ての攻撃力を-1する。" },
+    { category: "pack_5", type: "monster", name: "熱狂の貢献者", originalCost: 1, cost: 1, attack: 1, hp: 2, image: "images/pack_5/koukenn.jpg", attribute: "freat", soulGuard: true, unselectable: true, flavor: "道具も技術もエナジーも、使い方を誤れば破滅を招く。「みんな...忘れてしまったの...？」", desc: "【ソウルガード】<br>■【ターン終了時】自分のリーダーのライフを+1する。<br>■このカードはカードの効果で選択されない。" },
+    { category: "pack_5", type: "magic", name: "舞台の頂 オルデニス", originalCost: 1, cost: 1, image: "images/pack_5/oldeniss.jpg", attribute: "freat", arts: 6, shiftStatue: true, flavor: "全てのアーティストが夢みる最高の舞台。歌う者の心を湧き立て、聴く者全てに熱をもたらす。かつては火薬と金属片が舞い、闘いの熱を蓄えた戦場だったという。", desc: "■自分のキャラ1枚は【挑発】を持つ。<br>■【アーツ6】【シフトスタチュー】「このカードは能力で選択されない。」を持つ。<br>■【ターン開始時】相手のターン開始時、自分のステージにソウルが13以上のカードがあるなら、自分はゲームに勝利する。" },
     { category: "pack_5", type: "magic", name: "少女レイ", originalCost: 3, cost: 3, image: "images/pack_5/rei.jpg", attribute: "freat_song", flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■このカードと自分の手札1枚を自分のステージにあるカード1枚のソウルに入れる。" },
     { category: "pack_5", type: "magic", name: "劣等上等", originalCost: 2, cost: 2, image: "images/pack_5/rinren.jpg", attribute: "freat_song", shift: true, flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■【シフト】次から1つ選んで使う。<br>・自分のリーダーと相手のステージにいるキャラ1枚を選択し、「接続」する。<br>・相手のステージに存在するキャラ全ての攻撃力を次の相手のターン終了時まで-1する。" },
     { category: "pack_5", type: "magic", name: "テトリス", originalCost: 1, cost: 1, image: "images/pack_5/tetlis.jpg", attribute: "freat_song", arts: 3, flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■このターン中、自分のリーダーは【ドレイン】を持つ。<br>■【アーツ3】自分のリーダーのソウルを+1する。" },
@@ -1368,7 +1382,6 @@ function startGame() {
   
   drawCard(1); drawCard(1); drawCard(1); 
   drawCard(2); drawCard(2); drawCard(2);
-  drawCard(currentTurn);
   
   if (isSoloMode && opponentLeader && opponentLeader.name === "降り注ぐ絶望 ディザスター") {
       let taijuTemplate = getCardTypes().find(c => c.name === "災いの胎呪");
@@ -1383,13 +1396,9 @@ function startGame() {
   
   renderAll();
   
-  // 👇 追加：ゲーム開始時にド派手なVS画面（カットイン演出）を表示！
   showVsScreen();
   
-  if (isSoloMode && currentTurn === 2) {
-    // 👇 変更：VS画面が終わるまで（約4秒追加して）AIの攻撃を待たせる！
-    setTimeout(playAITurn, 5500); 
-  }
+  // ※AIの攻撃待機は、マリガン（引き直し）が終わった後に移動しました！
 }
 
 function drawCard(pId) { 
@@ -1415,12 +1424,6 @@ function destroyCard(playerId, zone, isLost = false, isDirectDrop = false) {
   if (targetCard.immortalZero) {
       if (targetCard.hp < 0) targetCard.hp = 0; // HPがマイナスになっていたら0に戻して生存させる
       return { destroyed: false };
-  }
-  if (!isLost && !isDirectDrop) {
-      if (targetCard.name === "熱狂の貢献者" && currentTurn === playerId) {
-          if (targetCard.hp <= 0) targetCard.hp = 1; 
-          return { destroyed: false };
-      }
   }
 
   let linkedId = targetCard.isConnected;
@@ -1698,16 +1701,12 @@ window.useBurnSkill = function(zone) {
   } else if (card.name === "古参の熱狂者") {
       ['left', 'center', 'right'].forEach(z => {
           let tCard = players[oppId].stage[z];
-          if (tCard && tCard.type === "monster") applyEffectDamage(myPlayerId, oppId, z, 2);
+          if (tCard && tCard.type === "monster") applyEffectDamage(myPlayerId, oppId, z, 3); // 👈 2から3に変更
       });
   } else if (card.name === "熱狂の宣教者") {
-      ['left', 'center', 'right'].forEach(z => {
-          let tCard = players[oppId].stage[z];
-          if (tCard && tCard.type === "monster") {
-              tCard.turnAttackBoost = (tCard.turnAttackBoost || 0) - 1;
-              showFloatingTextOnElement(`p${oppId}-stage-${z}`, -1, 'attack_boost');
-          }
-      });
+      // 👈 相手デバフから、自分のリーダーのソウル+1に変更
+      p.leader.soul.push(resetCardState({name: "熱狂と歓声"}));
+      showFloatingTextOnElement(`p${myPlayerId}-leader-zone`, "SOUL UP!", 'heal');
   } else if (card.name === "熱狂の従者") {
       let songCards = p.trash.filter(c => c.attribute && c.attribute.includes("song"));
       if (songCards.length > 0) {
@@ -2079,6 +2078,13 @@ function attachStageListeners() {
         // 👇👇 ここを修正！リーダーやアイテムが選ばれた時にも正しく読み取るようにする
         let card = zone === 'leader' ? p.leader : (zone === 'item' ? p.weapon : p.stage[zone]);
         if (!card) return; // 空っぽの場所をクリックした場合は無視する
+        
+        // 👇 追加：「カードの効果で選択されない」バリアの処理！
+        if (card.unselectable) {
+            playSound('barrier');
+            alert("このカードはカードの効果で選択できません！");
+            return;
+        }
         
         infoPanel.innerHTML = `🎯 「${card.name}」を選択中... <button onclick="confirmSelection()" style="padding:5px 20px; background:#e74c3c; color:white; border:none; border-radius:5px; font-weight:bold; font-size:16px; cursor:pointer; margin-left:10px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">確定</button>`;
         renderAll();
@@ -3106,14 +3112,6 @@ async function playCard(cardId, targetZone, pId) {
           p.mp += playedCard.cost; p.stage[tZone] = null; playedCard.soul = []; playedCard.attackCount = 0; playedCard.hasBarrier = false; playedCard.infection = false; playedCard.burnActive = false; playedCard.turnAttackBoost = 0; p.hand.push(playedCard); 
       };
 
-      if (playedCard.name === "熱狂の貢献者") {
-          p.hp += 4; 
-          if (p.hp > p.maxHp) p.hp = p.maxHp;
-          triggerConnection(p.leader, 'heal', 4);
-          showFloatingTextOnElement(`p${pId}-leader-zone`, 4, 'heal');
-          const el = document.getElementById(`p${pId}-leader-zone`);
-          if (el) { el.classList.add("heal-anim"); setTimeout(() => el.classList.remove("heal-anim"), 300); }
-      }
       if (playedCard.name === "リフレクト・ブラスト") { p.leader.reflector = true; playSound('barrier'); }
       if (playedCard.connectOpposite) {
           let oppZone = getOppositeZone(tZone); let oppCard = players[oppId].stage[oppZone];
@@ -3168,6 +3166,10 @@ async function playCard(cardId, targetZone, pId) {
       }
       else if (playedCard.name === "≪相死相愛≫ α&β") {
           let cards = window.pullFromDeck(pId, c => c.type === "monster" && c.attribute === "reliance" && (c.originalCost || c.cost) <= 3, 2, true);
+          for (let c of cards) await window.summonToEmptyZone(pId, c);
+      }
+      else if (playedCard.name === "熱狂の宣教者") {
+          let cards = window.pullFromDeck(pId, c => c.type === "monster" && c.attribute && c.attribute.includes("freat") && (c.originalCost || c.cost) <= 3, 2, true);
           for (let c of cards) await window.summonToEmptyZone(pId, c);
       }
       else if (playedCard.name === "≪従属≫ オデッセイ") {
@@ -3396,10 +3398,10 @@ async function playCard(cardId, targetZone, pId) {
         let cIdx = p.hand.findIndex(c => c.id === cardId);
         if (cIdx !== -1) { p.mp -= card.cost; p.hand.splice(cIdx, 1); sendToTrashOrLost(pId, [card]); }
         if (p.weapon && p.weapon.name === "魔法の杖") { p.mp = Math.min(p.maxMp, p.mp + 1); }
-        if (card.attribute && card.attribute.includes("song")) {
-            if (p.leader && p.leader.name === "迸る閃望 ルミナス=イデオル" && !p.leader.songSkillUsed) {
-                p.leader.songSkillUsed = true; 
-                let tokenTemplate = getCardTypes().find(c => c.name === "熱狂と歓声");
+        if (card.attribute && typeof card.attribute === 'string' && card.attribute.includes("song")) {
+            // 👇 修正：「&& !p.leader.songSkillUsed」と「p.leader.songSkillUsed = true;」を削除！
+            if (p.leader && p.leader.name.includes("ルミナス=イデオル")) {
+                let tokenTemplate = getCardTypes().find(c => c.name === "熱狂と歓声" || c.name === "熱狂の歓声");
                 let token = resetCardState(tokenTemplate);
                 ['left', 'center', 'right'].forEach(z => {
                     if (p.stage[z]) { 
@@ -3911,18 +3913,40 @@ async function endTurnProcess(pId) {
           }
           if (c && c.name === "古参の熱狂者") {
               await window.showPassiveEffect(pId, z);
-              p.leader.soul.push(resetCardState({name: "熱狂と歓声"})); 
-              showFloatingTextOnElement(`p${pId}-leader-zone`, "SOUL UP!", 'heal');
+              ['left', 'center', 'right'].forEach(oz => {
+                  let myCard = p.stage[oz];
+                  if (myCard && myCard.type === "monster") {
+                      myCard.attack += 1; triggerConnection(myCard, 'permanent_attack_boost', 1);
+                      myCard.hp += 1; triggerConnection(myCard, 'heal', 1);
+                      showFloatingTextOnElement(`p${pId}-stage-${oz}`, 1, 'attack_boost');
+                      setTimeout(() => showFloatingTextOnElement(`p${pId}-stage-${oz}`, 1, 'heal'), 300);
+                  }
+              });
           }
           if (c && c.name === "熱狂の従者") {
               await window.showPassiveEffect(pId, z);
+              p.hp += 2; if (p.hp > p.maxHp) p.hp = p.maxHp;
+              triggerConnection(p.leader, 'heal', 2);
+              showFloatingTextOnElement(`p${pId}-leader-zone`, 2, 'heal');
+              
               c.ward = true;
               showFloatingTextOnElement(`p${pId}-stage-${z}`, "WARD", 'heal');
           }
           if (c && c.name === "熱狂の宣教者") {
               await window.showPassiveEffect(pId, z);
-              p.leader.soul.push(resetCardState({name: "熱狂と歓声"}));
-              showFloatingTextOnElement(`p${pId}-leader-zone`, "SOUL UP!", 'heal');
+              ['left', 'center', 'right'].forEach(oz => {
+                  let tCard = players[nextPId].stage[oz];
+                  if (tCard && tCard.type === "monster") {
+                      tCard.turnAttackBoost = (tCard.turnAttackBoost || 0) - 1;
+                      showFloatingTextOnElement(`p${nextPId}-stage-${oz}`, -1, 'attack_boost');
+                  }
+              });
+          }
+          if (c && c.name === "熱狂の貢献者") {
+              await window.showPassiveEffect(pId, z);
+              p.hp += 1; if (p.hp > p.maxHp) p.hp = p.maxHp;
+              triggerConnection(p.leader, 'heal', 1);
+              showFloatingTextOnElement(`p${pId}-leader-zone`, 1, 'heal');
           }
           if (c && c.name === "影の国の闇 スカージ") {
               let hasTarget = false;
@@ -5181,6 +5205,11 @@ function showVsScreen() {
         setTimeout(() => {
             vsOverlay.style.display = "none";
             vsOverlay.style.transition = ""; 
+            
+            // 👇 追加：VS画面が消えた直後に、マリガン（引き直し）画面を呼び出す！
+            if (isGameStarted && !isGameOver) {
+                window.startMulligan();
+            }
         }, 500);
     }, 3500);
 }
@@ -5194,3 +5223,79 @@ infoPanelStyle.innerHTML = `
     }
 `;
 document.head.appendChild(infoPanelStyle);
+
+window.startMulligan = function() {
+    window.isMulliganing = true;
+    let p = players[myPlayerId];
+    let selectedIndices = []; 
+
+    let overlay = document.createElement("div");
+    overlay.id = "mulligan-modal";
+    overlay.style = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.9); z-index: 100000; display: flex; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(5px);";
+
+    let updateModal = () => {
+        let cardsHtml = p.hand.map((c, i) => {
+            let isSelected = selectedIndices.includes(i);
+            // 選んだカードは赤く光って上に飛び出る！
+            let extraStyle = isSelected ? "box-shadow: 0 0 20px 10px #e74c3c; transform: translateY(-20px);" : "box-shadow: 0 0 10px rgba(255,255,255,0.3);";
+            return `<div onclick="window.toggleMulligan(${i})" style="cursor: pointer; transition: 0.2s; margin: 0 10px; ${extraStyle}">
+                ${generateCardHtml(c, "", "mulligan-card")}
+            </div>`;
+        }).join("");
+
+        overlay.innerHTML = `
+            <div style="font-size: 32px; color: #f1c40f; font-weight: bold; margin-bottom: 20px; text-shadow: 0 0 15px rgba(241,196,15,0.8);">マリガン（引き直し）</div>
+            <div style="font-size: 18px; color: #ecf0f1; margin-bottom: 40px;">デッキに戻すカードを選択してください（何枚でも可）</div>
+            <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 50px;">
+                ${cardsHtml}
+            </div>
+            <button onclick="window.confirmMulligan()" style="padding: 15px 50px; background: #e74c3c; border: 2px solid #c0392b; border-radius: 8px; color: white; font-size: 24px; cursor: pointer; transition: 0.2s; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">確定</button>
+        `;
+    };
+
+    window.toggleMulligan = (index) => {
+        playSound('click');
+        let pos = selectedIndices.indexOf(index);
+        if (pos === -1) selectedIndices.push(index);
+        else selectedIndices.splice(pos, 1);
+        updateModal();
+    };
+
+    window.confirmMulligan = () => {
+        playSound('draw');
+        if (selectedIndices.length > 0) {
+            let cardsToReturn = [];
+            selectedIndices.sort((a, b) => b - a);
+            for (let i of selectedIndices) {
+                cardsToReturn.push(p.hand.splice(i, 1)[0]);
+            }
+            p.deck.push(...cardsToReturn);
+            p.deck.sort(() => Math.random() - 0.5);
+            for (let i = 0; i < selectedIndices.length; i++) {
+                drawCard(myPlayerId);
+            }
+        }
+        document.getElementById("mulligan-modal").remove();
+        delete window.toggleMulligan;
+        delete window.confirmMulligan;
+        
+        window.isMulliganing = false;
+
+        // 👇 追加：マリガン（引き直し）が終わった後に、自分が先攻ならターンの最初の1枚を引く！
+        if (currentTurn === myPlayerId) {
+            drawCard(myPlayerId);
+        }
+
+        renderAll();
+        sendGameState(); // 最新の手札とデッキ情報を相手に送る！
+
+        // ソロモードの場合、AIの攻撃をここで開始する！
+        if (isSoloMode && currentTurn === 2 && !isGameOver) {
+            drawCard(2); // 👇 追加：AIが先攻の場合、ここでAIに最初の1枚を引かせる！
+            setTimeout(playAITurn, 1000); 
+        }
+    };
+
+    updateModal();
+    document.body.appendChild(overlay);
+};
