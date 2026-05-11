@@ -1132,20 +1132,26 @@ socket.on('assign_player', (num) => {
 });
 
 window.isMulliganing = false; // マリガン中かどうかのフラグ
+window.mulliganFinishedFlag = false;
 
 socket.on('game_updated', (gameState) => {
   if (isSoloMode) return;
   let wasNotStarted = !isGameStarted; 
   
-  // 👇 修正：自分がマリガン中の時は、相手から送られてきたデータで自分の手札とデッキを上書きしないように保護する！
-  if (window.isMulliganing && myPlayerId) {
-      let myHandBackup = [...players[myPlayerId].hand];
-      let myDeckBackup = [...players[myPlayerId].deck];
-      players = gameState.players;
-      players[myPlayerId].hand = myHandBackup;
-      players[myPlayerId].deck = myDeckBackup;
-  } else {
-      players = gameState.players; 
+  let myHandBackup = myPlayerId ? [...players[myPlayerId].hand] : [];
+  let myDeckBackup = myPlayerId ? [...players[myPlayerId].deck] : [];
+  
+  players = gameState.players; 
+
+  // 👇 修正：通信の「すれ違い」による手札リセットバグを完全に防ぐ最強の保護処理！
+  if (myPlayerId) {
+      let incomingMe = gameState.players[myPlayerId];
+      // 自分がマリガン中、または「自分は完了したのに相手のデータでは未完了になっている（すれ違い通信）」場合
+      if (window.isMulliganing || (window.mulliganFinishedFlag && !incomingMe.mulliganFinished)) {
+          players[myPlayerId].hand = myHandBackup;
+          players[myPlayerId].deck = myDeckBackup;
+          players[myPlayerId].mulliganFinished = window.mulliganFinishedFlag;
+      }
   }
   
   currentTurn = gameState.currentTurn; isGameOver = gameState.isGameOver; 
@@ -1348,6 +1354,7 @@ function startGame() {
   isSelectingStage = false; selectionStageCallback = null;
   pendingSelection = null; 
   
+  window.mulliganFinishedFlag = false;
   [1, 2].forEach(pId => { 
     players[pId] = { hp: 15, maxHp: 15, mp: 1, maxMp: 1, deck: [], hand: [], stage: {left: null, center: null, right: null}, leader: null, weapon: null, leaderAttackCount: 0, trash: [], lostZone: [], destroyedThisTurn: 0 }; 
   });
@@ -5280,6 +5287,8 @@ window.startMulligan = function() {
         delete window.confirmMulligan;
         
         window.isMulliganing = false;
+        window.mulliganFinishedFlag = true;          // 👈 追加：システムに完了を知らせる
+        players[myPlayerId].mulliganFinished = true; // 👈 追加：相手にも完了を知らせる
 
         if (currentTurn === myPlayerId) {
             drawCard(myPlayerId);
