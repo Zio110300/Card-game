@@ -5226,7 +5226,6 @@ document.head.appendChild(infoPanelStyle);
 
 window.startMulligan = function() {
     window.isMulliganing = true;
-    let p = players[myPlayerId];
     let selectedIndices = []; 
 
     let overlay = document.createElement("div");
@@ -5234,9 +5233,9 @@ window.startMulligan = function() {
     overlay.style = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.9); z-index: 100000; display: flex; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(5px);";
 
     let updateModal = () => {
+        let p = players[myPlayerId]; // 👈 修正：画面を更新するたびに最新の自分データを取得する！
         let cardsHtml = p.hand.map((c, i) => {
             let isSelected = selectedIndices.includes(i);
-            // 選んだカードは赤く光って上に飛び出る！
             let extraStyle = isSelected ? "box-shadow: 0 0 20px 10px #e74c3c; transform: translateY(-20px);" : "box-shadow: 0 0 10px rgba(255,255,255,0.3);";
             return `<div onclick="window.toggleMulligan(${i})" style="cursor: pointer; transition: 0.2s; margin: 0 10px; ${extraStyle}">
                 ${generateCardHtml(c, "", "mulligan-card")}
@@ -5262,6 +5261,7 @@ window.startMulligan = function() {
     };
 
     window.confirmMulligan = () => {
+        let p = players[myPlayerId]; // 👈 修正：カードを捨てる時も最新の自分データを取得する！
         playSound('draw');
         if (selectedIndices.length > 0) {
             let cardsToReturn = [];
@@ -5281,17 +5281,15 @@ window.startMulligan = function() {
         
         window.isMulliganing = false;
 
-        // 👇 追加：マリガン（引き直し）が終わった後に、自分が先攻ならターンの最初の1枚を引く！
         if (currentTurn === myPlayerId) {
             drawCard(myPlayerId);
         }
 
         renderAll();
-        sendGameState(); // 最新の手札とデッキ情報を相手に送る！
+        sendGameState(); 
 
-        // ソロモードの場合、AIの攻撃をここで開始する！
         if (isSoloMode && currentTurn === 2 && !isGameOver) {
-            drawCard(2); // 👇 追加：AIが先攻の場合、ここでAIに最初の1枚を引かせる！
+            drawCard(2); 
             setTimeout(playAITurn, 1000); 
         }
     };
