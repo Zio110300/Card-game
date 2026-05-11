@@ -1317,7 +1317,7 @@ function getCardTypes() {
     { category: "pack_5", type: "magic", name: "舞台の頂 オルデニス", originalCost: 1, cost: 1, image: "images/pack_5/oldeniss.jpg", attribute: "freat", arts: 6, shiftStatue: true, flavor: "全てのアーティストが夢みる最高の舞台。歌う者の心を湧き立て、聴く者全てに熱をもたらす。かつては火薬と金属片が舞い、闘いの熱を蓄えた戦場だったという。", desc: "■自分のキャラ1枚は【挑発】を持つ。<br>■【アーツ6】【シフトスタチュー】「このカードは能力で選択されない。」を持つ。<br>■【ターン開始時】相手のターン開始時、自分のステージにソウルが13以上のカードがあるなら、自分はゲームに勝利する。" },
     { category: "pack_5", type: "magic", name: "少女レイ", originalCost: 3, cost: 3, image: "images/pack_5/rei.jpg", attribute: "freat_song", flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■このカードと自分の手札1枚を自分のステージにあるカード1枚のソウルに入れる。" },
     { category: "pack_5", type: "magic", name: "劣等上等", originalCost: 2, cost: 2, image: "images/pack_5/rinren.jpg", attribute: "freat_song", shift: true, flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■【シフト】次から1つ選んで使う。<br>・自分のリーダーと相手のステージにいるキャラ1枚を選択し、「接続」する。<br>・相手のステージに存在するキャラ全ての攻撃力を次の相手のターン終了時まで-1する。" },
-    { category: "pack_5", type: "magic", name: "テトリス", originalCost: 1, cost: 1, image: "images/pack_5/tetlis.jpg", attribute: "freat_song", arts: 3, flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■このターン中、自分のリーダーは【ドレイン】を持つ。<br>■【アーツ3】自分のリーダーのソウルを+1する。" },
+    { category: "pack_5", type: "magic", name: "テトリス", originalCost: 1, cost: 1, image: "images/pack_5/tetlis.jpg", attribute: "freat_song", arts: 3, flavor: "", desc: "■ステージにキャラがいるなら使える。<br>■【エフェクト】次のターン終了時まで【ドレイン】を持つ。<br>■【アーツ3】自分のリーダーのソウルを+1する。" },
     { category: "pack_5", type: "magic", name: "天ノ弱", originalCost: 2, cost: 2, image: "images/pack_5/amanojaku.jpg", attribute: "freat_song", flavor: "", desc: "■自分のリーダーの攻撃力を+1する。ステージに存在するキャラ1枚を選択し、【反転】する。<br>■【エフェクト】自分のターン開始時、「グッバイ宣言」1枚を手札に加え、この【エフェクト】を失う。" },
     { category: "pack_5", type: "magic", name: "KING", originalCost: 5, cost: 5, image: "images/pack_5/gumi.jpg", attribute: "freat_song", flavor: "", desc: "■このカードを自分のリーダーのソウルに入れる。<br>■相手のステージにいるランダムなキャラ1枚を破壊し、カード3枚を引く。" },
     { category: "pack_5", type: "magic", name: "ワールドイズマイン", originalCost: 6, cost: 6, image: "images/pack_5/world.jpg", attribute: "freat_song", flavor: "　", desc: "■ステージにキャラがいるなら使える。<br>■ステージに存在するキャラ全ての攻撃力を0まで減らし、自分のリーダーのライフを減らした分+する。" },
@@ -2970,6 +2970,12 @@ window.executeEffectAbility = function(pId, card) {
 
     // 2. 複雑なカスタム能力の付与（カード名で判定）
     switch (card.name) {
+        case "テトリス":
+            p.leader.drain = true;
+            p.leader.tetrisDrainTimer = 2; // 👈 2ターン分（自分と相手のターン終了時まで）持続するタイマー
+            hasEffect = true;
+            break;
+            
         case "天ノ弱":
             p.leader.amanojakuEffect = true; 
             hasEffect = true;
@@ -3743,7 +3749,7 @@ async function playCard(cardId, targetZone, pId) {
         return;
     }
     else if (card.name === "テトリス") {
-        p.leader.drain = true;
+        // ※【エフェクト】として処理するため、ここでは何もしない
     }
     else if (card.name === "天ノ弱") {
         window.startStageSelection(
@@ -4129,6 +4135,17 @@ async function endTurnProcess(pId) {
       // ==========================================
       // 【Phase 2】 ターン終了処理 (Cleanup)
       // ==========================================
+      
+      [1, 2].forEach(targetPId => {
+          let leader = players[targetPId].leader;
+          if (leader && leader.tetrisDrainTimer > 0) {
+              leader.tetrisDrainTimer--;
+              if (leader.tetrisDrainTimer === 0) {
+                  leader.drain = false;
+              }
+          }
+      });
+
       if (p.leader) {
           p.leader.turnAttackBoost = 0; p.leader.burnActive = false; p.leader.songSkillUsed = false;
       }
