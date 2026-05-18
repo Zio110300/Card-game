@@ -736,39 +736,140 @@ if (cancelWaitingBtn) {
         myPlayerId = null;
     });
 }
-// 👆👆 追加ここまで 👆👆
 
-// ★ ボス選択の処理を追加
 soloModeBtn.addEventListener("click", () => {
-  playSound('click'); // 👈 これを追加！
-  if (myCustomDeck.length !== DECK_LIMIT) { alert(`デッキは必ず ${DECK_LIMIT}枚 にしてください！（現在 ${myCustomDeck.length}枚）`); return; }
-  isSoloMode = true;
-  myRoomId = "solo-room"; 
-  myPlayerId = 1;
-  applyBoardLayout(myPlayerId); 
-  homeScreen.style.display = "none"; 
-  document.getElementById('game-wrap').style.display = 'block';
-  resizeGame();
-  
-  let bossType = document.getElementById("solo-boss-select").value;
-  
-  opponentDeck = [];
-  let aiCardTypes = getCardTypes().filter(c => c.category === "general" && c.type === "monster");
-  for(let i=0; i<DECK_LIMIT; i++) {
-    opponentDeck.push(JSON.parse(JSON.stringify(aiCardTypes[Math.floor(Math.random() * aiCardTypes.length)])));
-  }
-  
-  if (bossType === "dragon") {
-      opponentLeader = { name: "ダークドラゴン", type: "leader", originalCost: 0, cost: 0, attack: 2, hp: 50, image: "🐉", attribute: "dark", desc: "【常時】相手のセンターにキャラがいないなら、ターン終了時に相手のリーダーに2ダメージを与える。" };
-  } else if (bossType === "satan") {
-      // ★ 新ボス：大悪魔 サタン
-      opponentLeader = { name: "大悪魔 サタン", type: "leader", originalCost: 0, cost: 0, attack: 3, hp: 66, image: "👿", attribute: "dark", desc: "【常時】ターン終了時、相手のランダムなキャラ1体に4ダメージを与える。キャラがいない場合、相手リーダーに2ダメージを与える。" };
-  } else if (bossType === "disaster") {
-      // ★ 超高難易度ボス：ディザスター
-      opponentLeader = { name: "降り注ぐ絶望 ディザスター", type: "leader", originalCost: 0, cost: 0, attack: 0, hp: 66, image: "🌋", attribute: "magic_fear", desc: "■開始時：レフトとライトに「災いの胎呪」「災いの出看」を出す。<br>■ターン開始時：「出看」のHP-1。相手キャラ全員に1ダメージ×5回。「出看」のHPが0なら「出看」のHP+5。<br>■ターン終了時：「胎呪」のHPが13以上なら相手全体に49ダメージ！<br>その後、地震・津波・噴火のいずれかが発生。" };
-  }
-  
-  startGame();
+    playSound('click'); 
+    if (myCustomDeck.length !== DECK_LIMIT) { alert(`デッキは必ず ${DECK_LIMIT}枚 にしてください！（現在 ${myCustomDeck.length}枚）`); return; }
+    
+    // 👇 いきなりゲームを始めず、選択モーダルを表示する！
+    document.getElementById("solo-choice-modal").style.display = "flex";
+});
+
+// モーダル内の「キャンセル」
+document.getElementById("btn-solo-cancel").addEventListener("click", () => {
+    playSound('click');
+    document.getElementById("solo-choice-modal").style.display = "none";
+});
+
+// モーダル内の「ボスバトルへ」
+document.getElementById("btn-boss-battle").addEventListener("click", () => {
+    playSound('click');
+    document.getElementById("solo-choice-modal").style.display = "none";
+    
+    // 👇 元々あった「ボスバトルの準備処理」をここに丸ごとお引越し！
+    isSoloMode = true;
+    myRoomId = "solo-room"; 
+    myPlayerId = 1;
+    applyBoardLayout(myPlayerId); 
+    homeScreen.style.display = "none"; 
+    document.getElementById('game-wrap').style.display = 'block';
+    resizeGame();
+    
+    let bossType = document.getElementById("solo-boss-select").value;
+    
+    opponentDeck = [];
+    let aiCardTypes = getCardTypes().filter(c => c.category === "general" && c.type === "monster");
+    for(let i=0; i<DECK_LIMIT; i++) {
+      opponentDeck.push(JSON.parse(JSON.stringify(aiCardTypes[Math.floor(Math.random() * aiCardTypes.length)])));
+    }
+    
+    if (bossType === "dragon") {
+        opponentLeader = { name: "ダークドラゴン", type: "leader", originalCost: 0, cost: 0, attack: 2, hp: 50, image: "🐉", attribute: "dark", desc: "【常時】相手のセンターにキャラがいないなら、ターン終了時に相手のリーダーに2ダメージを与える。" };
+    } else if (bossType === "satan") {
+        opponentLeader = { name: "大悪魔 サタン", type: "leader", originalCost: 0, cost: 0, attack: 3, hp: 66, image: "👿", attribute: "dark", desc: "【常時】ターン終了時、相手のランダムなキャラ1体に4ダメージを与える。キャラがいない場合、相手リーダーに2ダメージを与える。" };
+    } else if (bossType === "disaster") {
+        opponentLeader = { name: "降り注ぐ絶望 ディザスター", type: "leader", originalCost: 0, cost: 0, attack: 0, hp: 66, image: "🌋", attribute: "magic_fear", desc: "■開始時：レフトとライトに「災いの胎呪」「災いの出看」を出す。<br>■ターン開始時：「出看」のHP-1。相手キャラ全員に1ダメージ×5回。「出看」のHPが0なら「出看」のHP+5。<br>■ターン終了時：「胎呪」のHPが13以上なら相手全体に49ダメージ！<br>その後、地震・津波・噴火のいずれかが発生。" };
+    }
+    
+    startGame();
+});
+
+// ==========================================
+// 📖 ノベル機能のデータと処理
+// ==========================================
+// ==========================================
+// 📖 ノベル機能のデータと処理（外部ファイル読み込み版）
+// ==========================================
+const novelDatabase = [
+    {
+        title: "FREAT",
+        file: "novels/FREAT.txt"
+    },
+    {
+        title: "BICE",
+        file: "novels/BICE.txt"
+    }
+    // 小説を増やす時は、ここに { title: "第二章", file: "novels/chapter2.txt" } のように追加するだけでOK！
+];
+
+// モーダル内の「ノベルへ」
+document.getElementById("btn-novel-mode").addEventListener("click", () => {
+    playSound('click');
+    document.getElementById("solo-choice-modal").style.display = "none";
+    document.getElementById("home-screen").style.display = "none";
+    
+    // アニメーションを表示
+    document.getElementById("book-anim-overlay").style.display = "flex";
+    
+    // 1.5秒後にアニメーションを消して書庫画面へ
+    setTimeout(() => {
+        document.getElementById("book-anim-overlay").style.display = "none";
+        document.getElementById("novel-select-screen").style.display = "flex";
+        renderNovelList();
+    }, 1500);
+});
+
+// ノベルリストの生成
+function renderNovelList() {
+    const listContainer = document.getElementById("novel-list");
+    listContainer.innerHTML = "";
+    
+    novelDatabase.forEach((novel, index) => {
+        let item = document.createElement("div");
+        item.className = "novel-list-item";
+        item.innerHTML = `<span>${novel.title}</span> <span style="font-size: 16px; color: #bdc3c7;">読む 📖</span>`;
+        item.onclick = () => {
+            playSound('draw'); // ページをめくるような音
+            openNovel(index);
+        };
+        listContainer.appendChild(item);
+    });
+}
+
+// 小説を開く処理（非同期でテキストファイルを読み込む）
+async function openNovel(index) {
+    const novel = novelDatabase[index];
+    document.getElementById("novel-title").innerText = novel.title;
+    document.getElementById("novel-content").innerText = "物語を読み込んでいます..."; // ロード中の表示
+    document.getElementById("novel-read-screen").style.display = "flex";
+
+    try {
+        // 👈 ここで裏側で novels/FREAT.txt をダウンロードしてくる！
+        const response = await fetch(novel.file);
+        
+        if (!response.ok) throw new Error("ファイルが見つかりません");
+        
+        // テキストとして取り出して画面にセット！
+        const text = await response.text();
+        document.getElementById("novel-content").innerText = text;
+        
+    } catch (error) {
+        document.getElementById("novel-content").innerText = "⚠️ 物語の読み込みに失敗しました。\n（※ローカル環境で直接 index.html を開いている場合、ブラウザのセキュリティ制限で外部テキストが読み込めないことがあります。）";
+        console.error(error);
+    }
+}
+
+// 小説を閉じる
+document.getElementById("btn-novel-close").addEventListener("click", () => {
+    playSound('click');
+    document.getElementById("novel-read-screen").style.display = "none";
+});
+
+// 書庫からホームへ戻る
+document.getElementById("btn-novel-back").addEventListener("click", () => {
+    playSound('click');
+    document.getElementById("novel-select-screen").style.display = "none";
+    document.getElementById("home-screen").style.display = "flex";
 });
 
 saveDeckBtn.addEventListener("click", () => {

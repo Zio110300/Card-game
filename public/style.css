@@ -584,3 +584,64 @@ hr { margin: 5px 0 !important; border-width: 1px !important; }
   50% { transform: rotate(15deg); filter: grayscale(0%) brightness(1.5) !important; box-shadow: 0 0 30px #e74c3c !important; border-color: #e74c3c !important; }
   100% { transform: rotate(0deg); }
 }
+
+/* ==========================================
+   ノベル機能のデザイン＆パラパラアニメーション
+   ========================================== */
+
+/* 読書画面のスクロールバーをおしゃれに */
+#novel-content::-webkit-scrollbar { width: 10px; }
+#novel-content::-webkit-scrollbar-track { background: transparent; }
+#novel-content::-webkit-scrollbar-thumb { background: #bdc3c7; border-radius: 5px; }
+
+/* 本のパラパラアニメーションの器 */
+.book-container {
+  position: relative;
+  width: 200px;
+  height: 250px;
+  perspective: 1200px;
+}
+
+/* 本のページ */
+.book-page {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: #fdf6e3;
+  border: 1px solid #dcdde1;
+  border-radius: 0 10px 10px 0;
+  transform-origin: left center;
+  box-shadow: inset -5px 0 15px rgba(0,0,0,0.05), 5px 5px 15px rgba(0,0,0,0.3);
+}
+
+/* ページめくりのキーフレーム */
+@keyframes turnPage {
+  0% { transform: rotateY(0deg); opacity: 1; z-index: 10; }
+  100% { transform: rotateY(-180deg); opacity: 0; z-index: 1; }
+}
+
+/* 各ページのタイミングをずらしてパラパラ感を出す */
+.page1 { animation: turnPage 0.8s cubic-bezier(0.645, 0.045, 0.355, 1) infinite; }
+.page2 { animation: turnPage 0.8s cubic-bezier(0.645, 0.045, 0.355, 1) 0.2s infinite; }
+.page3 { animation: turnPage 0.8s cubic-bezier(0.645, 0.045, 0.355, 1) 0.4s infinite; }
+
+/* 小説リストのボタンデザイン */
+.novel-list-item {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid #7f8c8d;
+  border-left: 5px solid #f1c40f;
+  padding: 20px;
+  font-size: 24px;
+  color: #ecf0f1;
+  font-family: serif;
+  cursor: pointer;
+  transition: 0.3s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.novel-list-item:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateX(10px);
+  border-left: 5px solid #e74c3c;
+}

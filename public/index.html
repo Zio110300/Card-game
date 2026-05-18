@@ -48,14 +48,14 @@
       </div>
 
       <div class="fantasy-panel" style="flex: 1; text-align: center;">
-        <h3 class="fantasy-title" style="color: #e74c3c; text-shadow: 0 0 10px #e74c3c, 0 2px 4px #000;">ソロモード (特訓)</h3>
+        <h3 class="fantasy-title" style="color: #e74c3c; text-shadow: 0 0 10px #e74c3c, 0 2px 4px #000;">ソロモード </h3>
         <p style="font-size: 14px; color: #bdc3c7; margin-bottom: 20px;">強敵に立ち向かい、打ち倒せ！</p>
         <select id="solo-boss-select" class="fantasy-select">
           <option value="dragon">🐉 ダークドラゴン (HP:50)</option>
           <option value="satan">👿 大悪魔 サタン (HP:66)</option>
           <option value="disaster">🌋 絶望の魔神 ディザスター (HP:80)</option>
         </select>
-        <button id="solo-mode-btn" class="fantasy-btn btn-red" style="width: 100%; margin-top: 20px; padding: 15px;">🤖 ボスに挑戦する</button>
+        <button id="solo-mode-btn" class="fantasy-btn btn-red" style="width: 100%; margin-top: 20px; padding: 15px;">一人で遊ぶ</button>
       </div>
 
     </div>
@@ -204,6 +204,45 @@
 
   </div>
   <div id="floating-text-container" class="floating-text-container"></div>
+  
+
+  <div id="solo-choice-modal" style="display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 20000; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+      <div style="font-size: 36px; color: #f1c40f; font-weight: bold; margin-bottom: 50px; text-shadow: 0 0 20px rgba(241,196,15,0.8); font-family: serif; letter-spacing: 4px;">どちらへ向かいますか？</div>
+      <div style="display: flex; gap: 40px;">
+          <button id="btn-boss-battle" class="fantasy-btn btn-red" style="padding: 25px 50px; font-size: 28px; box-shadow: 0 0 20px rgba(231, 76, 60, 0.5);">⚔️ ボスバトルへ</button>
+          <button id="btn-novel-mode" class="fantasy-btn btn-blue" style="padding: 25px 50px; font-size: 28px; box-shadow: 0 0 20px rgba(52, 152, 219, 0.5);">📖 書庫（ノベル）へ</button>
+      </div>
+      <button id="btn-solo-cancel" class="fantasy-btn" style="margin-top: 50px; padding: 15px 40px; font-size: 20px;">戻る</button>
+  </div>
+
+  <div id="book-anim-overlay" style="display:none; position: fixed; top:0; left:0; width:100vw; height:100vh; background:#1a252f; z-index: 20001; justify-content: center; align-items: center; flex-direction: column;">
+      <div class="book-container">
+          <div class="book-page page1"></div>
+          <div class="book-page page2"></div>
+          <div class="book-page page3"></div>
+      </div>
+      <div style="color: #f1c40f; margin-top: 60px; font-size: 28px; font-family: serif; letter-spacing: 8px; text-shadow: 0 0 10px rgba(241,196,15,0.5);">物語を開いています...</div>
+  </div>
+
+  <div id="novel-select-screen" style="display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: linear-gradient(135deg, #2c3e50, #000000); z-index: 20002; flex-direction: column; align-items: center;">
+      <div style="width: 100%; height: 100%; padding-top: 80px; display: flex; flex-direction: column; align-items: center;">
+          <div style="font-size: 48px; color: #ecf0f1; font-family: serif; margin-bottom: 50px; text-shadow: 0 0 15px #fff; border-bottom: 2px solid #f1c40f; padding-bottom: 10px;">ー 書庫 ー</div>
+          <div id="novel-list" style="display: flex; flex-direction: column; gap: 20px; width: 80%; max-width: 700px; overflow-y: auto; max-height: 60vh; padding: 20px;">
+              </div>
+          <button id="btn-novel-back" class="fantasy-btn" style="margin-top: 40px; font-size: 24px;">ホームへ戻る</button>
+      </div>
+  </div>
+
+  <div id="novel-read-screen" style="display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.95); z-index: 20003; justify-content: center; align-items: center;">
+      <div id="novel-book-container" style="background: #fdf6e3; width: 85%; max-width: 900px; height: 85%; border-radius: 4px 15px 15px 4px; box-shadow: inset 20px 0 30px rgba(0,0,0,0.1), 0 10px 40px rgba(0,0,0,0.8); padding: 50px; position: relative; overflow: hidden; display: flex; flex-direction: column; border-left: 15px solid #8e44ad;">
+          <div id="novel-title" style="font-size: 32px; font-weight: bold; color: #2c3e50; border-bottom: 3px double #7f8c8d; padding-bottom: 15px; margin-bottom: 30px; font-family: 'Yu Mincho', 'MS Mincho', serif;">タイトル</div>
+          <div id="novel-content" style="flex: 1; overflow-y: auto; color: #34495e; font-size: 20px; line-height: 2.2; font-family: 'Yu Mincho', 'MS Mincho', serif; white-space: pre-wrap; padding-right: 20px;">本文</div>
+          <div style="display: flex; justify-content: flex-end; margin-top: 30px; border-top: 1px solid #bdc3c7; padding-top: 20px;">
+              <button id="btn-novel-close" class="fantasy-btn btn-blue" style="padding: 10px 30px; font-size: 20px;">本を閉じる</button>
+          </div>
+      </div>
+  </div>
+  
   <script src="/socket.io/socket.io.js"></script>
   <script>const socket = io();</script>
   <script src="script.js"></script>
