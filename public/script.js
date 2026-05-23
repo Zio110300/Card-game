@@ -337,7 +337,9 @@ window.showDeckCardInfo = function(cardName, isFlavorMode = false, isFromDeck = 
         modalDesc.innerHTML = `<div style="font-style: italic; color: #bdc3c7; line-height: 1.8;">${flavorText}</div>`;
         modalFlavor.innerHTML = `<button onclick="showDeckCardInfo('${escapedName}', false, ${isFromDeck})" class="fantasy-btn btn-blue" style="padding: 6px 15px; font-size: 14px; margin-top: 10px;">⬅️ 能力詳細に戻る</button>`;
     } else {
-        modalDesc.innerHTML = card.desc ? card.desc : "（効果テキストはありません）";
+        let formattedDesc = card.desc ? window.formatKeywordAbilities(card.desc) : "（効果テキストはありません）";
+        modalDesc.innerHTML = formattedDesc;
+        
         modalFlavor.innerHTML = card.flavor ? `<em>「${card.flavor}」</em>` : "";
         modalDesc.innerHTML += `<br><br><button onclick="showDeckCardInfo('${escapedName}', true, ${isFromDeck})" class="fantasy-btn btn-purple" style="padding: 6px 15px; font-size: 14px; margin-top: 10px;">📖 フレーバーテキストを読む</button>`;
     }
