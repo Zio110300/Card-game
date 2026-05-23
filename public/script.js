@@ -3585,7 +3585,12 @@ async function playCard(cardId, targetZone, pId) {
     }
     else if (card.name === "Absolute punisher！") {
         let dmg = 11 + extraMagicDmg; if (p.weapon && p.weapon.name === "魔法の杖") dmg += 1;
-        await applyEffectDamage(pId, oppId, 'leader', dmg);
+        
+        // ① ONE（自分のリーダー）に青い光を集約させる専用アニメーション！
+        await window.playPunisherAnimation(pId);
+        
+        // ② アニメーションでタメたので、共通のタメは「スキップ（true）」して即ダメージ！
+        await applyEffectDamage(pId, oppId, 'leader', dmg, true);
     }
     else if (card.name === "スプリングティー") {
         ['left', 'center', 'right'].forEach(z => { let c = p.stage[z]; if(c && c.type === "monster") { c.hp += 2; triggerConnection(c, 'heal', 2); showFloatingTextOnElement(`p${pId}-stage-${z}`, 2, 'heal'); } });
@@ -5155,7 +5160,54 @@ window.useReflectBlastSkill = function(zone) {
     renderAll();
 }
 
-window.applyEffectDamage = async function(attackerPid, targetPid, targetZone, damage) {
+window.playPunisherAnimation = async function(pId) {
+    // 自分のリーダー（ONE）の画面上の座標を取得
+    const leaderEl = document.getElementById(`p${pId}-leader-zone`);
+    if (!leaderEl) return;
+    const rect = leaderEl.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    // 画面全体を暗くするバリアを展開
+    const overlay = document.createElement("div");
+    overlay.style = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 55000; pointer-events: none; transition: opacity 0.3s;";
+    document.body.appendChild(overlay);
+
+    playSound('tension'); // キュイィィン！というタメ音
+
+    // 自分のリーダーに向かって集約する青い線を15本生成
+    for (let i = 0; i < 15; i++) {
+        let line = document.createElement("div");
+        line.className = "punisher-line";
+        let angle = Math.random() * 360; // ランダムな角度から
+        line.style.setProperty('--angle', `${angle}deg`);
+        line.style.left = `${centerX}px`;
+        line.style.top = `${centerY}px`;
+        line.style.animation = `punisherConverge 1s cubic-bezier(0.1, 0.8, 0.5, 1) forwards`;
+        line.style.animationDelay = `${Math.random() * 0.3}s`; // 少しずつタイミングをずらす
+        overlay.appendChild(line);
+    }
+
+    // 線が集まるまで待機（ディレイ）
+    await new Promise(r => setTimeout(r, 1200));
+
+    // ONEにエネルギーが集まりきった瞬間のフラッシュ！
+    let flash = document.createElement("div");
+    flash.className = "punisher-flash";
+    flash.style.left = `${centerX}px`;
+    flash.style.top = `${centerY}px`;
+    overlay.appendChild(flash);
+
+    // フラッシュが広がる時間だけ待機
+    await new Promise(r => setTimeout(r, 150));
+    
+    // 暗転を解除して消去
+    overlay.style.opacity = "0";
+    setTimeout(() => overlay.remove(), 300);
+};
+
+// 🌟 更新：共通の大ダメージ処理（スキップ機能付き）🌟
+window.applyEffectDamage = async function(attackerPid, targetPid, targetZone, damage, skipDelay = false) { // 👈 skipDelay を追加
     let tPlayer = players[targetPid];
     let tCard = targetZone === 'leader' ? tPlayer.leader : tPlayer.stage[targetZone];
     if (!tCard) return;
@@ -5164,10 +5216,11 @@ window.applyEffectDamage = async function(attackerPid, targetPid, targetZone, da
         damage = 0;
     }
 
-    // 👇 追加：効果による大ダメージ（10以上）かつバリアで防がれない（または反射される）場合、発生前のタメ演出を入れる！
     let willReflect = tCard.reflector;
     let willBarrier = tCard.hasBarrier;
-    if (damage >= 10 && (!willBarrier || willReflect)) {
+    
+    // 👇 skipDelay が true の時は、共通のタメ演出を行わない！
+    if (damage >= 10 && (!willBarrier || willReflect) && !skipDelay) {
         playSound('tension');
         await new Promise(r => setTimeout(r, 1200));
     }
@@ -5183,7 +5236,6 @@ window.applyEffectDamage = async function(attackerPid, targetPid, targetZone, da
     } else {
         if (targetZone === 'leader') { 
             tPlayer.hp -= damage; 
-            // 👈 追加：リーダーのHPテキストおよび最大HPのUI表記を確実に更新する
             let hpText = document.getElementById(`p${targetPid}-hp-text`); 
             if(hpText) hpText.innerText = `${tPlayer.hp} / ${tPlayer.maxHp}`;
         } 

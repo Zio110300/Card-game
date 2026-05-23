@@ -645,3 +645,43 @@ hr { margin: 5px 0 !important; border-width: 1px !important; }
   transform: translateX(10px);
   border-left: 5px solid #e74c3c;
 }
+/* ==========================================
+   Absolute Punisher 専用アニメーション
+   ========================================== */
+.punisher-line {
+    position: absolute;
+    width: 150vw;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #00f3ff, #0051ff, transparent);
+    box-shadow: 0 0 15px #00f3ff;
+    transform-origin: center;
+    opacity: 0;
+    z-index: 55001;
+    pointer-events: none;
+}
+
+/* 光の線が中心に向かって縮んでいく動き */
+@keyframes punisherConverge {
+    0% { transform: translate(-50%, -50%) rotate(var(--angle)) scaleX(1); opacity: 0; }
+    15% { opacity: 1; }
+    100% { transform: translate(-50%, -50%) rotate(var(--angle)) scaleX(0.05); opacity: 1; filter: brightness(3); }
+}
+
+.punisher-flash {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    box-shadow: 0 0 80px 40px #00f3ff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    z-index: 55002;
+    pointer-events: none;
+    animation: punisherFlashAnim 0.4s ease-out forwards;
+}
+
+/* 最後に中心で爆発的に光る動き */
+@keyframes punisherFlashAnim {
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(30); opacity: 0; }
+}
