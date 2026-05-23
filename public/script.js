@@ -3585,11 +3585,7 @@ async function playCard(cardId, targetZone, pId) {
     }
     else if (card.name === "Absolute punisher！") {
         let dmg = 11 + extraMagicDmg; if (p.weapon && p.weapon.name === "魔法の杖") dmg += 1;
-        if (players[oppId].leader.hasBarrier) { players[oppId].leader.hasBarrier = false; } else {
-            players[oppId].hp -= dmg; triggerConnection(players[oppId].leader, 'damage', dmg); showFloatingTextOnElement(`p${oppId}-leader-zone`, dmg, 'damage');
-            const targetEl = document.getElementById(`p${oppId}-leader-zone`);
-            if(targetEl){ targetEl.classList.add("damage-anim"); setTimeout(() => targetEl.classList.remove("damage-anim"), 300); let hpText = document.getElementById(`p${oppId}-hp-text`); if(hpText) hpText.innerText = `${players[oppId].hp} / ${players[oppId].maxHp}`; }
-        }
+        await applyEffectDamage(pId, oppId, 'leader', dmg);
     }
     else if (card.name === "スプリングティー") {
         ['left', 'center', 'right'].forEach(z => { let c = p.stage[z]; if(c && c.type === "monster") { c.hp += 2; triggerConnection(c, 'heal', 2); showFloatingTextOnElement(`p${pId}-stage-${z}`, 2, 'heal'); } });
@@ -5159,13 +5155,21 @@ window.useReflectBlastSkill = function(zone) {
     renderAll();
 }
 
-window.applyEffectDamage = function(attackerPid, targetPid, targetZone, damage) {
+window.applyEffectDamage = async function(attackerPid, targetPid, targetZone, damage) {
     let tPlayer = players[targetPid];
     let tCard = targetZone === 'leader' ? tPlayer.leader : tPlayer.stage[targetZone];
     if (!tCard) return;
 
     if (targetZone !== 'leader' && tCard.immortalZero && tCard.hp === 0) {
         damage = 0;
+    }
+
+    // 👇 追加：効果による大ダメージ（10以上）かつバリアで防がれない（または反射される）場合、発生前のタメ演出を入れる！
+    let willReflect = tCard.reflector;
+    let willBarrier = tCard.hasBarrier;
+    if (damage >= 10 && (!willBarrier || willReflect)) {
+        playSound('tension');
+        await new Promise(r => setTimeout(r, 1200));
     }
 
     if (tCard.reflector) {
@@ -5177,7 +5181,12 @@ window.applyEffectDamage = function(attackerPid, targetPid, targetZone, damage) 
     } else if (tCard.hasBarrier) {
         tCard.hasBarrier = false; playSound('barrier');
     } else {
-        if (targetZone === 'leader') { tPlayer.hp -= damage; } 
+        if (targetZone === 'leader') { 
+            tPlayer.hp -= damage; 
+            // 👈 追加：リーダーのHPテキストおよび最大HPのUI表記を確実に更新する
+            let hpText = document.getElementById(`p${targetPid}-hp-text`); 
+            if(hpText) hpText.innerText = `${tPlayer.hp} / ${tPlayer.maxHp}`;
+        } 
         else { tCard.hp -= damage; }
         
         triggerConnection(tCard, 'damage', damage);
