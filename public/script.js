@@ -288,34 +288,104 @@ let pendingSelection = null;
 const infoPanel = document.getElementById("info-panel");
 const deckInfoPanel = document.getElementById("deck-info-panel");
 
-window.showDeckCardInfo = function(cardName, isFlavorMode = false) {
+window.showDeckCardInfo = function(cardName, isFlavorMode = false, isFromDeck = false) {
     let card = getCardTypes().find(c => c.name === cardName);
     if (!card) return;
 
     // クリックイベントでエラーにならないようにクォーテーションをエスケープ
     let escapedName = card.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
+    // HTMLモーダルの各要素を取得
+    const modal = document.getElementById("deck-card-modal");
+    const modalImg = document.getElementById("deck-modal-img");
+    const modalName = document.getElementById("deck-modal-name");
+    const modalAttr = document.getElementById("deck-modal-attr");
+    const modalCost = document.getElementById("deck-modal-cost");
+    const modalStats = document.getElementById("deck-modal-stats");
+    const modalDesc = document.getElementById("deck-modal-desc");
+    const modalFlavor = document.getElementById("deck-modal-flavor");
+    const actionArea = document.getElementById("deck-modal-action-area");
+
+    // モーダルを画面中央にフレックス表示
+    modal.style.display = "flex";
+
+    // 1. 画像イラストのセット（画像パスがある場合は表示、文字などの場合は非表示に）
+    if (card.image && (card.image.includes("/") || card.image.includes("."))) {
+        modalImg.src = card.image;
+        modalImg.style.display = "block";
+    } else {
+        modalImg.src = "";
+        modalImg.style.display = "none";
+    }
+
+    // 2. 基本テキスト情報のセット
+    modalName.innerText = card.name;
+    modalAttr.innerText = card.attribute ? card.attribute.toUpperCase() : "なし";
+    modalCost.innerText = card.cost !== undefined ? card.cost : "なし";
+
+    // 3. 攻撃力/ライフのセット（キャラやリーダーカードの場合のみ表示）
+    if (card.attack !== undefined && card.hp !== undefined) {
+        modalStats.innerHTML = `⚔️ 攻撃力: ${card.attack} &nbsp;&nbsp;&nbsp;&nbsp; ❤️ ライフ: ${card.hp}`;
+        modalStats.style.display = "block";
+    } else {
+        modalStats.style.display = "none";
+    }
+
+    // 4. 効果説明とフレーバーテキストの切り替え表示
     if (isFlavorMode) {
         let flavorText = card.flavor ? card.flavor : "（フレーバーテキストはありません）";
-        deckInfoPanel.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; min-height: 50px;">
-                <div style="flex:1; text-align:center; padding: 10px 0;">
-                    <span style="font-size: 15px; font-style: italic; color: #ffffff; line-height: 1.6; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">${flavorText}</span>
-                </div>
-                <button onclick="showDeckCardInfo('${escapedName}', false)" style="padding: 8px 12px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; flex-shrink: 0; margin-left: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">⬅️ 詳細に戻る</button>
-            </div>
-        `;
+        modalDesc.innerHTML = `<div style="font-style: italic; color: #bdc3c7; line-height: 1.8;">${flavorText}</div>`;
+        modalFlavor.innerHTML = `<button onclick="showDeckCardInfo('${escapedName}', false, ${isFromDeck})" class="fantasy-btn btn-blue" style="padding: 6px 15px; font-size: 14px; margin-top: 10px;">⬅️ 能力詳細に戻る</button>`;
     } else {
-        let baseInfo = getCardInfoText(card);
-        deckInfoPanel.innerHTML = `
-            <div style="position: relative; padding-right: 120px;">
-                ${baseInfo}
-                <button onclick="showDeckCardInfo('${escapedName}', true)" style="position: absolute; top: 0; right: 0; padding: 8px 12px; background-color: #9b59b6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">📖 フレーバー</button>
-            </div>
-        `;
+        modalDesc.innerHTML = card.desc ? card.desc : "（効果テキストはありません）";
+        modalFlavor.innerHTML = card.flavor ? `<em>「${card.flavor}」</em>` : "";
+        modalDesc.innerHTML += `<br><br><button onclick="showDeckCardInfo('${escapedName}', true, ${isFromDeck})" class="fantasy-btn btn-purple" style="padding: 6px 15px; font-size: 14px; margin-top: 10px;">📖 フレーバーテキストを読む</button>`;
     }
+
+    // 5. 「追加」または「外す」アクションボタンの自動生成
+    actionArea.innerHTML = "";
+    let actionBtn = document.createElement("button");
+    actionBtn.style.padding = "12px 35px";
+    actionBtn.style.fontSize = "18px";
+    actionBtn.style.fontWeight = "bold";
+
+    if (isFromDeck) {
+        // デッキ側のカードをクリックして開いた場合
+        actionBtn.innerText = "🗑️ デッキから外す";
+        actionBtn.className = "fantasy-btn btn-red";
+        actionBtn.onclick = () => {
+            // 既存のデッキ削除システムを呼び出す（環境に合わせて配列操作と再描画を自動実行）
+            if (typeof window.removeCardFromDeck === 'function') {
+                window.removeCardFromDeck(card.name);
+            } else if (typeof myCustomDeck !== 'undefined' && typeof renderDeckEdit === 'function') {
+                let idx = myCustomDeck.findIndex(c => c.name === card.name);
+                if (idx !== -1) myCustomDeck.splice(idx, 1);
+                renderDeckEdit();
+            }
+            window.closeDeckCardModal();
+        };
+    } else {
+        // カタログ一覧のカードをクリックして開いた場合
+        actionBtn.innerText = "➕ デッキに追加する";
+        actionBtn.className = "fantasy-btn btn-green";
+        actionBtn.onclick = () => {
+            // 既存のデッキ追加システムを呼び出す
+            if (typeof window.addCardToDeck === 'function') {
+                window.addCardToDeck(card.name);
+            } else if (typeof myCustomDeck !== 'undefined' && typeof renderDeckEdit === 'function') {
+                if (myCustomDeck.length >= DECK_LIMIT) {
+                    alert(`デッキは最大 ${DECK_LIMIT}枚 です！`);
+                } else {
+                    myCustomDeck.push(JSON.parse(JSON.stringify(card)));
+                    renderDeckEdit();
+                }
+            }
+            window.closeDeckCardModal();
+        };
+    }
+    actionArea.appendChild(actionBtn);
 }
-// 👇 追加：情報パネルの表示をデフォルトに戻す専用関数
+
 window.clearCardInfo = function() {
     if (!isGameStarted || isGameOver) return;
     infoPanel.innerHTML = (myPlayerId === currentTurn) ? `あなたのターン` : `相手のターン中...`;
@@ -5490,4 +5560,14 @@ window.startMulligan = function() {
 
     updateModal();
     document.body.appendChild(overlay);
+
+    // ==========================================
+// 🌟 デッキ編成用の大画面モーダル開閉処理 🌟
+// ==========================================
+window.closeDeckCardModal = function() {
+    document.getElementById("deck-card-modal").style.display = "none";
+    playSound('click');
+};
+document.getElementById("close-deck-modal-btn").addEventListener("click", window.closeDeckCardModal);
+document.getElementById("deck-card-modal-bg").addEventListener("click", window.closeDeckCardModal);
 };
