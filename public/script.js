@@ -5560,7 +5560,7 @@ window.startMulligan = function() {
 
     updateModal();
     document.body.appendChild(overlay);
-
+};
     // ==========================================
 // 🌟 デッキ編成用の大画面モーダル開閉処理 🌟
 // ==========================================
@@ -5570,4 +5570,3 @@ window.closeDeckCardModal = function() {
 };
 document.getElementById("close-deck-modal-btn").addEventListener("click", window.closeDeckCardModal);
 document.getElementById("deck-card-modal-bg").addEventListener("click", window.closeDeckCardModal);
-};
