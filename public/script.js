@@ -466,15 +466,46 @@ if (!document.getElementById("keyword-tooltip-style")) {
     style.innerHTML = `
     .keyword-hover {
         position: relative; cursor: help; color: #f1c40f; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); border-bottom: 2px dashed #f1c40f; 
+        white-space: nowrap; 
     }
     .keyword-desc {
-        visibility: hidden; opacity: 0; position: absolute; top: 130%; left: 10px; transform: none; background-color: rgba(26, 37, 47, 0.95); color: #ecf0f1; padding: 12px 16px; border-radius: 8px; border: 2px solid #f1c40f; width: max-content; max-width: 400px; font-size: 18px; font-weight: normal; z-index: 100000; box-shadow: 0 4px 15px rgba(0,0,0,0.7); transition: 0.2s; pointer-events: none; text-shadow: none; line-height: 1.5; 
+        visibility: hidden; opacity: 0; position: absolute; top: 130%; left: 50%; transform: translateX(-50%); background-color: rgba(26, 37, 47, 0.95); color: #ecf0f1; padding: 12px 16px; border-radius: 8px; border: 2px solid #f1c40f; width: max-content; max-width: 320px; font-size: 18px; font-weight: normal; z-index: 100000; box-shadow: 0 4px 15px rgba(0,0,0,0.7); transition: opacity 0.2s, visibility 0.2s; pointer-events: none; text-shadow: none; line-height: 1.5; text-align: left;
+        white-space: normal; /* 👈 追加：親の nowrap を打ち消し、説明文はちゃんと折り返させる！ */
     }
     .keyword-hover:hover .keyword-desc {
         visibility: visible; opacity: 1;
     }
     `;
     document.head.appendChild(style);
+
+    // 画面端で見切れないように位置を自動調整するシステム
+    document.addEventListener('mouseover', (e) => {
+        const hoverEl = e.target.closest('.keyword-hover');
+        if (hoverEl) {
+            const desc = hoverEl.querySelector('.keyword-desc');
+            if (desc) {
+                // まずはデフォルトの中央揃えにリセット
+                desc.style.left = '50%';
+                desc.style.right = 'auto';
+                desc.style.transform = 'translateX(-50%)';
+                desc.style.marginLeft = '0px'; // 👈 リセット
+                
+                // 位置情報を取得
+                const modalDesc = hoverEl.closest('#deck-modal-desc') || document.body;
+                const modalRect = modalDesc.getBoundingClientRect();
+                const descRect = desc.getBoundingClientRect();
+                
+                // 👈 変更：はみ出したピクセル分だけ margin-left で正確にズラす！
+                if (descRect.right > modalRect.right - 10) {
+                    const overRight = descRect.right - (modalRect.right - 10);
+                    desc.style.marginLeft = `-${overRight}px`;
+                } else if (descRect.left < modalRect.left + 10) {
+                    const overLeft = (modalRect.left + 10) - descRect.left;
+                    desc.style.marginLeft = `${overLeft}px`;
+                }
+            }
+        }
+    });
 }
 
 // キーワード変換処理（ホバー式）
@@ -1404,9 +1435,9 @@ function sendGameState() {
 function getCardTypes() {
   return [
     { category: "pack_1", type: "leader", name: "蒼深の砂時計", originalCost: 0, cost: 0, attack: 0, hp: 15, image: "images/pack_1/sunadokei.jpg", attribute: "sea_god", flavor: "神出鬼没の砂時計。時空に干渉する力を持ち、異界との隙間をこじ開ける。流れ落ちる砂は決して時間を表しているのではない。", desc: "<br>■【アクト】このカードをレストし、お互いのロストからカードをランダムに1枚手札に加える。<br>■自分のカードがドロップゾーンに置かれる時、代わりにロストに置く。" },
-    { category: "pack_1", type: "monster", name: "海神 アオクジラ", originalCost: 6, cost: 6, attack: 1, hp: 6, image: "images/pack_1/aokujira.jpg", attribute: "sea_god", evolution: true, doubleAttack: true, pierce: true, ward: true, soulGuard: true, flavor: "最も深い海に座す海神の名前。最初に観測された海神であること、そして今回の被害の元凶であると考えられていたため、海神を象徴する存在として名称に「海神」が含まれている。-海神に関する資料(2)-", desc: "<br>■【コール時】自分の手札1枚を選択してこのカードのソウルに入れる。<br>■自分のロストゾーンにカードがあるなら、このカードの攻撃力をこのカードのソウルの枚数分、+する。" },
+    { category: "pack_1", type: "monster", name: "海神 アオクジラ", originalCost: 6, cost: 6, attack: 1, hp: 6, image: "images/pack_1/aokujira.jpg", attribute: "sea_god", evolution: true, doubleAttack: true, pierce: true, ward: true, soulGuard: true, flavor: "最も深い海に座す海神の名前。最初に観測された海神であること、そして今回の被害の元凶であると考えられていたため、海神を象徴する存在として名称に「海神」が含まれている。-海神に関する資料(2)-", desc: "<br>■【コール】自分の手札1枚を選択してこのカードのソウルに入れる。<br>■自分のロストゾーンにカードがあるなら、このカードの攻撃力をこのカードのソウルの枚数分、+する。<br>【貫通】【守護】【2回攻撃】【ソウルガード】" },
     { category: "pack_1", type: "monster", name: "生春 アオハル", originalCost: 3, cost: 3, attack: 1, hp: 1, image: "images/pack_1/aoharu.jpg", attribute: "sea_god", flavor: "以前の報告内容から生じた仮設を検証した結果、海神に吞み込まれたものは何かしらの方法で海神へと変貌することが判明した。それは生き物に限らず、無機物、さらには季節などの概念もが海神化する可能性が示唆された。-海神に-海神に関する調査報告書(3)-", desc: "<br>■自分か相手のロストにカードがあるなら手札のこのカードのコストを0にする。<br>■【コール】このカードがセンターにコールされた時、レフトとライトに同名カードをコールする。" },
-    { category: "pack_1", type: "monster", name: "冬辞 アオトウ", originalCost: 4, cost: 4, attack: 1, hp: 2, image: "images/pack_1/aotou.jpg", attribute: "sea_god", ward: true, flavor: "ああ、なんで...どうして世界はこんなにも残酷なんだ。-研究者が遺した記録-", desc: "<br>■【コール】相手のステージにいるキャラ1枚を選択し、ロストする。" },
+    { category: "pack_1", type: "monster", name: "冬辞 アオトウ", originalCost: 4, cost: 4, attack: 1, hp: 2, image: "images/pack_1/aotou.jpg", attribute: "sea_god", ward: true, flavor: "ああ、なんで...どうして世界はこんなにも残酷なんだ。-研究者が遺した記録-", desc: "<br>■【コール】相手のステージにいるキャラ1枚を選択し、ロストする。<br>【守護】" },
     { category: "pack_1", type: "monster", name: "アオクラゲ", originalCost: 2, cost: 2, attack: 2, hp: 1, image: "images/pack_1/aokurage.jpg", attribute: "sea_god", soulGuard: true, flavor: "海神の脅威はその神出鬼没性にある。対象は何の前触れもなく表れては周囲のものを吞み込み、跡形もなく去っていくのだ。-海神に関する調査報告書(1)-", desc: "<br>■【コール】自分の手札1枚を選択し、このカードのソウルに入れる。<br>【ソウルガード】" },
     { category: "pack_1", type: "monster", name: "アオノメ", originalCost: 1, cost: 1, attack: 1, hp: 1, image: "images/pack_1/aonome.jpg", attribute: "sea_god", flavor: "依然として、海神の顕現条件について詳しいことは判明していない。しかしながら、稀少な海神の目撃条件から、対象には被害者の要素と一致することが判明した。-海神に関する調査報告書(2)-", desc: "<br>■自分のステージにいる「アオノメ」の数だけ、手札の「アオノメ」のコストを-1する。<br>■このカードはデッキに何枚でも入れることができる" },
     { category: "pack_1", type: "magic", name: "Erotion the future", originalCost: 7, cost: 7, image: "images/pack_1/erotionthefuture.jpg", attribute: "sea_god", flavor: "未来さえ吞み込む、未曾有の脅威。", desc: "<br>■自分のステージにいる全てのキャラをロストし、相手のステージにいるライフ6以下のキャラ全てをロストする。" },
@@ -1443,7 +1474,7 @@ function getCardTypes() {
 
     { category: "pack_2", type: "leader", name: "\"Absolutely Main Gamer\" ONE", originalCost: 0, cost: 0, attack: 1, hp: 16, image: "images/pack_2/ONE.jpg", attribute: "bice_epic", flavor: "冷徹な瞳の奥に野望を秘める少女。超高度技術未来都市「EPIC」で高い人気を博している競技「BICE」で、相棒の「YRIS」とTOPを目指す。彼女の本当の名前は明かされておらず、「ONE」というのはファンたちから生まれた愛称である。", desc: "<br>■自分のステージにカードがコールされたとき、そのカードのソウルを+1する。<br>■【アクト】PPを1消費する。このターン中、このカードの攻撃力+1。<br>【ソウルガード】" },
     { category: "pack_2", type: "monster", name: "\"Born from competition\" YRIS", originalCost: 1, cost: 1, attack: 1, hp: 2, image: "images/pack_2/GXPA.jpg", attribute: "bice_epic", soulGuard: true, flavor: "「BICE」で発生する残骸や人命救助を行う人型の機械。「ONE」と運命的な出会いを果たし、共に「BICE」へ出場することになる。<br>「競争、修繕、改良...わたしたちは止まらない！止まれない！」", desc: "<br>■自分のステージの「BICE」キャラが破壊された時、自身とリーダーのライフを1回復。<br>■このカードは攻撃されない。<br>【ソウルガード】" },
-    { category: "pack_2", type: "monster", name: "\"Get Ready Going To\" LFA", originalCost: 8, cost: 8, attack: 8, hp: 4, image: "images/pack_2/GRGT.jpg", attribute: "bice_epic", soulGuard: true, pierce: true, accel: 6, burn: true, flavor: "幾度も重ねられる破壊と修繕の連鎖の中から見出した一つの答え。究極の力を再現した「YRIS」の姿。<br>「いきますよ！まだ見ぬゴールのその先へ！」", desc: "<br>■【アクセラ6】自分の「GR」の上に重ねてステージにコールできる。<br>■【燃焼】このターン中、このカードは【超貫通】を持つ。<br>【ソウルガード】" },
+    { category: "pack_2", type: "monster", name: "\"Get Ready Going To\" LFA", originalCost: 8, cost: 8, attack: 8, hp: 4, image: "images/pack_2/GRGT.jpg", attribute: "bice_epic", soulGuard: true, pierce: true, accel: 6, burn: true, flavor: "幾度も重ねられる破壊と修繕の連鎖の中から見出した一つの答え。究極の力を再現した「YRIS」の姿。<br>「いきますよ！まだ見ぬゴールのその先へ！」", desc: "<br>■【アクセラ6】自分の「GR」の上に重ねてステージにコールできる。<br>■【燃焼】このターン中、このカードは【超貫通】を持つ。<br>【貫通】【ソウルガード】" },
     { category: "pack_2", type: "monster", name: "\"Re Born in 2600\" BNR34", originalCost: 2, cost: 2, attack: 1, hp: 2, image: "images/pack_2/GTR.jpg", attribute: "bice", soulGuard: true, arts: 3, burn: true, flavor: "没落した一族を一人で復活させた「BICE」の現トップランカー。「A8000」とは2位の座を争っている。", desc: "<br>■【燃焼】このターン中、このカードがリーダーへ与えるダメージを+2する。<br>■【アーツ3】このカードの攻撃力とライフ+2する。<br>【ソウルガード】" },
     { category: "pack_2", type: "monster", name: "\"To Just Zero\" A8000", originalCost: 3, cost: 3, attack: 3, hp: 3, image: "images/pack_2/supra.jpg", attribute: "bice", soulGuard: true, burn: true, flavor: "無類の強さを誇る「BICE」のトップランカー。彼女の機体から発生する出力はあたり一面を焼け野原にする。", desc: "<br>■【燃焼】このターン中、このカードがキャラに与えるダメージ+2する。<br>【ソウルガード】" },
     { category: "pack_2", type: "monster", name: "\"Comact OPElator of No.1\" LA4000", originalCost: 1, cost: 1, attack: 1, hp: 1, image: "images/pack_2/copen.jpg", attribute: "bice", burn: true, soulGuard: true, flavor: "とある研究者の一人が愛した量産型の人型機体。小さく取り回しがきくことから、当時は幅広い層から支持された。", desc: "<br>■【燃焼】自分のキャラ1枚を選択し、ソウルを+1する。<br>【ソウルガード】" },
