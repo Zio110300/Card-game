@@ -242,6 +242,37 @@
           </div>
       </div>
   </div>
+
+  <div id="deck-card-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 70000; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+      
+      <div id="deck-card-modal-bg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: pointer;"></div>
+      
+      <div style="display: flex; background: linear-gradient(135deg, #1a252f, #2c3e50); border: 2px solid #f1c40f; border-radius: 12px; padding: 30px; max-width: 900px; width: 90%; height: 75vh; box-shadow: 0 0 40px rgba(0,0,0,0.9); position: relative; gap: 40px; z-index: 1;">
+          
+          <button id="close-deck-modal-btn" style="position: absolute; top: 15px; right: 20px; background: transparent; border: none; color: #bdc3c7; font-size: 32px; cursor: pointer; transition: 0.2s;">✖</button>
+          
+          <div style="flex: 1; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.4); border-radius: 8px; padding: 10px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
+              <img id="deck-modal-img" src="" alt="card image" style="max-width: 100%; max-height: 100%; border-radius: 8px; box-shadow: 0 5px 20px rgba(0,0,0,0.6); object-fit: contain;">
+          </div>
+          
+          <div style="flex: 1.2; display: flex; flex-direction: column; color: #ecf0f1; font-size: 18px; overflow-y: auto; padding-right: 15px;">
+              <h2 id="deck-modal-name" style="color: #f1c40f; margin-top: 0; font-size: 32px; border-bottom: 2px solid #7f8c8d; padding-bottom: 10px; font-family: serif; letter-spacing: 2px;">カード名</h2>
+              
+              <div style="display: flex; gap: 30px; margin-bottom: 15px; font-size: 20px;">
+                  <div><strong>属性:</strong> <span id="deck-modal-attr" style="color: #3498db;"></span></div>
+                  <div><strong>コスト:</strong> <span id="deck-modal-cost" style="color: #e67e22;"></span></div>
+              </div>
+              
+              <div id="deck-modal-stats" style="margin-bottom: 15px; font-weight: bold; color: #e74c3c; font-size: 22px;"></div>
+              
+              <div style="flex: 1; margin-bottom: 20px; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 8px; line-height: 1.8; font-size: 20px; border-left: 5px solid #9b59b6;" id="deck-modal-desc"></div>
+              
+              <div style="font-style: italic; color: #bdc3c7; font-size: 16px; border-top: 1px dashed #7f8c8d; padding-top: 15px; margin-bottom: 20px; line-height: 1.6;" id="deck-modal-flavor"></div>
+              
+              <div id="deck-modal-action-area" style="display: flex; justify-content: flex-end; margin-top: auto;"></div>
+          </div>
+      </div>
+  </div>
   
   <script src="/socket.io/socket.io.js"></script>
   <script>const socket = io();</script>
