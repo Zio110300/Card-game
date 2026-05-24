@@ -1765,11 +1765,10 @@ window.useLeaderSkill = async function() {
       playSound('play');
       showCardEffect(p.leader);
       if (!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: p.leader }); 
-      playSound('tension');
-      await new Promise(r => setTimeout(r, 1500)); // 👈 2200から1500に変更し、音と完璧に同期！
       
+      // 👇 専用のタメを消し、共通の大ダメージ判定にすべてを任せる（trueも消す）
       let oppId = myPlayerId === 1 ? 2 : 1;
-      applyEffectDamage(myPlayerId, oppId, 'leader', 12); 
+      await applyEffectDamage(myPlayerId, oppId, 'leader', 12); 
   }else if (p.leader.name === "迸る閃望 ルミナス=イデオル") {
       if (!p.leader.soul || p.leader.soul.length < 1) return;
       let consumedSoul = p.leader.soul.pop(); 
@@ -4302,8 +4301,11 @@ async function endTurnProcess(pId) {
               setTimeout(() => { flashEl.remove(); gameContainer.classList.remove("screen-shake-anim"); }, 1500);
               await new Promise(r => setTimeout(r, 1000)); 
 
-              ['left', 'center', 'right'].forEach(z => { if (players[nextPId].stage[z]) applyEffectDamage(pId, nextPId, z, 49); });
-              applyEffectDamage(pId, nextPId, 'leader', 49);
+              // 👇 修正：すべての攻撃から共通の自動ディレイを「スキップ（true）」させる！
+              for (let z of ['left', 'center', 'right']) {
+                  if (players[nextPId].stage[z]) await applyEffectDamage(pId, nextPId, z, 49, true); 
+              }
+              await applyEffectDamage(pId, nextPId, 'leader', 49, true);
               await new Promise(r => setTimeout(r, 1000));
           } else {
               let randAction = Math.floor(Math.random() * 3);
