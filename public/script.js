@@ -1571,7 +1571,7 @@ function getCardTypes() {
     { category: "pack_6", type: "monster", name: "\"Getting Reborn Goal Transcender\" LFR", originalCost: 5, cost: 5, attack: 3, hp: 3, image: "images/pack_6/LFR.jpg", attribute: "u_bice", counter: true, superCounter: true, soulGuard: true, arts: 6, soulBright: true, flavor: "", desc: "【反撃】【超反撃】【ソウルガード】<br>■【アーツ6】ドロップゾーンの「\"Born from competition\" YRIS」1枚をこのカードのソウルに入れる。<br>■【ソウルブライト】自分のステージにいる属性「U-BICE」のキャラ全ての攻撃力とライフを＋（消費したソウルの枚数×2）する。" },
     { category: "pack_6", type: "monster", name: "\"A Moving to Goal of art\" ウアイラ", originalCost: 4, cost: 4, attack: 1, hp: 1, image: "images/pack_6/uaira.jpg", attribute: "u_bice", soulGuard: true, soulBright: true, flavor: "", desc: "【ソウルガード】<br>■【コール】自分のドロップゾーンから属性「BICE」のカード1枚をこのカードのソウルに入れる。<br>■【ソウルブライト】目の前のキャラにダメージ3。" },
     { category: "pack_6", type: "monster", name: "\"For the Fantastic Future\" フェノメノ", originalCost: 20, cost: 20, attack: 0, hp: 1, image: "images/pack_6/fenomeno.jpg", attribute: "u_bice", soulGuard: true, soulBright: true, flavor: "", desc: "【ソウルガード】<br>■自分のドロップゾーンに存在するカードの枚数分、手札のこのカードのコストを-1する。<br>■【コール】自分のドロップゾーンから属性「BICE」のカード1枚をこのカードのソウルに入れる。<br>■【ソウルブライト】自分のドロップゾーンに存在するカード全てをロストし、その枚数分このカードの攻撃力+1する。" },
-    { category: "pack_6", type: "monster", name: "JNC3500 \"A\"", originalCost: 9, cost: 9, attack: 1, hp: 2, image: "images/pack_6/NSXA.jpg", attribute: "u_bice", soulBright: true, flavor: "。", desc: "■自分のステージにいる属性「BICE」のキャラが破壊されたとき、手札のこのカードのコストを-1する。<br>■【コール】【エフェクト】自分のステージにいるキャラが破壊されたとき、自分のステージにいるキャラ全ての攻撃力とライフを+1する。<br>■【ソウルブライト】ステージのキャラ全てにダメージ1。" },
+    { category: "pack_6", type: "monster", name: "JNC3500 \"A\"", originalCost: 9, cost: 9, attack: 1, hp: 2, image: "images/pack_6/NSXA.jpg", attribute: "u_bice", soulBright: true, flavor: "。", desc: "■自分のステージにいる属性「BICE」のキャラが破壊されたとき、手札のこのカードのコストを-1する。<br>■自分のステージにいるキャラが破壊されたとき、自分のステージにいるキャラ全ての攻撃力とライフを+1する。<br>■【ソウルブライト】ステージのキャラ全てにダメージ1。" },
     { category: "pack_6", type: "set_magic", name: "Absolute Order", originalCost: 0, cost: 0, image: "images/pack_6/order.jpg", attribute: "bice", soulGuard: true, flavor: "そこは、一切の暴力が存在し得ない世界。", desc: "【設置】【ソウルガード】<br>■このカードは自分のリーダーが「\"Absolutely Main Gamer\" ONE」なら使える。<br>■【アフターグロウ】このカードを破壊する。<br>■お互いのステージのカード全ては攻撃できない。" },
 
     // 👇 追加：デッキに入らないトークンカード
@@ -1763,17 +1763,19 @@ function destroyCard(playerId, zone, isLost = false, isDirectDrop = false) {
           }
       });
   }
-  if (p.leader && p.leader.jncEffect) {
-      ['left', 'center', 'right'].forEach(z => {
-          let c = p.stage[z];
-          if (c && c.type === "monster") {
-              c.hp += 1; triggerConnection(c, 'heal', 1);
-              c.attack += 1; triggerConnection(c, 'permanent_attack_boost', 1);
-              showFloatingTextOnElement(`p${playerId}-stage-${z}`, 1, 'attack_boost');
-              setTimeout(() => showFloatingTextOnElement(`p${playerId}-stage-${z}`, 1, 'heal'), 300);
-          }
-      });
-  }
+  Object.values(p.stage).forEach(stageCard => {
+      if (stageCard && stageCard.name === "JNC3500 \"A\"") {
+          ['left', 'center', 'right'].forEach(z => {
+              let c = p.stage[z];
+              if (c && c.type === "monster") {
+                  c.hp += 1; triggerConnection(c, 'heal', 1);
+                  c.attack += 1; triggerConnection(c, 'permanent_attack_boost', 1);
+                  showFloatingTextOnElement(`p${playerId}-stage-${z}`, 1, 'attack_boost');
+                  setTimeout(() => showFloatingTextOnElement(`p${playerId}-stage-${z}`, 1, 'heal'), 300);
+              }
+          });
+      }
+  });
 
   if (targetCard.soulGuard && targetCard.soul && targetCard.soul.length > 0) {
         // 👇 一度「破壊」された演出（爆発と破壊音）を出す！
@@ -3312,11 +3314,6 @@ window.executeEffectAbility = function(pId, card) {
             
         case "グッバイ宣言":
             p.leader.goodbyeEffect = true; 
-            hasEffect = true;
-            break;
-        
-        case "JNC3500 \"A\"":
-            p.leader.jncEffect = true;
             hasEffect = true;
             break;
     }
