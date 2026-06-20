@@ -465,7 +465,6 @@ function resetCardState(card) {
   return newCard;
 }
 
-// 👇👇 ここからコピー 👇👇
 window.keywordDefinitions = {
     "進化": "手札にあるこのカードを自分のステージにいるキャラに重ねてコールできる。",
     "守護": "このカードがステージにいるとき、相手はリーダーよりも優先してこのカードを攻撃しなければならない。",
@@ -474,11 +473,12 @@ window.keywordDefinitions = {
     "超貫通": "このカードが【貫通】で与えるダメージを2倍にする！",
     "2回攻撃": "ターン中に1度だけ自力でスタンド状態になる（1ターンに2回攻撃できる）。",
     "ソウルガード": "このカードが破壊されたとき、このカードのソウルを1消費してライフ1で復活する。",
-    "ソウルブライト": "このカードのソウルを全て消費して使える能力。",
+    "ソウルブライト": "ソウル全てをドロップゾーンに置き、その枚数分の【分身】をステージにコールして次の能力を使う。",
     "分身": "攻撃力とライフが（1 / 1）になった同名のカード。",
     "感染症": "ターン終了時、このカードにダメージ1を与え、この能力を失う。",
     "ドレイン": "このカードがダメージを与えたとき、そのダメージ分、このカードのライフを+する。",
     "反撃": "攻撃してきたカードに反撃する（攻撃されたカードの攻撃力分のダメージを攻撃したカードに与える）。",
+    "超反撃": "【反撃】で与えるダメージを2倍にする！",
     "反転": "ターン中に1回使える。カードのステータスを反転する（攻撃力とライフを交換する）。",
     "コール": "このカードがコールされたときに発動する。",
     "アフターグロウ": "ターン終了時に発動する能力。",
@@ -561,7 +561,7 @@ window.formatKeywordAbilities = function(text) {
 function getCardInfoText(card) {
   const attrMap = { 
     fire: "🔥炎", water: "💧水", wood: "🌿木", light: "✨光", dark: "🌙闇", neutral: "⚪無", god: "👼神", sea_god: "🌊海神", human: "👤人", spirit: "👻霊", magic_attr: "🔮魔", fairy_attr: "🧚精霊", fire_magic: "🔥熱/魔", electric_magic: "⚡電気/魔",
-    bice: "🏎️BICE", bice_epic: "👑BICE/EPIC", reliance: "🤝リライアンス",
+    bice: "🏎️BICE", bice_epic: "👑BICE/EPIC", u_bice: "🏎️U-BICE", reliance: "🤝リライアンス",
     bice_fire: "🏎️🔥BICE/熱", 
     light_soul: "✨👻光/魂", 
     magic_human: "👤🔮人/魔", beast_human: "🐺👤獣/人", machine: "⚙️機械", dragon_human: "🐉👤竜/人",
@@ -583,6 +583,7 @@ function getCardInfoText(card) {
   if (card.reflector) skillTags.push("【リフレクター】"); 
   if (card.spellShift) skillTags.push("【スペルシフト】");
   if (card.counter) skillTags.push("【反撃】");
+  if (card.superCounter) skillTags.push("【超反撃】"); 
   if (card.taunt) skillTags.push("【挑発】");
   if (card.shiftStatue) skillTags.push("【シフトスタチュー】"); 
   if (card.doubleAttack) skillTags.push("【2回攻撃】");
@@ -1518,7 +1519,7 @@ function getCardTypes() {
     { category: "pack_2", type: "monster", name: "\"To Just Zero\" A8000", originalCost: 3, cost: 3, attack: 2, hp: 3, image: "images/pack_2/supra.jpg", attribute: "bice", soulGuard: true, burn: true, flavor: "無類の強さを誇る「BICE」のトップランカー。彼女の機体から発生する出力はあたり一面を焼け野原にする。", desc: "<br>■【燃焼】このターン中、このカードがキャラに与えるダメージ+2する。<br>【ソウルガード】" },
     { category: "pack_2", type: "monster", name: "\"Comact OPElator of No.1\" LA4000", originalCost: 1, cost: 1, attack: 1, hp: 1, image: "images/pack_2/copen.jpg", attribute: "bice", burn: true, soulGuard: true, flavor: "とある研究者の一人が愛した量産型の人型機体。小さく取り回しがきくことから、当時は幅広い層から支持された。", desc: "<br>■【燃焼】自分のキャラ1枚を選択し、ソウルを+1する。<br>【ソウルガード】" },
     { category: "pack_2", type: "monster", name: "\"Greater Than 2nd\" 911GT2RS", originalCost: 5, cost: 5, attack: 2, hp: 2, image: "images/pack_2/911.jpg", attribute: "bice", soulGuard: true, burn: true, flavor: "誰よりも速く、何よりも強く。をコンセプトに開発された超大型BICE。これまでの通念を大きく覆したそれは、それまでのBICEの在り方を否定した。", desc: "<br>■【コール】カード3枚を引く。<br>■【燃焼】相手のステージからランダムなキャラ1枚にダメージ4！<br>【ソウルガード】" },
-    { category: "pack_2", type: "monster", name: "\"Ultimate Buddy\" ヴァルキリー", originalCost: 4, cost: 4, attack: 1, hp: 3, image: "images/pack_2/valkily.jpg", attribute: "bice", soulGuard: true, burn: true, flavor: "これまでのBICEを環境に合わせて利用する戦法を得意とする。大きな変革期を迎えたBICEたちに居場所を与えた。<br>「全てのBICEが俺の相棒！」", desc: "<br>■【コール】デッキからコスト3以下の「BICE」キャラを最大2枚コールする。<br>■【燃焼】自分のセンターのキャラに【バリア】を付与する。<br>【ソウルガード】" },
+    { category: "pack_2", type: "monster", name: "\"Ultimate Buddy\" ヴァルキリー", originalCost: 4, cost: 4, attack: 1, hp: 3, image: "images/pack_2/valkily.jpg", attribute: "u_bice", soulGuard: true, burn: true, flavor: "これまでのBICEを環境に合わせて利用する戦法を得意とする。大きな変革期を迎えたBICEたちに居場所を与えた。<br>「全てのBICEが俺の相棒！」", desc: "<br>■【コール】デッキからコスト3以下の「BICE」キャラを最大2枚コールする。<br>■【燃焼】自分のセンターのキャラに【バリア】を付与する。<br>【ソウルガード】" },
     { category: "pack_2", type: "magic", name: "RBA", originalCost: 1, cost: 1, image: "images/pack_2/RBA.jpg", attribute: "bice", flavor: "「YRIS」が救助活動に向かう時のコマンド。これを知る者は彼女を設計した研究者と、「ONE」のみ。", desc: "<br>■自分のリーダーに【バリア】付与。自分のステージに「GR」がいるなら、自分のドロップからランダムにキャラを1枚手札に加える。" },
     { category: "pack_2", type: "magic", name: "Absolute enforcer", originalCost: 4, cost: 4, image: "images/pack_2/enforcer.jpg", attribute: "bice", flavor: "「跪け、私が裁く。」", desc: "<br>■相手のステージにいるキャラ全ての攻撃力を-2する。" },
     { category: "pack_2", type: "magic", name: "Exaust re boost", originalCost: 1, cost: 1, image: "images/pack_2/boost.jpg", attribute: "bice", flavor: "とある研究者によって開発された機構。当時は画期的なものであったが、今ではどの機械にも設定されている。", desc: "<br>■このターン中、自分のステージにいる属性「BICE」のキャラ全ての攻撃力を+1する。" },
@@ -1567,6 +1568,12 @@ function getCardTypes() {
     { category: "pack_5", type: "magic", name: "KING", originalCost: 5, cost: 5, image: "images/pack_5/gumi.jpg", attribute: "freat_song", flavor: "", desc: "■このカードを自分のリーダーのソウルに入れる。<br>■相手のステージにいるランダムなキャラ1枚を破壊し、カード3枚を引く。" },
     { category: "pack_5", type: "magic", name: "ワールドイズマイン", originalCost: 6, cost: 6, image: "images/pack_5/world.jpg", attribute: "freat_song", flavor: "　", desc: "■ステージにキャラがいるなら使える。<br>■ステージに存在するキャラ全ての攻撃力を0まで減らし、自分のリーダーのライフを減らした分+する。" },
     
+    { category: "pack_6", type: "monster", name: "\"Getting Reborn Goal Transcender\" LFR", originalCost: 5, cost: 5, attack: 3, hp: 3, image: "images/pack_6/LFR.jpg", attribute: "u_bice", counter: true, superCounter: true, soulGuard: true, arts: 6, soulBright: true, flavor: "", desc: "【反撃】【超反撃】【ソウルガード】<br>■【アーツ6】ドロップゾーンの「\"Born from competition\" YRIS」1枚をこのカードのソウルに入れる。<br>■【ソウルブライト】自分のステージにいる属性「U-BICE」のキャラ全ての攻撃力とライフを＋（消費したソウルの枚数×2）する。" },
+    { category: "pack_6", type: "monster", name: "\"A Moving to Goal of art\" ウアイラ", originalCost: 4, cost: 4, attack: 1, hp: 1, image: "images/pack_6/uaira.jpg", attribute: "u_bice", soulGuard: true, soulBright: true, flavor: "", desc: "【ソウルガード】<br>■【コール】自分のドロップゾーンから属性「BICE」のカード1枚をこのカードのソウルに入れる。<br>■【ソウルブライト】目の前のキャラにダメージ3。" },
+    { category: "pack_6", type: "monster", name: "\"For the Fantastic Future\" フェノメノ", originalCost: 20, cost: 20, attack: 0, hp: 1, image: "images/pack_6/fenomeno.jpg", attribute: "u_bice", soulGuard: true, soulBright: true, flavor: "", desc: "【ソウルガード】<br>■自分のドロップゾーンに存在するカードの枚数分、手札のこのカードのコストを-1する。<br>■【コール】自分のドロップゾーンから属性「BICE」のカード1枚をこのカードのソウルに入れる。<br>■【ソウルブライト】自分のドロップゾーンに存在するカード全てをロストし、その枚数分このカードの攻撃力+1する。" },
+    { category: "pack_6", type: "monster", name: "JNC3500 \"A\"", originalCost: 9, cost: 9, attack: 1, hp: 2, image: "images/pack_6/NSXA.jpg", attribute: "u_bice", soulBright: true, flavor: "。", desc: "■自分のステージにいる属性「BICE」のキャラが破壊されたとき、手札のこのカードのコストを-1する。<br>■【コール】【エフェクト】自分のステージにいるキャラが破壊されたとき、自分のステージにいるキャラ全ての攻撃力とライフを+1する。<br>■【ソウルブライト】ステージのキャラ全てにダメージ1。" },
+    { category: "pack_6", type: "set_magic", name: "Absolute Order", originalCost: 0, cost: 0, image: "images/pack_6/order.jpg", attribute: "bice", soulGuard: true, flavor: "そこは、一切の暴力が存在し得ない世界。", desc: "【設置】【ソウルガード】<br>■このカードは自分のリーダーが「\"Absolutely Main Gamer\" ONE」なら使える。<br>■【アフターグロウ】このカードを破壊する。<br>■お互いのステージのカード全ては攻撃できない。" },
+
     // 👇 追加：デッキに入らないトークンカード
     { category: "token", type: "token", name: "熱狂と歓声", originalCost: 0, cost: 0, image: "", attribute: "freat", flavor: "「熱」とは力。", desc: "■「迸る閃望 ルミナス=イデオル」のソウルに入ったカードは全て「熱狂の歓声」に変身する。" },
     { category: "token", type: "magic", name: "グッバイ宣言", originalCost: 1, cost: 1, image: "images/pack_5/goobye.jpg", attribute: "freat_song", flavor: "", desc: "■自分のリーダーに【リフレクター】を付与する。<br>■【エフェクト】自分のターン開始時、「天ノ弱」1枚を手札に加え、この【エフェクト】を失う。" },
@@ -1745,6 +1752,25 @@ function destroyCard(playerId, zone, isLost = false, isDirectDrop = false) {
               let zName = p.stage.left === c ? 'left' : p.stage.center === c ? 'center' : 'right';
               showFloatingTextOnElement(`p${playerId}-stage-${zName}`, 1, 'heal');
               showFloatingTextOnElement(`p${playerId}-leader-zone`, 1, 'heal');
+          }
+      });
+  }
+
+  if (targetCard.attribute && targetCard.attribute.includes("bice")) {
+      p.hand.forEach(c => {
+          if (c.name === "JNC3500 \"A\"") {
+              c.originalCost -= 1; if (c.originalCost < 0) c.originalCost = 0; c.cost = c.originalCost;
+          }
+      });
+  }
+  if (p.leader && p.leader.jncEffect) {
+      ['left', 'center', 'right'].forEach(z => {
+          let c = p.stage[z];
+          if (c && c.type === "monster") {
+              c.hp += 1; triggerConnection(c, 'heal', 1);
+              c.attack += 1; triggerConnection(c, 'permanent_attack_boost', 1);
+              showFloatingTextOnElement(`p${playerId}-stage-${z}`, 1, 'attack_boost');
+              setTimeout(() => showFloatingTextOnElement(`p${playerId}-stage-${z}`, 1, 'heal'), 300);
           }
       });
   }
@@ -2072,8 +2098,8 @@ function renderAll() {
         if (card.cost < 0) card.cost = 0;
       }
       
-      if (card.name === "Absolute punisher！") {
-        card.cost -= players[pId].destroyedThisTurn;
+      if (card.name === "\"For the Fantastic Future\" フェノメノ") {
+        card.cost -= players[pId].trash.length;
         if (card.cost < 0) card.cost = 0;
       }
 
@@ -2430,21 +2456,22 @@ function attachStageListeners() {
         renderAll();
       }
 
-      // ボタンを表示する条件（キャラとリーダーの両方で使えるように修正！）
+      // 🌟 復活：接続スキル（コネクト）のボタン
       if ((card.type === "monster" || card.type === "leader") && card.connectSkill && pid === myPlayerId && currentTurn === myPlayerId && !isGameOver && !isSelectingHand) {
         text += `<br><button onclick="useConnectSkill('${zone}')" style="margin-top:8px; padding:8px 16px; background:#00bcd4; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%;">🔗 接続スキル発動</button>`;
         overlayBtnHtml += `<button class="card-center-btn" style="background:#00bcd4; color:white;" onclick="event.stopPropagation(); useConnectSkill('${zone}');">🔗 接続</button>`;
       }
-      // 👆👆ここまで「接続スキル」の追加👆👆
+
+      // 🌟 追加：ソウルブライトのボタン
+      if ((card.type === "monster" || card.type === "leader") && card.soulBright && card.soul && card.soul.length > 0 && pid === myPlayerId && currentTurn === myPlayerId && !isGameOver && !isSelectingHand) {
+        text += `<br><button onclick="useSoulBrightSkill('${zone}')" style="margin-top:8px; padding:8px 16px; background:#f1c40f; color:#2c3e50; border:none; border-radius:5px; cursor:pointer; font-weight:bold; width:100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">✨ ソウルブライト（分身生成）</button>`;
+        overlayBtnHtml += `<button class="card-center-btn" style="background:#f1c40f; color:#2c3e50;" onclick="event.stopPropagation(); useSoulBrightSkill('${zone}');">✨ 分身</button>`;
+      }
 
       infoPanel.innerHTML = text; // 元からある処理
 
-      // 👇👇 ここから下を追加！クリックしたカードの真ん中にボタンを貼り付ける処理 👇👇
-
-      // 👇👇 ここから下を追加！クリックしたカードの真ん中にボタンを貼り付ける処理 👇👇
       document.querySelectorAll('.card-action-overlay').forEach(o => o.remove()); // 前に出たボタンを消す
       if (overlayBtnHtml !== "") {
-        // 👇 追加：生成された全てのスキルボタンに「パネルを消す処理」を自動で仕込む！
         overlayBtnHtml = overlayBtnHtml.replace(/onclick="/g, 'onclick="window.clearCardInfo(); ');
 
         let overlay = document.createElement("div");
@@ -2603,6 +2630,24 @@ function showFloatingTextOnElement(elementId, value, type) {
 async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
   let wasLocked = window.isActionLocked;
   window.isActionLocked = true; 
+
+  // 👇 追加：Absolute Orderの攻撃ロック判定
+  let hasAbsoluteOrder = false;
+  [1, 2].forEach(pId => {
+      ['left', 'center', 'right'].forEach(z => {
+          let c = players[pId].stage[z];
+          if (c && c.name === "Absolute Order") hasAbsoluteOrder = true;
+      });
+  });
+  if (hasAbsoluteOrder) {
+      if (attackerPid === myPlayerId) {
+          playSound('barrier');
+          alert("「Absolute Order」が場にあるため、誰も攻撃できません！");
+      }
+      window.isActionLocked = false;
+      return;
+  }
+
   try {
       const attackerPlayer = players[attackerPid]; const targetPlayer = players[targetPid];
       const attackerLeader = attackerPlayer.leader; const targetLeader = targetPlayer.leader;
@@ -2756,6 +2801,7 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
           }
         }
         oppCounterAtk = targetLeader.counter ? targetLeader.attack + (targetLeader.turnAttackBoost || 0) + (targetPlayer.weapon ? targetPlayer.weapon.effectValue : 0) : 0; 
+        if (targetLeader.superCounter) oppCounterAtk *= 2; 
       } else { 
         if (targetCard.reflector) {
           targetCard.reflector = false; playSound('barrier'); 
@@ -2789,6 +2835,8 @@ async function executeAttack(attackerPid, attackerZone, targetPid, targetZone) {
         if (targetCard.name === "海神 アオクジラ" && targetPlayer.lostZone.length > 0 && targetCard.soul) {
             oppCounterAtk += targetCard.soul.length;
         }
+        
+        if (targetCard.superCounter) oppCounterAtk *= 2;
 
         if(targetCard.hp <= 0) {
             if (targetCard.immortalZero) {
@@ -3223,7 +3271,17 @@ window.executeArtsEffect = async function(pId, card, targetZone) {
             p.leader.soul.push(pushCard);
             showFloatingTextOnElement(`p${pId}-leader-zone`, "SOUL UP!", 'heal');
             playSound('buff');
-            break;              
+            break;
+        case "\"Getting Reborn Goal Transcender\" LFR":
+            let targetInTrash = p.trash.find(c => c.name === "\"Born from competition\" YRIS");
+            if (targetInTrash) {
+                let idx = p.trash.indexOf(targetInTrash);
+                p.trash.splice(idx, 1);
+                if (p.stage[targetZone]) p.stage[targetZone].soul.push(resetCardState(targetInTrash));
+                showFloatingTextOnElement(`p${pId}-stage-${targetZone}`, "SOUL UP!", 'heal');
+                playSound('buff');
+            }
+            break;             
     }
 };
 
@@ -3254,6 +3312,11 @@ window.executeEffectAbility = function(pId, card) {
             
         case "グッバイ宣言":
             p.leader.goodbyeEffect = true; 
+            hasEffect = true;
+            break;
+        
+        case "JNC3500 \"A\"":
+            p.leader.jncEffect = true;
             hasEffect = true;
             break;
     }
@@ -3367,6 +3430,11 @@ window.executeShiftAbility = function(pId, cardId, card, targetZone, consumeThis
 async function playCard(cardId, targetZone, pId) {
   const p = players[pId]; const cardIndex = p.hand.findIndex(c => c.id === cardId); if(cardIndex === -1) return; const card = p.hand[cardIndex];
   if(p.mp < card.cost) { return; }
+
+  if (card.name === "Absolute Order" && p.leader.name !== "\"Absolutely Main Gamer\" ONE") {
+      alert("このカードは自分のリーダーが「ONE」の時のみ使用できます！");
+      return;
+  }
 
   if ((card.shiftStatue || card.spellShift) && !window.shiftTypeResolved && targetZone !== 'leader' && targetZone !== 'item') {
       let isTargetingEmpty = (p.stage[targetZone] === null);
@@ -3529,6 +3597,26 @@ async function playCard(cardId, targetZone, pId) {
                   if (dmg > 0) applyEffectDamage(pId, oppId, z, dmg); 
               }
           });
+      }
+      if (playedCard.name === "\"A Moving to Goal of art\" ウアイラ" || playedCard.name === "\"For the Fantastic Future\" フェノメノ") {
+          let validTrash = p.trash.filter(c => c.attribute && c.attribute.includes("bice"));
+          if (validTrash.length > 0 && !(isSoloMode && pId === 2)) {
+              window.isSelectingTrash = true; window.cancelActionCallback = revertSummon;
+              window.selectionTrashCallback = async function(index) {
+                  let targetCard = p.trash[index];
+                  if (!targetCard || !(targetCard.attribute && targetCard.attribute.includes("bice"))) return;
+                  window.cancelActionCallback = null; p.trash.splice(index, 1);
+                  if (p.stage[tZone]) p.stage[tZone].soul.push(resetCardState(targetCard));
+                  window.isSelectingTrash = false; window.selectionTrashCallback = null; pendingSelection = null; closeZoneView();
+                  showFloatingTextOnElement(`p${pId}-stage-${tZone}`, "SOUL UP!", 'heal');
+                  playSound('play'); showCardEffect(playedCard); if(!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: playedCard });
+                  renderAll(); sendGameState();
+              };
+              openZoneView(pId, 'trash');
+              let detailArea = document.getElementById('zone-view-detail');
+              if (detailArea) { detailArea.style.display = "block"; detailArea.innerHTML = `<div style="text-align:center; font-size:24px; color:#f1c40f; margin-bottom:10px;">ソウルに入れる「BICE」属性のカードを選択してください</div>`; }
+              return true;
+          }
       }
       else if (playedCard.name === "フェアリー") {
           let targets = ['left', 'center', 'right'].filter(z => {
@@ -4317,6 +4405,10 @@ async function endTurnProcess(pId) {
                       }
                   }
               }
+          }
+          // 👇 追加：Absolute Orderの自壊
+          if (c.name === "Absolute Order") {
+              destroyCard(pId, z, false);
           }
       }
 
@@ -5243,21 +5335,83 @@ window.useInvertSkill = async function(zone) {
   const el = document.getElementById(elId);
   if(el) { el.classList.add("heal-anim"); setTimeout(() => el.classList.remove("heal-anim"), 300); }
 
-  await window.triggerInvertEffects(myPlayerId, card); 
-
-  // 👇 追加：反転の結果、ライフが0以下になった場合は即座に破壊する！
-  if (zone !== 'item' && card.hp <= 0) {
-      destroyCard(myPlayerId, zone, false);
-  } else if (zone === 'item' && p.hp <= 0) {
-      checkGameOver(); // アイテム反転でリーダーのHPが0になったら決着
-  }
-
   if (!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card }); 
   renderAll(); sendGameState();
-}
-// 👆👆 修正ここまで 👆👆
+};
+window.useSoulBrightSkill = async function(zone) {
+    let p = players[myPlayerId];
+    if (isSelectingHand || isSelectingStage) return;
+    let card = p.stage[zone];
+    if (!card || !card.soulBright || !card.soul || card.soul.length === 0) return;
 
-// 👇👇 ここから「反逆の光旗」のアクトスキルの処理 👇👇
+    let consumedCount = card.soul.length;
+    let consumedSouls = [...card.soul];
+    card.soul = [];
+    sendToTrashOrLost(myPlayerId, consumedSouls); 
+    
+    // 🌟 共通処理：まずは必ず「分身」を生成する！
+    let spawnCount = Math.min(consumedCount, 2);
+    let emptyZones = ['left', 'center', 'right'].filter(z => !p.stage[z]);
+    let actualSpawn = Math.min(spawnCount, emptyZones.length);
+    
+    if (actualSpawn > 0) {
+        playSound('play'); 
+        for (let i = 0; i < actualSpawn; i++) {
+            let targetZone = emptyZones[i];
+            let cloneCard = JSON.parse(JSON.stringify(card));
+            cloneCard.id = card.id + "-clone-" + Date.now() + i; 
+            cloneCard.attack = 1; cloneCard.hp = 1; if (cloneCard.maxHp !== undefined) cloneCard.maxHp = 1;
+            cloneCard.turnAttackBoost = 0; cloneCard.soul = []; cloneCard.bunshin = true; 
+            p.stage[targetZone] = cloneCard;
+            showFloatingTextOnElement(`p${myPlayerId}-stage-${targetZone}`, "分身!", 'heal');
+            window.showSummonEffect(myPlayerId, targetZone);
+            await window.triggerOnCallPassives(myPlayerId, targetZone);
+        }
+    }
+    
+    // 🌟 その後、固有の能力を使う！
+    if (card.name === "\"Getting Reborn Goal Transcender\" LFR") {
+        playSound('play');
+        let boost = consumedCount * 2;
+        ['left', 'center', 'right'].forEach(z => {
+            let c = p.stage[z];
+            if (c && c.attribute && c.attribute.includes("u_bice")) {
+                c.attack += boost; triggerConnection(c, 'permanent_attack_boost', boost);
+                c.hp += boost; triggerConnection(c, 'heal', boost);
+                showFloatingTextOnElement(`p${myPlayerId}-stage-${z}`, boost, 'attack_boost');
+                setTimeout(() => showFloatingTextOnElement(`p${myPlayerId}-stage-${z}`, boost, 'heal'), 300);
+            }
+        });
+    } else if (card.name === "\"A Moving to Goal of art\" ウアイラ") {
+        playSound('play');
+        let oppZone = getOppositeZone(zone);
+        let oppId = myPlayerId === 1 ? 2 : 1;
+        let oppCard = players[oppId].stage[oppZone];
+        if (oppCard && oppCard.type === "monster") {
+            await applyEffectDamage(myPlayerId, oppId, oppZone, 3);
+        }
+    } else if (card.name === "\"For the Fantastic Future\" フェノメノ") {
+        playSound('play');
+        let trashCount = p.trash.length;
+        if (trashCount > 0) {
+            p.trash.forEach(c => p.lostZone.push(resetCardState(c)));
+            p.trash = [];
+            card.attack += trashCount; triggerConnection(card, 'permanent_attack_boost', trashCount);
+            showFloatingTextOnElement(`p${myPlayerId}-stage-${zone}`, trashCount, 'attack_boost');
+        }
+    } else if (card.name === "JNC3500 \"A\"") {
+        playSound('play');
+        let oppId = myPlayerId === 1 ? 2 : 1;
+        for (let z of ['left', 'center', 'right']) {
+            if (p.stage[z] && p.stage[z].type === "monster") await applyEffectDamage(myPlayerId, myPlayerId, z, 1, true);
+            if (players[oppId].stage[z] && players[oppId].stage[z].type === "monster") await applyEffectDamage(myPlayerId, oppId, z, 1, true);
+        }
+    }
+    
+    if (!isSoloMode) socket.emit('show_card_effect', { roomId: myRoomId, card: card }); 
+    renderAll(); sendGameState();
+};
+
 window.useNoroshiSkill = function(zone) {
     let p = players[myPlayerId];
     if (isSelectingHand || isSelectingStage) return;
@@ -5665,7 +5819,8 @@ window.startMulligan = function() {
     updateModal();
     document.body.appendChild(overlay);
 };
-    // ==========================================
+    
+// ==========================================
 // 🌟 デッキ編成用の大画面モーダル開閉処理 🌟
 // ==========================================
 window.closeDeckCardModal = function() {
