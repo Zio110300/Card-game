@@ -273,6 +273,20 @@
           </div>
       </div>
   </div>
+
+  <button id="open-log-btn" style="display: none; position: fixed; top: 10px; left: 10px; padding: 10px 15px; font-size: 16px; background-color: rgba(44, 62, 80, 0.8); color: white; border: 2px solid #bdc3c7; border-radius: 8px; cursor: pointer; z-index: 50000; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.5); transition: 0.2s;">📜 バトルログ</button>
+
+  <!-- ログを表示するモーダル（大画面） -->
+  <div id="battle-log-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 60000; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+      <div style="width: 90%; max-width: 800px; height: 80vh; background: #1a252f; border: 2px solid #3498db; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 0 30px rgba(0,0,0,0.8);">
+          <div style="padding: 15px 20px; border-bottom: 2px solid #34495e; display: flex; justify-content: space-between; align-items: center; background: #2c3e50; border-radius: 10px 10px 0 0;">
+              <span style="font-size: 24px; font-weight: bold; color: #ecf0f1;">📜 バトルログ</span>
+              <button id="close-log-btn" style="background: transparent; border: none; color: #e74c3c; font-size: 28px; cursor: pointer; font-weight: bold;">✖</button>
+          </div>
+          <!-- ここにログの文字が追加されていきます -->
+          <div id="battle-log-content" style="flex: 1; padding: 20px; overflow-y: auto; font-size: 18px; line-height: 1.8; color: #bdc3c7; font-family: monospace;"></div>
+      </div>
+  </div>
   
   <script src="/socket.io/socket.io.js"></script>
   <script>const socket = io();</script>
